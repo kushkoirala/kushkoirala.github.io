@@ -76,11 +76,31 @@
                 page-break-inside: avoid; /* Prevent awkward page breaks */
             }
         }
+        .name-container {
+            display: flex;
+            align-items: center;
+        }
+        .linkedin-link {
+            font-size: 0.8em; /* Smaller font size */
+            margin-left: auto; /* Right-aligned with indentation */
+            padding-left: 1rem; /* Additional right indentation effect */
+            text-decoration: none;
+            color: #0366d6;
+        }
+        .linkedin-link:hover {
+            text-decoration: underline;
+        }
+        h1 {
+            margin: 0; /* Remove default margin for alignment */
+        }
     </style>
 </head>
 <body>
     <div class="header">
-        <h1>Kushal Koirala</h1>
+        <div class="name-container">
+            <h1>Kushal Koirala</h1>
+            <a href="https://www.linkedin.com/in/kushal-koirala-250125341/" class="linkedin-link">LinkedIn</a>
+        </div>
         <div class="contact-info">
             📧 kush.koirala@gmail.com | 📍 Wichita, KS
         </div>
