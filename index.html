@@ -51,6 +51,31 @@
             grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
             gap: 1rem;
         }
+        #print-pdf-btn {
+            background-color: #0366d6; /* Matches your header color */
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            font-size: 1rem;
+            cursor: pointer;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+        }
+        #print-pdf-btn:hover {
+            background-color: #005cc5;
+        }
+        @media print {
+            #print-pdf-btn {
+                display: none; /* Hide the button in the PDF */
+            }
+            body {
+                margin: 0; /* Remove margins for full-page PDF */
+                padding: 1cm; /* Add some padding if needed */
+            }
+            .header, .section {
+                page-break-inside: avoid; /* Prevent awkward page breaks */
+            }
+        }
     </style>
 </head>
 <body>
@@ -60,6 +85,7 @@
             📧 kush.koirala@gmail.com | 📍 Wichita, KS
         </div>
         <p>Aerospace Systems Architect designing the  Autonomous Intelligent Decision Architecture (AIDA) ,an AI-driven Flight Control. Extensive experience in systems architecture and engineering technology development for aerospace applications.</p>
+        <button id="print-pdf-btn" onclick="window.print()">Print to PDF</button>
     </div>
 
     <div class="section">
