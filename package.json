@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "npm run lint && npm run build",
+    "test:full": "npm run lint && npm run build && npm run preview"
   },
   "dependencies": {
     "@types/three": "^0.181.0",

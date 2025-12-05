@@ -233,11 +233,13 @@ const StepViewer = ({ url }) => {
 
     // Cleanup
     return () => {
+      // Copy ref to variable to avoid stale closure warning
+      const container = containerRef.current;
       if (requestID) {
         cancelAnimationFrame(requestID);
       }
-      if (renderer && containerRef.current && renderer.domElement.parentNode === containerRef.current) {
-        containerRef.current.removeChild(renderer.domElement);
+      if (renderer && container && renderer.domElement.parentNode === container) {
+        container.removeChild(renderer.domElement);
         renderer.dispose();
       }
     };

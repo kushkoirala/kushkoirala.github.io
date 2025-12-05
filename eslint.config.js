@@ -5,9 +5,10 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist']),
+  globalIgnores(['dist', 'public/**', 'node_modules']),
   {
     files: ['**/*.{js,jsx}'],
+    ignores: ['public/**/*.js'],
     extends: [
       js.configs.recommended,
       reactHooks.configs.flat.recommended,
@@ -24,6 +25,7 @@ export default defineConfig([
     },
     rules: {
       'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
+      'react-hooks/exhaustive-deps': 'warn', // Allow stale ref in cleanup when intentional
     },
   },
 ])
