@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { Linkedin, Mail, X } from 'lucide-react';
+import { Linkedin, Mail, X, Maximize2 } from 'lucide-react';
 import UniversalModal from './components/UniversalModal';
 import DigitalTwin from './components/DigitalTwin';
+import ReqIFViewer from './components/ReqIFViewer';
 
 function App() {
   const [modalData, setModalData] = useState({ isOpen: false, url: '', title: '' });
+  const [fullScreen, setFullScreen] = useState(null); // 'reqif' | 'twin' | null
 
   // If you host PDFs on GitHub, use the Raw Link. 
   // If you put them in the 'public' folder, use the relative path (e.g., window.location.origin + '/report.pdf')
@@ -16,10 +18,11 @@ function App() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-8 font-sans text-gray-900">
+    <div className="min-h-screen bg-white text-gray-900">
+      <div className="max-w-7xl mx-auto px-6 py-4 font-sans resume-shell">
       
       {/* HEADER */}
-      <header className="mb-10 border-b border-gray-200 pb-6">
+      <header className="mb-6 border-b border-gray-200 pb-4">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-4">
           <div>
             <h1 className="text-4xl font-bold text-blue-700 mb-2">Kushal Koirala</h1>
@@ -64,17 +67,44 @@ function App() {
         </button>
       </header>
 
-      {/* 3D SHOWCASE */}
+      {/* REQUIREMENTS + 3D SHOWCASE */}
       <section className="mb-12 print:hidden">
-        <h2 className="text-2xl font-bold text-blue-700 border-b border-gray-200 pb-2 mb-6">Digital Twin Showcase</h2>
-        <div>
-          <div className="flex justify-between items-baseline mb-2">
-            <h3 className="font-bold text-lg">Udaan - Concept Aircraft (CATIA V5)</h3>
+        <h2 className="text-2xl font-bold text-blue-700 border-b border-gray-200 pb-2 mb-6">Udaan Requirements & Digital Twin</h2>
+        <p className="text-gray-600 text-sm mb-6">
+          Explore the Udaan aircraft requirements in ReqIF format alongside the interactive STEP-based digital twin. This keeps requirements traceability aligned with the Dassault ecosystem while staying fully open source.
+        </p>
+        <div className="space-y-8">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="font-bold text-lg text-gray-900">Requirements (ReqIF)</h3>
+              <button
+                type="button"
+                onClick={() => setFullScreen('reqif')}
+                className="flex items-center gap-2 text-sm text-blue-700 hover:text-blue-900"
+              >
+                <Maximize2 className="h-4 w-4" /> Full screen
+              </button>
+            </div>
+            <ReqIFViewer reqifFile="udaan.reqif" />
           </div>
-          <p className="text-gray-600 text-sm mb-4">
-            Interactive web-based visualization demonstrating Digital Continuity from Engineering Data (STEP) to Web Experience using WebAssembly.
-          </p>
-          <DigitalTwin />
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-bold text-lg text-gray-900">Digital Twin (STEP)</h3>
+                <p className="text-gray-600 text-sm">
+                  Interactive web-based visualization demonstrating Digital Continuity from Engineering Data (STEP) to Web Experience using WebAssembly.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setFullScreen('twin')}
+                className="flex items-center gap-2 text-sm text-blue-700 hover:text-blue-900"
+              >
+                <Maximize2 className="h-4 w-4" /> Full screen
+              </button>
+            </div>
+            <DigitalTwin />
+          </div>
         </div>
       </section>
 
@@ -127,12 +157,12 @@ function App() {
         
         <div className="mb-4">
            <div className="flex justify-between items-baseline">
-            <h3 className="font-bold">Ph.D. Candidate Aerospace Engineering (ABD / Coursework Completed)</h3>
-            <span className="text-sm text-gray-500">2021 – 2025</span>
+            <h3 className="font-bold">Ph.D. Aerospace Engineering (Coursework Only)</h3>
+            <span className="text-sm text-gray-500">2021 – Present</span>
           </div>
           <p className="text-gray-600 italic">Wichita State University</p>
           <ul className="list-disc pl-5 mt-2 text-sm text-gray-700">
-            <li>Focus: Advanced Flight Dynamics & Modern Control Theory (Neural Networks, Optimal Control).</li>
+            <li>Focus: Advanced Flight Dynamics & Modern Control Theory (Neural Networks, Optimal Control, Systems Engineering).</li>
             <li>Key Research: <a href="#" onClick={(e) => openPdf(e, 'AIDA - Proposal _ v1.pdf', 'AIDA: Autonomous Intelligent Decision Architecture')} className="text-blue-600 hover:underline">AIDA: Autonomous Intelligent Decision Architecture</a></li>
             <li>Flight Control Research: <a href="#" onClick={(e) => openPdf(e, 'Flight Control Design.pdf', 'Flight Control System Design')} className="text-blue-600 hover:underline">Advanced Flight Control Systems</a></li>
             <li>Related Projects: <a href="#" onClick={(e) => openPdf(e, 'Mars Lander.pdf', 'Mars Exploration Initiative')} className="text-blue-600 hover:underline">Mars Exploration Project</a></li>
@@ -159,6 +189,7 @@ function App() {
           <p className="text-gray-600 italic">Wichita State University</p>
           <ul className="list-disc pl-5 mt-2 text-sm text-gray-700">
              <li>Capstone Project: <a href="#" onClick={(e) => openPdf(e, 'Final Report-PropShox.pdf', 'Udaan - The Dive Bomber')} className="text-blue-600 hover:underline">Udaan - The Dive Bomber</a></li>
+             <li>Undergraduate Research: <a href="#" onClick={(e) => openPdf(e, 'B1 Experimental Aerodynamics.pdf', 'Experimental Aerodynamics')} className="text-blue-600 hover:underline">Experimental Aerodynamics</a></li>
           </ul>
         </div>
       </section>
@@ -171,6 +202,28 @@ function App() {
         onClose={() => setModalData({ ...modalData, isOpen: false })} 
       />
     </div>
+
+      {/* Full-screen overlay for viewers */}
+      {fullScreen && (
+        <div className="fixed inset-0 z-50 bg-white flex flex-col">
+          <div className="flex items-center justify-between px-4 py-3 border-b bg-gray-50">
+            <div className="text-sm font-semibold text-gray-900">
+              {fullScreen === 'reqif' ? 'Requirements (Full Screen)' : 'Digital Twin (Full Screen)'}
+            </div>
+            <button
+              type="button"
+              onClick={() => setFullScreen(null)}
+              className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900"
+            >
+              <X className="h-4 w-4" /> Close
+            </button>
+          </div>
+          <div className="flex-1 overflow-auto p-4 bg-gray-100">
+            {fullScreen === 'reqif' ? <ReqIFViewer reqifFile="udaan.reqif" /> : <DigitalTwin />}
+          </div>
+        </div>
+      )}
+  </div>
   );
 }
 

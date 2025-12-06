@@ -8,19 +8,20 @@ const StepViewer = ({ url }) => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (!url || !containerRef.current) return;
+    const containerEl = containerRef.current;
+    if (!url || !containerEl) return;
 
     let scene, camera, renderer, controls, requestID;
 
     const initViewer = async () => {
       try {
         // 1. Setup Three.js Scene
-        if (!containerRef.current) {
+        if (!containerEl) {
           throw new Error('Container ref not available');
         }
 
-        const width = containerRef.current.clientWidth || 800;
-        const height = containerRef.current.clientHeight || 600;
+        const width = containerEl.clientWidth || 800;
+        const height = containerEl.clientHeight || 600;
 
         scene = new THREE.Scene();
         scene.background = new THREE.Color(0xf0f2f5);
@@ -37,7 +38,7 @@ const StepViewer = ({ url }) => {
 
         renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(width, height);
-        containerRef.current.appendChild(renderer.domElement);
+  containerEl.appendChild(renderer.domElement);
 
         controls = new OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
@@ -233,13 +234,11 @@ const StepViewer = ({ url }) => {
 
     // Cleanup
     return () => {
-      // Copy ref to variable to avoid stale closure warning
-      const container = containerRef.current;
       if (requestID) {
         cancelAnimationFrame(requestID);
       }
-      if (renderer && container && renderer.domElement.parentNode === container) {
-        container.removeChild(renderer.domElement);
+      if (renderer && containerEl && renderer.domElement.parentNode === containerEl) {
+        containerEl.removeChild(renderer.domElement);
         renderer.dispose();
       }
     };

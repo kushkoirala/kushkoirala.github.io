@@ -1,13 +1,23 @@
 import React, { useState } from 'react';
 import StepViewer from './StepViewer';
-import { Play, Box } from 'lucide-react';
+import { Play, Box, Upload } from 'lucide-react';
 
 const DigitalTwin = () => {
   const [isRendering, setIsRendering] = useState(false);
-  const stepFileUrl = `${window.location.origin}/Udaan.stp`;
+  const [customUrl, setCustomUrl] = useState(null);
+  const stepFileUrl = customUrl || `${window.location.origin}/Udaan.stp`;
 
   const handleRender = () => {
     setIsRendering(true);
+  };
+
+  const handleFileUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const url = URL.createObjectURL(file);
+      setCustomUrl(url);
+      setIsRendering(true);
+    }
   };
 
   return (
@@ -31,6 +41,18 @@ const DigitalTwin = () => {
               <Play size={20} />
               Load & Render STEP File
             </button>
+            <div className="mt-4 flex items-center gap-2 justify-center">
+              <label className="flex items-center gap-2 px-4 py-2 bg-gray-200 text-gray-800 font-medium rounded-lg hover:bg-gray-300 transition cursor-pointer">
+                <Upload size={18} />
+                Upload STEP File
+                <input
+                  type="file"
+                  accept=".stp,.step,.STEP,.STP"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
+              </label>
+            </div>
             <p className="text-xs text-gray-500 mt-4">
               Note: Initial load may take a moment as the WASM kernel processes the geometry
             </p>

@@ -28,4 +28,10 @@ export default defineConfig([
       'react-hooks/exhaustive-deps': 'warn', // Allow stale ref in cleanup when intentional
     },
   },
+  {
+    files: ['scripts/**/*.js'],
+    languageOptions: {
+      globals: globals.node,
+    },
+  },
 ])
