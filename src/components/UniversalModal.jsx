@@ -1,12 +1,23 @@
-import React from 'react';
-import { X, Download, Box, FileText, ExternalLink } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Download, Box, FileText, ExternalLink, Loader } from 'lucide-react';
 import StepViewer from './StepViewer';
 
 const UniversalModal = ({ isOpen, onClose, url, title }) => {
-  if (!isOpen) return null;
-
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  
   // Detect File Type based on extension
   const isStepFile = url.toLowerCase().endsWith('.stp') || url.toLowerCase().endsWith('.step');
+  const isPdf = url.toLowerCase().endsWith('.pdf');
+  
+  // Reset loading state when URL changes
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setIsLoading(true);
+    setLoadError(false);
+  }, [url]);
+  
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 sm:p-8" onClick={onClose}>
@@ -53,32 +64,79 @@ const UniversalModal = ({ isOpen, onClose, url, title }) => {
           {isStepFile ? (
             /* CASE A: 3D STEP VIEWER */
             <StepViewer url={url} />
+          ) : isPdf ? (
+            /* CASE B: NATIVE BROWSER PDF VIEWER (with loading state) */
+            <>
+              {isLoading && (
+                <div className="absolute inset-0 flex items-center justify-center bg-gray-50 z-10">
+                  <div className="flex flex-col items-center gap-3">
+                    <Loader size={40} className="text-blue-600 animate-spin" />
+                    <p className="text-gray-600 font-medium">Loading PDF...</p>
+                  </div>
+                </div>
+              )}
+              {loadError && (
+                <div className="flex flex-col items-center justify-center h-full text-center p-8 bg-gray-50">
+                  <FileText size={64} className="text-gray-300 mb-4" />
+                  <h4 className="text-xl font-semibold text-gray-700 mb-2">Failed to Load PDF</h4>
+                  <p className="text-gray-500 mb-6 max-w-md">
+                    The PDF could not be loaded inline. Try opening it in a new tab or downloading it.
+                  </p>
+                  <a 
+                    href={url} 
+                    target="_blank" 
+                    rel="noreferrer"
+                    className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition shadow-md"
+                  >
+                    <ExternalLink size={18} /> Open PDF
+                  </a>
+                </div>
+              )}
+              <object
+                data={url}
+                type="application/pdf"
+                className="w-full h-full"
+                onLoad={() => setIsLoading(false)}
+                onError={() => {
+                  setIsLoading(false);
+                  setLoadError(true);
+                }}
+              >
+                {/* FALLBACK: If the browser cannot render the PDF inline */}
+                <div className="flex flex-col items-center justify-center h-full text-center p-8 bg-gray-50">
+                  <FileText size={64} className="text-gray-300 mb-4" />
+                  <h4 className="text-xl font-semibold text-gray-700 mb-2">Preview Not Supported</h4>
+                  <p className="text-gray-500 mb-6 max-w-md">
+                    Your browser cannot embed this PDF inline. Open it in a new tab or download it to view.
+                  </p>
+                  <a 
+                    href={url} 
+                    target="_blank" 
+                    rel="noreferrer"
+                    className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition shadow-md"
+                  >
+                    <ExternalLink size={18} /> Open PDF
+                  </a>
+                </div>
+              </object>
+            </>
           ) : (
-            /* CASE B: NATIVE BROWSER PDF VIEWER */
-            /* We use the <object> tag which invokes the browser's internal PDF engine */
-            <object
-              data={url}
-              type="application/pdf"
-              className="w-full h-full"
-            >
-              {/* FALLBACK: If the browser (e.g. some mobile devices) cannot render the PDF inline */}
-              <div className="flex flex-col items-center justify-center h-full text-center p-8 bg-gray-50">
-                <FileText size={64} className="text-gray-300 mb-4" />
-                <h4 className="text-xl font-semibold text-gray-700 mb-2">Preview Not Supported Inline</h4>
-                <p className="text-gray-500 mb-6 max-w-md">
-                  Your browser (likely on mobile) prefers not to embed PDFs directly. 
-                  You can view the file by opening it in a new tab.
-                </p>
-                <a 
-                  href={url} 
-                  target="_blank" 
-                  rel="noreferrer"
-                  className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition shadow-md"
-                >
-                  <ExternalLink size={18} /> Open PDF
-                </a>
-              </div>
-            </object>
+            /* CASE C: UNKNOWN FILE TYPE */
+            <div className="flex flex-col items-center justify-center h-full text-center p-8 bg-gray-50">
+              <FileText size={64} className="text-gray-300 mb-4" />
+              <h4 className="text-xl font-semibold text-gray-700 mb-2">File Type Not Supported</h4>
+              <p className="text-gray-500 mb-6 max-w-md">
+                This file type cannot be previewed inline.
+              </p>
+              <a 
+                href={url} 
+                target="_blank" 
+                rel="noreferrer"
+                className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition shadow-md"
+              >
+                <ExternalLink size={18} /> Open File
+              </a>
+            </div>
           )}
         </div>
 

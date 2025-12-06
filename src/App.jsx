@@ -64,7 +64,7 @@ function App() {
           </div>
           <ul className="list-disc pl-5 space-y-2 text-gray-800">
             <li><strong>Enterprise Solution Architecture:</strong> Lead technical engagement for cross-industry clients (A&D, Transportation), architecting end-to-end digital twins (CATIA/DELMIA/SIMULIA) and defining "To-Be" solution dossiers.</li>
-            <li><strong>Strategic Workflow Automation:</strong> Directed a team of 6 Senior Architects in a multi-year OEM engagement to revolutionize Materials & Processes workflows. Engineered an automated provisioning system that reduced cycle time by 99%.</li>
+            <li><strong>Strategic Workflow Automation:</strong> Directed a team of 6 Senior Architects in a multi-year OEM engagement to revolutionize Materials & Processes workflows. Engineered an automated provisioning system that reduced cycle time by 99%. <a href="#" onClick={(e) => openPdf(e, 'Final Report-PropShox.pdf', 'Propulsion Shock System Report')} className="text-blue-600 hover:underline font-medium">[View Report]</a></li>
             <li><strong>Proprietary Framework Development:</strong> Developed a custom "Capability Assessment Layer" within UAF, now institutionalized across 5+ major engagements to map client value streams directly to technical architecture.</li>
             <li><strong>Infrastructure & Scalability:</strong> Orchestrated scalable Linux-based 3DExperience and Teamwork Cloud (Cassandra) architectures, deploying 50+ virtual instances to prove real-time Systems Traceability where no OOTB methodology existed.</li>
           </ul>
