@@ -171,6 +171,17 @@ function App() {
 
         <div className="mb-4">
            <div className="flex justify-between items-baseline">
+            <h3 className="font-bold">M.Eng. Aerospace Engineering</h3>
+            <span className="text-sm text-gray-500">In Progress (75% Complete)</span>
+          </div>
+          <p className="text-gray-600 italic">University of Texas at Arlington (UTA)</p>
+          <ul className="list-disc pl-5 mt-2 text-sm text-gray-700">
+             <li>Advanced graduate-level coursework in aerospace systems, dynamics, and engineering design.</li>
+          </ul>
+        </div>
+
+        <div className="mb-4">
+           <div className="flex justify-between items-baseline">
             <h3 className="font-bold">M.S. Aerospace Engineering</h3>
             <span className="text-sm text-gray-500">May 2024</span>
           </div>
