@@ -1,0 +1,395 @@
+
+
+
+<!DOCTYPE html>
+<html lang="en" class="no-js ">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    
+
+
+    <title>404: Page Not Found - The University of Texas at Arlington</title>
+    <meta name="title" content="404: Page Not Found - The University of Texas at Arlington" />
+    <!-- Open Graph data: Social media service basic tags -->
+    <meta property="og:title" content="404: Page Not Found" />
+    <meta property="og:url" content="https://www.uta.edu/404" />
+    <meta property="og:site_name" content="404: Page Not Found - The University of Texas at Arlington" />
+    <meta name="twitter:site" content="404: Page Not Found - The University of Texas at Arlington" />
+    <meta name="twitter:text:title" content="404: Page Not Found" />
+        <!-- BrightEdge -->
+
+<!-- be_ixf, sdk, gho-->
+<meta name="be:sdk" content="dotnet_sdk_1.4.22" />
+<meta name="be:timer" content="15ms" />
+<meta name="be:orig_url" content="https%3a%2f%2fwww.uta.edu%2f404.aspx" />
+<meta name="be:capsule_url" content="https%3a%2f%2fixfd1-api.bc0a.com%2fapi%2fixf%2f1.0.0%2fget_capsule%2ff00000000303009%2f1428869243" />
+<meta name="be:norm_url" content="https%3a%2f%2fwww.uta.edu%2f404.aspx" />
+<meta name="be:api_dt" content="py_2025; pm_02; pd_26; ph_09; pmh_09; p_epoch:1740589781479" />
+<meta name="be:mod_dt" content="py_2025; pm_02; pd_26; ph_09; pmh_09; p_epoch:1740589781479" />
+<meta name="be:messages" content="0" />
+<style>
+.be-ix-link-block .be-related-link-container {margin-bottom: 20px;padding-left: 15px;padding-right: 15px;text-align: center;}
+.be-ix-link-block .be-related-link-container .be-label {margin: 0;color: white;line-height: 1em;font-variant-numeric: lining-nums;font-weight: 600;}
+.be-ix-link-block .be-related-link-container .be-list { display: inline-block; list-style: none;margin: 0; padding: 0;}
+.be-ix-link-block .be-related-link-container .be-list .be-list-item {display: inline-block;margin-right: 20px;margin-bottom: 22px;}
+.be-ix-link-block .be-related-link-container .be-list .be-list-item .be-related-link {color: #fff;text-decoration: none;    padding-bottom: 5px;position: relative;}
+.be-ix-link-block .be-related-link-container .be-list .be-list-item .be-related-link:hover::before{width: 100%;}
+.be-ix-link-block .be-related-link-container .be-list .be-list-item .be-related-link::before{background-color: #fff;content: "";bottom: 0;
+height: 1px;left: 0;position: absolute;transition-duration: .2s;transition-property: width,background-color;transition-timing-function: cubic-bezier(.55,.085,.68,.53);width: 0;}
+.be-ix-link-block .be-related-link-container .be-list .be-list-item .be-related-link:hover {color: #fff;text-decoration: none;}
+.be-ix-link-block .be-related-link-container .be-list .be-list-item:last-child { margin-right: 0;}
+
+@media (max-width: 767px) {
+  .be-ix-link-block .be-related-link-container .be-label {width: 100%;margin-bottom: 22px;}
+  .be-ix-link-block .be-related-link-container .be-list { display: block;width: 100%;}
+  .be-ix-link-block .be-related-link-container .be-list .be-list-item {display: block;margin-right: 0;}
+}
+@media (min-width: 768px) {
+  .be-ix-link-block .be-related-link-container {display: flex;align-items: baseline;}
+  .be-ix-link-block .be-related-link-container .be-label {display: inline-block;margin-right: 20px;flex-grow: 0;flex-shrink: 0;}
+}
+</style>
+
+    <link href="/assets/images/apple-touch-icon.png" rel="apple-touch-icon" sizes="180x180">
+    <link href="/assets/images/favicon-32x32.png" rel="icon" sizes="32x32" type="image/png">
+    <link href="/assets/images/favicon-16x16.png" rel="icon" sizes="16x16" type="image/png">
+
+<!-- Google Tag Manager -->
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-TDMPNB');</script>
+<!-- End Google Tag Manager -->
+
+
+    <link rel="stylesheet" href="/assets/fonts/fontawesome/css/all.min.css" />
+
+        <link rel="stylesheet" href="/Styles/main.min.css?v=638988871320000000">
+    <link rel="search" type="application/opensearchdescription+xml" title="UTA" href="/opensearch.xml" />
+    
+
+<style>
+
+/***
+ * UTA 130 header logo
+ ~~~~~~~~~~~~~~~~~~~~~~~~~ */
+.global-header.uta-130 .navbar-uta .navbar-brand img {
+    max-width: 140px;
+}
+.global-header.uta-130 .navbar-uta .navbar-uta-college-title {
+  left: 280px;
+}
+
+@media screen and (min-width: 768px){
+	.global-header.uta-130 .navbar-uta .navbar-brand img {
+		max-width: 200px;
+	}
+}
+
+@media screen and (min-width: 1400px){
+	.global-header.uta-130 .navbar-uta .navbar-brand img {
+		max-width: 225px;
+	}
+	.global-header.uta-130:not(.college-header) .navbar {
+		padding: 0 1rem .5rem 1rem;
+	}
+}
+
+</style>
+    
+    <script>document.documentElement.classList.remove('no-js');</script>
+</head>
+<body>
+
+    
+<!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-TDMPNB"
+height="0" width="0" style="display:none;visibility:hidden" ></iframe></noscript>
+<!-- End Google Tag Manager(noscript) -->
+
+    
+    
+
+    <div>
+        
+        <header class="global-header uta-130" data-globalnav>
+
+            
+
+            <div class="global-header-wrapper">
+                
+
+    <nav class="utility-nav" aria-label="utility navigation">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col utility-wrapper">
+
+                    <ul class="nav nav-one">
+                                <li>
+                                    <a href="/students" >Students</a>
+                                </li>
+                                <li>
+                                    <a href="/for-parents" >Family</a>
+                                </li>
+                                <li>
+                                    <a href="https://resources.uta.edu/" aria-label="Faculty & Staff" >Faculty &amp; Staff</a>
+                                </li>
+                                <li>
+                                    <a href="/alumni" aria-label="Alumni" >Alumni</a>
+                                </li>
+                    </ul>
+
+                        <a class="navbar-brand" href="/">
+                            <img src="https://cdn.prod.web.uta.edu/-/media/feature/header/uta-130-web-hz-text-white-orange.png?revision=b1858840-8f6b-4577-a411-b3fac168511a&amp;la=en&amp;h=194&amp;w=920&amp;hash=1631622F11D3976FD4A48BBC30C91140" class="img-fluid" alt="U T A 130 years" />
+                        </a>
+
+                    <div class="nav-two-wrapper">
+
+                        <ul class="nav nav-two">
+
+                                    <li>
+                                        <a href="https://www.uta.edu/maps" aria-label="Campus Maps" >Maps</a>
+                                    </li>
+                                    <li>
+                                        <a href="https://events.uta.edu/" aria-label="Events" >Events</a>
+                                    </li>
+                                    <li>
+                                        <a href="/west" aria-label="UTA West" >UTA West</a>
+                                    </li>
+                                    <li>
+                                        <a href="/admissions/visit" >Visit</a>
+                                    </li>
+                                    <li>
+                                        <a href="https://giving.uta.edu/Give" >Give</a>
+                                    </li>
+
+                            
+
+                        </ul>
+
+                        
+<div class="search-form" role="search" aria-label="Search U T A">
+    <div class="form-group">
+        <form action="/search" method="get">
+            <div class="g-searchbox-wrapper">
+                <input name="q" type="search" class="g-searchbox" role="searchbox" aria-autocomplete="list" aria-label="Submit search" placeholder="Search UTA" />
+                <button class="g-searchbutton-go" type="submit" tabindex="0">
+                    <span class="fas fa-search g-searchbutton-icon" aria-hidden="true"></span>
+                    <span class="sr-only">Search U T A</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </nav>
+
+
+                <nav class="navbar navbar-expand-xl navbar-uta" aria-label="global navigation">
+                    <a class="navbar-brand scroll-brand" href="/">
+                        <img src="https://cdn.prod.web.uta.edu/-/media/feature/header/uta-130-web-hz-text-white-orange.png?revision=b1858840-8f6b-4577-a411-b3fac168511a&amp;la=en&amp;h=194&amp;w=920&amp;hash=1631622F11D3976FD4A48BBC30C91140" class="img-fluid" alt="U T A 130 years" />
+                    </a>
+
+                    <div class="navbar-togglers">
+                        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#uta-navbar" aria-controls="uta-navbar" aria-expanded="false" aria-label="Toggle navigation">
+                        </button>
+                    </div>
+
+                    
+
+    <div class="collapse navbar-collapse" id="uta-navbar">
+
+            <a class="navbar-brand full-brand" href="/">
+                <img src="https://cdn.prod.web.uta.edu/-/media/feature/header/uta-130-web-hz-text-white-orange.png?revision=b1858840-8f6b-4577-a411-b3fac168511a&amp;la=en&amp;h=194&amp;w=920&amp;hash=1631622F11D3976FD4A48BBC30C91140" class="img-fluid" alt="U T A 130 years" />
+            </a>
+
+        <ul class="navbar-nav">
+                    <li class="nav-item">
+
+                        <a href="/academics" class="nav-link" aria-label="Academics" >Academics</a>
+                    </li>
+                    <li class="nav-item">
+
+                        <a href="/admissions" class="nav-link" aria-label="Admissions" >Admissions</a>
+                    </li>
+                    <li class="nav-item">
+
+                        <a href="/about" class="nav-link" aria-label="About UTA" >About UTA</a>
+                    </li>
+                    <li class="nav-item">
+
+                        <a href="https://www.uta.edu/student-life" class="nav-link" aria-label="Campus Life" >Campus Life</a>
+                    </li>
+                    <li class="nav-item">
+
+                        <a href="/research" class="nav-link" aria-label="Research" >Research</a>
+                    </li>
+                    <li class="nav-item">
+
+                        <a href="/news" class="nav-link" aria-label="News" >News</a>
+                    </li>
+                    <li class="nav-item">
+
+                        <a href="https://utamavs.com/" class="nav-link" aria-label="Athletics" >Athletics</a>
+                    </li>
+        </ul>
+
+<a href="/admissions/apply" class="uta-btn uta-btn-compact-primary nav-link-apply" title="Apply" >                <span>Apply</span>
+</a>
+    </div>
+
+                </nav>
+            </div>
+        </header>
+
+
+        <main class="main" id="content">
+    <section class="hero">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-lg-10 offset-lg-1">
+                    <h1 class="hero-title">Page not found</h1>
+                    <div class="hero-description">
+                        <p><p>Oops! Sorry about that. We&rsquo;re in the process of implementing a more effective UTA web experience, and we appreciate your patience as we update our website.</p>
+<p>What you&rsquo;re looking for doesn&rsquo;t seem to be here. This may be due to:</p>
+<ul style="padding-left: 1.25em;">
+    <li>a broken link</li>
+    <li>an&nbsp;out-of date bookmark</li>
+    <li>a&nbsp;search engine&nbsp;which needs to be updated</li>
+    <li>a&nbsp;mistyped website address</li>
+</ul>
+<h2 style="margin-top:2em;">TRY A SEARCH</h2>
+<form action="/search" method="get" class="uta-search-form" id="uta-search-form">
+    <fieldset>
+    <div class="form-row">
+    <div class="form-group col-md-6">
+    <input aria-label="Search UTA" name="q" placeholder="Search UTA" type="text" class="form-control" style="height:41px;" />
+    </div>
+    <div class="form-group col-md-6">
+    <button class="uta-btn uta-btn-compact-primary" type="submit"><span>Go <span class="fas fa-angle-right"></span></span></button>
+    </div>
+    </div>
+    </fieldset>
+</form>
+<h2 style="margin-top:2em;">HELPFUL RESOURCES</h2>
+<p>Visit our online&nbsp;<a href="https://www.uta.edu/help/">Help Center</a>&nbsp;to find links to popular resources and answers to frequently asked questions.</p>
+<h2 style="margin-top:2em;">REPORT A PROBLEM</h2>
+<p>Submit a Website Support ticket in <a href="https://uta.service-now.com/selfservice2?id=utassp01_sc_home">Service Now</a>. </p>
+<p>Or, call our Service Desk (817-272-2208) for urgent matters.</p></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</main>
+
+        
+
+
+
+            <style>
+            .footer-redesign::before { background-image: url(https://cdn.prod.web.uta.edu/-/media/feature/footer/tower-transparent.png?revision=d9e9e362-bf7d-4356-843f-b08380dc7585) }
+            </style>
+        <footer class="footer footer-redesign ">
+            <div class="footer-content-wrapper">
+
+                    <!-- BrightEdge -->
+
+<!-- be_ixf, bodystr, body_1 -->
+
+                <div class="copyright">&copy; 2025 The University of Texas at Arlington
+
+<style>
+.social-link-group .x-icon {
+height: 16px;
+margin: 9px;
+width: 16px;
+}
+
+.social-embed-section .bypass {
+  text-indent: -4000px;
+}
+
+</style>
+</div>
+                <div class="address">
+                    701 S. Nedderman Drive, Arlington, TX 76019
+                    <br />
+                        <a class="phone" href="tel:+1-817-272-2011">817-272-2011</a>
+                </div>
+
+                    <div class="left-column-links">
+                        <ul>
+                                        <li>
+<a href="/admissions/apply" aria-label="Apply for Admission" >                                                <span>Apply for Admission</span>
+</a>                                        </li>
+                                        <li>
+<a href="/admissions/contact-us/request-information" >                                                <span>Request Info</span>
+</a>                                        </li>
+                                        <li>
+<a href="/admissions/visit" >                                                <span>Visit Campus</span>
+</a>                                        </li>
+                                        <li>
+<a href="https://giving.uta.edu/Give" >                                                <span>Give</span>
+</a>                                        </li>
+                        </ul>
+                    </div>
+
+                <div class="footer-left-column-socials">
+<a href="https://www.facebook.com/utarlington/" aria-label="Facebook" >                                    <div class="social-icon" style="background-image: url('https://cdn.prod.web.uta.edu/-/media/feature/footer/social-links/facebook.png?revision=c73eb8a3-3377-43ce-b8ff-62fe48209297');"></div>
+</a><a href="https://www.linkedin.com/school/university-of-texas-at-arlington/" aria-label="LinkedIn" >                                    <div class="social-icon" style="background-image: url('https://cdn.prod.web.uta.edu/-/media/feature/footer/social-links/linkedin.png?revision=3df7d253-1bbf-4674-93b5-7d93cdc5e56e');"></div>
+</a><a href="https://www.instagram.com/utarlington/" aria-label="Instagram" >                                    <div class="social-icon" style="background-image: url('https://cdn.prod.web.uta.edu/-/media/feature/footer/social-links/instagram.png?revision=e5f5d3fd-ad16-491e-9f2b-0ad5300948df');"></div>
+</a><a href="https://x.com/utarlington" aria-label="X UT Arlington" title="X UT Arlington" >                                    <div class="social-icon" style="background-image: url('https://cdn.prod.web.uta.edu/-/media/feature/footer/social-links/x-icon.png?revision=65c736a9-4036-4409-9b51-bb6e5469f8f7');"></div>
+</a><a href="https://www.youtube.com/user/UTArlington" aria-label="YouTube" >                                    <div class="social-icon" style="background-image: url('https://cdn.prod.web.uta.edu/-/media/feature/footer/social-links/youtube.png?revision=da15c0e2-7905-442e-a844-5b72c2f43254');"></div>
+</a>                </div>
+
+                <div class="footer-right-column-utility">
+                            <div>
+<a href="/contact-us" >Contact Us</a>                            </div>
+                            <div>
+<a href="/directory" >People Directory</a>                            </div>
+                            <div>
+<a href="/maps" >Campus Maps</a>                            </div>
+                            <div>
+<a href="/about/careers-at-uta" >Careers</a>                            </div>
+                            <div>
+<a href="https://ithelp.uta.edu" >IT Help</a>                            </div>
+                            <div>
+<a href="https://my.uta.edu" aria-label="MyUTA Mobile App" >MyUTA</a>                            </div>
+                </div>
+
+                <div class="footer-right-column-info">
+                    <div class="footer-right-column-sitemap">
+<a href="/campus-ops/oem/be-mavready" aria-label="Emergency Preparedness" >Emergency Preparedness</a><a href="/student-affairs/caps/resources" aria-label="Mental Health Resources" >Mental Health Resources</a><a href="https://www.uta.edu/titleix/" >Nondiscrimination and Title IX</a><a href="/administration/legal-affairs/privacy/privacy-notice" aria-label="Privacy and Legal Notice" >Privacy and Legal Notice</a><a href="/accessibility" aria-label="Accessibility" >Accessibility</a><a href="/site-policies" >Site Policies</a><a href="https://www.uta.edu/titleix/report/" >Report Sexual Misconduct</a><a href="https://www.highered.texas.gov/apps/resumes/" >Institutional Resume</a><a href="https://www.utsystem.edu/" >UT System</a><a href="https://www.texas.gov/" >State of Texas</a><a href="https://veterans.portal.texas.gov/" >Texas Veterans Portal</a><a href="https://www.tsl.texas.gov/trail/index.html" >Statewide Search</a><a href="https://sao.fraud.texas.gov/" >Report Fraud</a><a href="/administration/fao/grants/cares-act-report-and-disclosure" aria-label="CARES Act Federal Disclosures" >CARES Act Federal Disclosures</a><a href="/announcements/coronavirus" aria-label="COVID-19 Resources" >COVID-19 Resources</a>                    </div>
+                </div>
+
+            </div>
+        </footer>
+
+    </div>
+
+        <script src="/Scripts/main.bundle.min.js?v=638988871320000000"></script>
+
+    
+
+<script>
+// Fix story card links
+(function() {
+	// Update problematic story cards
+	var cardLinks = document.querySelectorAll('section.random-story-card__dark a.uta-btn');
+	cardLinks.forEach(alink => {
+		alink.classList.add('uta-btn-inverse-secondary');
+	});
+})();
+</script>
+</body>
+</html>

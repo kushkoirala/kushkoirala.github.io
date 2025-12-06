@@ -115,7 +115,18 @@ function App() {
         {/* Dassault */}
         <div className="mb-8 break-inside-avoid">
           <div className="flex justify-between items-baseline mb-2">
-            <h3 className="font-bold text-lg">Global Architect <span className="font-normal text-gray-600 ml-1">@ Dassault Systèmes (NIAR-WSU)</span></h3>
+            <div className="flex items-center gap-3">
+              <a 
+                href="https://www.3ds.com/" 
+                target="_blank" 
+                rel="noreferrer"
+                className="flex-shrink-0"
+                title="Dassault Systèmes"
+              >
+                <img src="/logos/dassault.png" alt="Dassault Systèmes" className="h-8 w-8 rounded-full hover:scale-110 transition" />
+              </a>
+              <h3 className="font-bold text-lg">Global Architect <span className="font-normal text-gray-600 ml-1">@ Dassault Systèmes (NIAR-WSU)</span></h3>
+            </div>
             <span className="text-sm text-gray-500 italic">July 2018 – Present</span>
           </div>
           <ul className="list-disc pl-5 space-y-2 text-gray-800">
@@ -129,7 +140,18 @@ function App() {
         {/* Safran */}
         <div className="mb-8 break-inside-avoid">
           <div className="flex justify-between items-baseline mb-2">
-            <h3 className="font-bold text-lg">Lead Design Engineer & Architect <span className="font-normal text-gray-600 ml-1">@ SAFRAN (Zodiac Aerospace)</span></h3>
+            <div className="flex items-center gap-3">
+              <a 
+                href="https://www.safran-group.com/" 
+                target="_blank" 
+                rel="noreferrer"
+                className="flex-shrink-0"
+                title="SAFRAN"
+              >
+                <img src="/logos/safran.png" alt="SAFRAN" className="h-8 w-8 rounded-full hover:scale-110 transition" />
+              </a>
+              <h3 className="font-bold text-lg">Lead Design Engineer & Architect <span className="font-normal text-gray-600 ml-1">@ SAFRAN (Zodiac Aerospace)</span></h3>
+            </div>
             <span className="text-sm text-gray-500 italic">Dec 2012 – July 2018</span>
           </div>
           <ul className="list-disc pl-5 space-y-2 text-gray-800">
@@ -142,7 +164,18 @@ function App() {
         {/* Duncan */}
         <div className="mb-8 break-inside-avoid">
           <div className="flex justify-between items-baseline mb-2">
-            <h3 className="font-bold text-lg">Design Engineer (VIP Interiors) <span className="font-normal text-gray-600 ml-1">@ Duncan Aviation</span></h3>
+            <div className="flex items-center gap-3">
+              <a 
+                href="https://www.duncanaviation.aero/" 
+                target="_blank" 
+                rel="noreferrer"
+                className="flex-shrink-0"
+                title="Duncan Aviation"
+              >
+                <img src="/logos/duncan.png" alt="Duncan Aviation" className="h-8 w-8 rounded-full hover:scale-110 transition" />
+              </a>
+              <h3 className="font-bold text-lg">Design Engineer (VIP Interiors) <span className="font-normal text-gray-600 ml-1">@ Duncan Aviation</span></h3>
+            </div>
             <span className="text-sm text-gray-500 italic">Aug 2012 – Nov 2012</span>
           </div>
           <ul className="list-disc pl-5 space-y-2 text-gray-800">
@@ -156,8 +189,19 @@ function App() {
         <h2 className="text-2xl font-bold text-blue-700 border-b border-gray-200 pb-2 mb-6">Education</h2>
         
         <div className="mb-4">
-           <div className="flex justify-between items-baseline">
-            <h3 className="font-bold">Ph.D. Aerospace Engineering (Coursework Only)</h3>
+           <div className="flex justify-between items-baseline mb-2">
+            <div className="flex items-center gap-2">
+              <a 
+                href="https://www.wichita.edu/" 
+                target="_blank" 
+                rel="noreferrer"
+                className="flex-shrink-0"
+                title="Wichita State University"
+              >
+                <img src="/logos/wsu.png" alt="Wichita State University" className="h-6 w-6 rounded-full hover:scale-110 transition" />
+              </a>
+              <h3 className="font-bold">Ph.D. Aerospace Engineering (Coursework Only)</h3>
+            </div>
             <span className="text-sm text-gray-500">2021 – Present</span>
           </div>
           <p className="text-gray-600 italic">Wichita State University</p>
@@ -170,9 +214,20 @@ function App() {
         </div>
 
         <div className="mb-4">
-           <div className="flex justify-between items-baseline">
-            <h3 className="font-bold">M.Eng. Aerospace Engineering</h3>
-            <span className="text-sm text-gray-500">2016 – 2019 (75% Complete)</span>
+           <div className="flex justify-between items-baseline mb-2">
+            <div className="flex items-center gap-2">
+              <a 
+                href="https://www.uta.edu/" 
+                target="_blank" 
+                rel="noreferrer"
+                className="flex-shrink-0"
+                title="University of Texas at Arlington"
+              >
+                <img src="/logos/uta.png" alt="UTA" className="h-6 w-6 rounded-full hover:scale-110 transition" />
+              </a>
+              <h3 className="font-bold">M.Eng. Aerospace Engineering</h3>
+            </div>
+            <span className="text-sm text-gray-500">2016 – 2019</span>
           </div>
           <p className="text-gray-600 italic">University of Texas at Arlington (UTA)</p>
           <ul className="list-disc pl-5 mt-2 text-sm text-gray-700">
@@ -181,8 +236,19 @@ function App() {
         </div>
 
         <div className="mb-4">
-           <div className="flex justify-between items-baseline">
-            <h3 className="font-bold">M.S. Aerospace Engineering</h3>
+           <div className="flex justify-between items-baseline mb-2">
+            <div className="flex items-center gap-2">
+              <a 
+                href="https://www.wichita.edu/" 
+                target="_blank" 
+                rel="noreferrer"
+                className="flex-shrink-0"
+                title="Wichita State University"
+              >
+                <img src="/logos/wsu.png" alt="Wichita State University" className="h-6 w-6 rounded-full hover:scale-110 transition" />
+              </a>
+              <h3 className="font-bold">M.S. Aerospace Engineering</h3>
+            </div>
             <span className="text-sm text-gray-500">May 2024</span>
           </div>
           <p className="text-gray-600 italic">Wichita State University</p>
@@ -193,8 +259,19 @@ function App() {
         </div>
 
          <div className="mb-4">
-           <div className="flex justify-between items-baseline">
-            <h3 className="font-bold">B.S. Aerospace Engineering</h3>
+           <div className="flex justify-between items-baseline mb-2">
+            <div className="flex items-center gap-2">
+              <a 
+                href="https://www.wichita.edu/" 
+                target="_blank" 
+                rel="noreferrer"
+                className="flex-shrink-0"
+                title="Wichita State University"
+              >
+                <img src="/logos/wsu.png" alt="Wichita State University" className="h-6 w-6 rounded-full hover:scale-110 transition" />
+              </a>
+              <h3 className="font-bold">B.S. Aerospace Engineering</h3>
+            </div>
             <span className="text-sm text-gray-500">May 2012</span>
           </div>
           <p className="text-gray-600 italic">Wichita State University</p>
