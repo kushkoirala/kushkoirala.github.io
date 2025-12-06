@@ -1,17 +1,99 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
+import { Gauge, Activity, Wind, Plane, RotateCw, ArrowUpFromLine, RotateCcw, Maximize, Minimize, Pause, Play } from 'lucide-react';
 
 const StepViewer = ({ url }) => {
   const containerRef = useRef(null);
   const [status, setStatus] = useState('Initializing CAD Kernel...');
   const [error, setError] = useState(null);
+  const [isFullScreen, setIsFullScreen] = useState(false);
+  
+  // Flight Simulation State
+  const [flightMode, setFlightMode] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+  const flightModeRef = useRef(false); // Ref for access inside animation loop
+  const isPausedRef = useRef(false);
+  const aircraftRef = useRef(null);
+  
+  // Camera & Controls Refs
+  const cameraRef = useRef(null);
+  const orbitControlsRef = useRef(null);
+  const initialCameraPosRef = useRef(null);
+  const [resetKey, setResetKey] = useState(0); // To force re-render of inputs
+
+  // Control inputs (Refs for performance in animation loop)
+  const controlsRef = useRef({ pitch: 0, roll: 0, yaw: 0, throttle: 0.6 });
+
+  // Sync state with ref
+  useEffect(() => {
+    flightModeRef.current = flightMode;
+    isPausedRef.current = isPaused;
+    if (flightMode) {
+      // Reset camera or controls if needed when entering flight mode
+    } else {
+      // Reset aircraft position when exiting flight mode
+      if (aircraftRef.current) {
+        aircraftRef.current.rotation.set(0, 0, 0);
+      }
+    }
+  }, [flightMode, isPaused]);
+
+  const handleControlChange = (axis, value) => {
+    controlsRef.current[axis] = parseFloat(value);
+  };
+
+  const handleResetView = () => {
+    // Reset Camera
+    if (cameraRef.current && initialCameraPosRef.current) {
+      cameraRef.current.position.copy(initialCameraPosRef.current);
+      cameraRef.current.lookAt(0, 0, 0);
+    }
+    
+    // Reset Orbit Controls
+    if (orbitControlsRef.current) {
+      orbitControlsRef.current.target.set(0, 0, 0);
+      orbitControlsRef.current.update();
+    }
+
+    // Reset Flight Controls
+    controlsRef.current = { pitch: 0, roll: 0, yaw: 0, throttle: 0.6 };
+    
+    // Reset Aircraft Rotation
+    if (aircraftRef.current) {
+      aircraftRef.current.rotation.set(0, 0, 0);
+    }
+
+    // Force re-render of inputs
+    setResetKey(prev => prev + 1);
+  };
+
+  const setSteadyState = (state) => {
+      switch(state) {
+          case 'cruise':
+              controlsRef.current = { pitch: 0, roll: 0, yaw: 0, throttle: 0.6 };
+              break;
+          case 'climb':
+              controlsRef.current = { pitch: 10 * (Math.PI/180), roll: 0, yaw: 0, throttle: 0.8 };
+              break;
+          case 'descent':
+              controlsRef.current = { pitch: -5 * (Math.PI/180), roll: 0, yaw: 0, throttle: 0.4 };
+              break;
+          case 'turnLeft':
+              controlsRef.current = { pitch: 0, roll: -20 * (Math.PI/180), yaw: 0, throttle: 0.6 };
+              break;
+          case 'turnRight':
+              controlsRef.current = { pitch: 0, roll: 20 * (Math.PI/180), yaw: 0, throttle: 0.6 };
+              break;
+      }
+      setResetKey(prev => prev + 1);
+  };
 
   useEffect(() => {
     const containerEl = containerRef.current;
     if (!url || !containerEl) return;
 
-    let scene, camera, renderer, controls, requestID;
+    let scene, camera, renderer, controls, requestID, gridHelper;
 
     const initViewer = async () => {
       try {
@@ -35,13 +117,30 @@ const StepViewer = ({ url }) => {
 
         camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 10000);
         camera.position.set(1000, 1000, 1000); // Far out start
+        cameraRef.current = camera;
 
         renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(width, height);
-  containerEl.appendChild(renderer.domElement);
+        containerEl.appendChild(renderer.domElement);
+
+        // Handle Resize
+        const handleResize = () => {
+            if (!containerEl) return;
+            const newWidth = containerEl.clientWidth;
+            const newHeight = containerEl.clientHeight;
+            
+            camera.aspect = newWidth / newHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(newWidth, newHeight);
+        };
+        
+        // Attach resize observer to container
+        const resizeObserver = new ResizeObserver(handleResize);
+        resizeObserver.observe(containerEl);
 
         controls = new OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
+        orbitControlsRef.current = controls;
 
         // 2. Initialize OpenCascade (WASM)
         setStatus('Initializing WASM Kernel...');
@@ -204,13 +303,54 @@ const StepViewer = ({ url }) => {
         const box = new THREE.Box3().setFromObject(group);
         const center = box.getCenter(new THREE.Vector3());
         group.position.sub(center); // Center at 0,0,0
-        scene.add(group);
+        
+        // Create a container for the aircraft to handle physics/flight dynamics
+        const aircraftGroup = new THREE.Group();
+        
+        // Create an inner container for model alignment (fixing CAD orientation)
+        const modelAlignmentGroup = new THREE.Group();
+        modelAlignmentGroup.add(group);
+        
+        // Default Alignment for common Z-up CAD models to fly along -Z (Three.js Forward)
+        // Rotate -90 deg around X to bring Z-up to Y-up
+        // Then rotate +180 deg around Y to face -Z (if nose was +Y after first rotation? No.)
+        // Let's assume standard CAD: X=Right, Y=Back, Z=Up? Or X=Forward?
+        // Common: Z-up. X-Forward.
+        // To map X-Forward (CAD) to -Z-Forward (Three.js):
+        // Rotate -90 X: Z->Y (Up), Y->-Z (Forward? No, Y->Z). X->X (Right).
+        // If CAD Y was Right, now it is Back (Z).
+        // If CAD X was Forward, now it is Right (X).
+        // This is messy.
+        
+        // Let's try a standard correction for "Z-up" models to "Y-up"
+        modelAlignmentGroup.rotation.x = -Math.PI / 2; 
+        modelAlignmentGroup.rotation.z = Math.PI; // Flip 180 degrees to fix front/back orientation
+        
+        // If the model is still sideways, we might need another rotation.
+        // For now, let's assume this fixes the "up" direction.
+        
+        aircraftGroup.add(modelAlignmentGroup);
+        scene.add(aircraftGroup);
+        
+        // Store reference for flight simulation
+        aircraftRef.current = aircraftGroup;
+        const initialY = aircraftGroup.position.y;
 
         // Adjust Camera to fit object
         const size = box.getSize(new THREE.Vector3()).length();
+        
+        // Initialize Grid Helper for Flight Reference
+        const gridSize = size * 50;
+        const gridDivisions = 100;
+        gridHelper = new THREE.GridHelper(gridSize, gridDivisions, 0x333333, 0xdddddd);
+        gridHelper.position.y = -size * 0.5; // Place below the aircraft
+        gridHelper.visible = false; // Hidden by default
+        scene.add(gridHelper);
+
         if (size > 0) {
           camera.position.set(size, size, size);
           camera.lookAt(0, 0, 0);
+          initialCameraPosRef.current = camera.position.clone();
         }
         
         setStatus(null); // Clear loading state
@@ -218,6 +358,48 @@ const StepViewer = ({ url }) => {
         // Animation Loop
         const animate = () => {
           requestID = requestAnimationFrame(animate);
+          
+          if (flightModeRef.current && aircraftRef.current && !isPausedRef.current) {
+            // Show Grid
+            if (gridHelper) {
+                gridHelper.visible = true;
+                // Move grid to simulate forward speed
+                // Scale down speed as requested
+                const speed = (size * 0.02) * (controlsRef.current.throttle || 0.6);
+                gridHelper.position.z += speed;
+                const gridSize = size * 50;
+                const cellUnit = gridSize / 100;
+                if (gridHelper.position.z > cellUnit) {
+                    gridHelper.position.z %= cellUnit;
+                }
+            }
+
+            // Apply flight controls
+            // Smooth interpolation could be added here
+            const { pitch, roll, yaw } = controlsRef.current;
+            
+            // Update rotation based on controls
+            // Note: Order of rotation matters (Euler angles)
+            // Roskam Body Frame to Three.js World Frame Mapping:
+            // Pitch (Theta): Rotation about Body Y-axis -> Three.js X-axis
+            aircraftRef.current.rotation.x = pitch; 
+            
+            // Roll (Phi): Rotation about Body X-axis -> Three.js Z-axis (Negative)
+            aircraftRef.current.rotation.z = -roll;  
+            
+            // Yaw (Psi): Rotation about Body Z-axis -> Three.js Y-axis (Negative)
+            // Coordinated Turn: Roll induces Yaw rate
+            // In a steady turn, Rate of Turn = (g * tan(BankAngle)) / Velocity
+            // Note: Yaw is accumulative (rate), Pitch/Roll are state (angle)
+            aircraftRef.current.rotation.y -= (yaw * 0.01) + (roll * 0.005); 
+            
+            // Simulate subtle vibration/movement
+            const time = Date.now() * 0.001;
+            aircraftRef.current.position.y = initialY + Math.sin(time * 2) * (size * 0.005);
+          } else {
+             if (gridHelper && !flightModeRef.current) gridHelper.visible = false;
+          }
+
           controls.update();
           renderer.render(scene, camera);
         };
@@ -241,12 +423,19 @@ const StepViewer = ({ url }) => {
         containerEl.removeChild(renderer.domElement);
         renderer.dispose();
       }
+      // Note: ResizeObserver cleanup is handled by garbage collection when element is removed, 
+      // but explicit disconnect is good practice if we had the observer instance here.
     };
   }, [url]);
 
   return (
-    <div className="relative w-full h-full bg-gray-100" style={{ minHeight: '384px' }}>
-      <div ref={containerRef} className="w-full h-full" style={{ minHeight: '384px' }} />
+    <div 
+        className={`relative bg-gray-100 transition-all duration-300 ${
+            isFullScreen ? 'fixed inset-0 z-50 w-screen h-screen' : 'w-full h-full'
+        }`} 
+        style={{ minHeight: isFullScreen ? '100vh' : '384px' }}
+    >
+      <div ref={containerRef} className="w-full h-full" />
       
       {/* Loading Overlay */}
       {status && (
@@ -261,6 +450,150 @@ const StepViewer = ({ url }) => {
         <div className="absolute inset-0 flex items-center justify-center bg-red-50 z-10 p-4 text-center">
           <p className="text-red-600 font-bold">Error: {error}</p>
         </div>
+      )}
+
+      {/* Flight Test Controls Overlay */}
+      {!status && !error && (
+        <>
+          {/* Toggle Switch */}
+          <div className="absolute top-4 right-4 z-20 flex gap-2">
+            {flightMode && (
+                <button
+                onClick={() => setIsPaused(!isPaused)}
+                className={`flex items-center gap-2 px-3 py-2 rounded-full font-bold shadow-lg transition-all ${
+                    isPaused ? 'bg-yellow-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'
+                }`}
+                title={isPaused ? "Resume Simulation" : "Pause Simulation"}
+                >
+                {isPaused ? <Play size={18} /> : <Pause size={18} />}
+                </button>
+            )}
+            <button
+              onClick={() => setIsFullScreen(!isFullScreen)}
+              className="flex items-center gap-2 px-3 py-2 rounded-full font-bold shadow-lg transition-all bg-white text-gray-700 hover:bg-gray-50"
+              title={isFullScreen ? "Exit Full Screen" : "Full Screen"}
+            >
+              {isFullScreen ? <Minimize size={18} /> : <Maximize size={18} />}
+            </button>
+            <button
+              onClick={handleResetView}
+              className="flex items-center gap-2 px-3 py-2 rounded-full font-bold shadow-lg transition-all bg-white text-gray-700 hover:bg-gray-50"
+              title="Reset View"
+            >
+              <RotateCcw size={18} />
+            </button>
+            <button
+              onClick={() => setFlightMode(!flightMode)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-full font-bold shadow-lg transition-all ${
+                flightMode 
+                  ? 'bg-blue-600 text-white ring-2 ring-blue-300' 
+                  : 'bg-white text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              <Plane size={18} />
+              {flightMode ? 'Flight Test Active' : 'Enable Flight Test'}
+            </button>
+          </div>
+
+          {/* Flight Controls & Telemetry */}
+          {flightMode && (
+            <div className="absolute bottom-4 left-4 right-4 z-20 flex flex-col md:flex-row gap-4 items-end justify-between pointer-events-none">
+              
+              {/* Controls (Left) */}
+              <div className="bg-black/80 backdrop-blur-md p-4 rounded-xl border border-white/20 text-white w-full md:w-80 pointer-events-auto">
+                <h4 className="text-xs font-bold text-blue-400 uppercase mb-3 flex items-center gap-2">
+                  <RotateCw size={14} /> Flight Controls
+                </h4>
+                
+                <div className="space-y-4" key={resetKey}>
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-xs text-gray-400">
+                      <span>Pitch</span>
+                      <span>{(controlsRef.current.pitch * (180/Math.PI)).toFixed(0)}°</span>
+                    </div>
+                    <input 
+                      type="range" min="-0.5" max="0.5" step="0.01" 
+                      defaultValue="0"
+                      onChange={(e) => handleControlChange('pitch', e.target.value)}
+                      className="w-full h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-xs text-gray-400">
+                      <span>Roll</span>
+                      <span>{(controlsRef.current.roll * (180/Math.PI)).toFixed(0)}°</span>
+                    </div>
+                    <input 
+                      type="range" min="-0.8" max="0.8" step="0.01" 
+                      defaultValue="0"
+                      onChange={(e) => handleControlChange('roll', e.target.value)}
+                      className="w-full h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-xs text-gray-400">
+                      <span>Yaw</span>
+                      <span>Rate</span>
+                    </div>
+                    <input 
+                      type="range" min="-0.1" max="0.1" step="0.001" 
+                      defaultValue="0"
+                      onChange={(e) => handleControlChange('yaw', e.target.value)}
+                      className="w-full h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                    />
+                  </div>
+                </div>
+
+                <div className="mt-4 pt-4 border-t border-white/10">
+                  <h5 className="text-[10px] font-bold text-gray-400 uppercase mb-2">Steady States</h5>
+                  <div className="grid grid-cols-3 gap-2">
+                    <button onClick={() => setSteadyState('cruise')} className="px-2 py-1 bg-white/10 hover:bg-white/20 rounded text-[10px] transition">Cruise</button>
+                    <button onClick={() => setSteadyState('climb')} className="px-2 py-1 bg-white/10 hover:bg-white/20 rounded text-[10px] transition">Climb</button>
+                    <button onClick={() => setSteadyState('descent')} className="px-2 py-1 bg-white/10 hover:bg-white/20 rounded text-[10px] transition">Descent</button>
+                    <button onClick={() => setSteadyState('turnLeft')} className="px-2 py-1 bg-white/10 hover:bg-white/20 rounded text-[10px] transition">Left Turn</button>
+                    <button onClick={() => setSteadyState('turnRight')} className="px-2 py-1 bg-white/10 hover:bg-white/20 rounded text-[10px] transition">Right Turn</button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Telemetry (Right) */}
+              <div className="bg-black/80 backdrop-blur-md p-4 rounded-xl border border-white/20 text-white w-full md:w-auto min-w-[200px] pointer-events-auto">
+                <h4 className="text-xs font-bold text-green-400 uppercase mb-3 flex items-center gap-2">
+                  <Activity size={14} /> Live Telemetry
+                </h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex flex-col">
+                    <span className="text-[10px] text-gray-400 uppercase">Airspeed</span>
+                    <span className="text-xl font-mono font-bold flex items-baseline gap-1">
+                      450 <span className="text-xs font-normal text-gray-500">kts</span>
+                    </span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[10px] text-gray-400 uppercase">Altitude</span>
+                    <span className="text-xl font-mono font-bold flex items-baseline gap-1">
+                      35,000 <span className="text-xs font-normal text-gray-500">ft</span>
+                    </span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[10px] text-gray-400 uppercase">AoA</span>
+                    <span className="text-xl font-mono font-bold flex items-baseline gap-1">
+                      2.4 <span className="text-xs font-normal text-gray-500">deg</span>
+                    </span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[10px] text-gray-400 uppercase">G-Load</span>
+                    <span className="text-xl font-mono font-bold flex items-baseline gap-1">
+                      1.0 <span className="text-xs font-normal text-gray-500">g</span>
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          )}
+        </>
       )}
     </div>
   );

@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
-import { Linkedin, Mail, X, Maximize2 } from 'lucide-react';
+import { Linkedin, Mail, X, Maximize2, FileText, Box, Activity, ArrowRight } from 'lucide-react';
 import UniversalModal from './components/UniversalModal';
 import DigitalTwin from './components/DigitalTwin';
 import ReqIFViewer from './components/ReqIFViewer';
+import TurbofanAnalysis from './components/TurbofanAnalysis';
 
 function App() {
   const [modalData, setModalData] = useState({ isOpen: false, url: '', title: '' });
-  const [fullScreen, setFullScreen] = useState(null); // 'reqif' | 'twin' | null
+  const [fullScreen, setFullScreen] = useState(null); // 'reqif' | 'twin' | 'acoustic' | null
 
   // If you host PDFs on GitHub, use the Raw Link. 
   // If you put them in the 'public' folder, use the relative path (e.g., window.location.origin + '/report.pdf')
@@ -66,47 +67,6 @@ function App() {
           Print Resume
         </button>
       </header>
-
-      {/* REQUIREMENTS + 3D SHOWCASE */}
-      <section className="mb-12 print:hidden">
-        <h2 className="text-2xl font-bold text-blue-700 border-b border-gray-200 pb-2 mb-6">Udaan Requirements & Digital Twin</h2>
-        <p className="text-gray-600 text-sm mb-6">
-          Explore the Udaan aircraft requirements in ReqIF format alongside the interactive STEP-based digital twin. This keeps requirements traceability aligned with the Dassault ecosystem while staying fully open source.
-        </p>
-        <div className="space-y-8">
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h3 className="font-bold text-lg text-gray-900">Requirements (ReqIF)</h3>
-              <button
-                type="button"
-                onClick={() => setFullScreen('reqif')}
-                className="flex items-center gap-2 text-sm text-blue-700 hover:text-blue-900"
-              >
-                <Maximize2 className="h-4 w-4" /> Full screen
-              </button>
-            </div>
-            <ReqIFViewer reqifFile="udaan.reqif" />
-          </div>
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="font-bold text-lg text-gray-900">Digital Twin (STEP)</h3>
-                <p className="text-gray-600 text-sm">
-                  Interactive web-based visualization demonstrating Digital Continuity from Engineering Data (STEP) to Web Experience using WebAssembly.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setFullScreen('twin')}
-                className="flex items-center gap-2 text-sm text-blue-700 hover:text-blue-900"
-              >
-                <Maximize2 className="h-4 w-4" /> Full screen
-              </button>
-            </div>
-            <DigitalTwin />
-          </div>
-        </div>
-      </section>
 
       {/* EXPERIENCE */}
       <section className="mb-10">
@@ -282,6 +242,67 @@ function App() {
         </div>
       </section>
 
+      {/* INTERACTIVE PORTFOLIO */}
+      <section className="mb-12 print:hidden">
+        <h2 className="text-2xl font-bold text-blue-700 border-b border-gray-200 pb-2 mb-6">Interactive Engineering Portfolio</h2>
+        <p className="text-gray-600 text-sm mb-8">
+          Explore interactive demonstrations of my engineering capabilities, from requirements management to physics-based simulations.
+        </p>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Card 1: Requirements */}
+          <div 
+            className="group bg-white rounded-xl p-6 border border-gray-200 hover:shadow-lg hover:border-blue-300 transition cursor-pointer flex flex-col" 
+            onClick={() => setFullScreen('reqif')}
+          >
+             <div className="h-12 w-12 bg-blue-50 rounded-lg flex items-center justify-center text-blue-600 mb-4 group-hover:bg-blue-600 group-hover:text-white transition">
+                <FileText size={24} />
+             </div>
+             <h3 className="font-bold text-lg text-gray-900 mb-2">Requirements (ReqIF)</h3>
+             <p className="text-sm text-gray-600 mb-4 flex-1">
+               View the Udaan aircraft requirements in native ReqIF format. Demonstrates traceability and model-based systems engineering (MBSE) data structures.
+             </p>
+             <div className="flex items-center text-blue-600 text-sm font-medium group-hover:translate-x-1 transition-transform">
+                View Requirements <ArrowRight size={16} className="ml-1" />
+             </div>
+          </div>
+
+          {/* Card 2: Digital Twin */}
+          <div 
+            className="group bg-white rounded-xl p-6 border border-gray-200 hover:shadow-lg hover:border-purple-300 transition cursor-pointer flex flex-col" 
+            onClick={() => setFullScreen('twin')}
+          >
+             <div className="h-12 w-12 bg-purple-50 rounded-lg flex items-center justify-center text-purple-600 mb-4 group-hover:bg-purple-600 group-hover:text-white transition">
+                <Box size={24} />
+             </div>
+             <h3 className="font-bold text-lg text-gray-900 mb-2">Digital Twin (STEP)</h3>
+             <p className="text-sm text-gray-600 mb-4 flex-1">
+               Interactive 3D visualization of the Udaan aircraft. Showcases digital continuity from engineering CAD data (STEP) to web-based experiences.
+             </p>
+             <div className="flex items-center text-purple-600 text-sm font-medium group-hover:translate-x-1 transition-transform">
+                Launch Viewer <ArrowRight size={16} className="ml-1" />
+             </div>
+          </div>
+
+          {/* Card 3: Turbofan Analysis */}
+          <div 
+            className="group bg-white rounded-xl p-6 border border-gray-200 hover:shadow-lg hover:border-orange-300 transition cursor-pointer flex flex-col" 
+            onClick={() => setFullScreen('acoustic')}
+          >
+             <div className="h-12 w-12 bg-orange-50 rounded-lg flex items-center justify-center text-orange-600 mb-4 group-hover:bg-orange-600 group-hover:text-white transition">
+                <Activity size={24} />
+             </div>
+             <h3 className="font-bold text-lg text-gray-900 mb-2">Turbofan Analysis</h3>
+             <p className="text-sm text-gray-600 mb-4 flex-1">
+               Real-time physics simulation of turbofan engine performance and acoustics. Includes standard atmosphere modeling and Lighthill noise estimation.
+             </p>
+             <div className="flex items-center text-orange-600 text-sm font-medium group-hover:translate-x-1 transition-transform">
+                Run Simulation <ArrowRight size={16} className="ml-1" />
+             </div>
+          </div>
+        </div>
+      </section>
+
       {/* MODAL */}
       <UniversalModal 
         isOpen={modalData.isOpen} 
@@ -291,8 +312,13 @@ function App() {
       />
     </div>
 
+      {/* Acoustic Simulator Overlay */}
+      {fullScreen === 'acoustic' && (
+        <TurbofanAnalysis onClose={() => setFullScreen(null)} />
+      )}
+
       {/* Full-screen overlay for viewers */}
-      {fullScreen && (
+      {fullScreen && fullScreen !== 'acoustic' && (
         <div className="fixed inset-0 z-50 bg-white flex flex-col">
           <div className="flex items-center justify-between px-4 py-3 border-b bg-gray-50">
             <div className="text-sm font-semibold text-gray-900">
