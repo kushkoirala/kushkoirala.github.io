@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Volume2, Wind, Gauge, ArrowLeft } from 'lucide-react';
 
 // Engine Data
@@ -34,9 +34,7 @@ const AcousticSimulator = ({ onClose }) => {
   const [n1, setN1] = useState(60); // %
   const [distance, setDistance] = useState(100); // meters
   const [angle, setAngle] = useState(135); // degrees
-  const [results, setResults] = useState(null);
-
-  const calculateNoise = () => {
+  const results = useMemo(() => {
     const specs = ENGINES[selectedEngine];
     const speedOfSound = 343; // m/s
 
@@ -86,7 +84,7 @@ const AcousticSimulator = ({ onClose }) => {
     // 3. Total Noise (Logarithmic Sum)
     const total_spl = 10 * Math.log10(Math.pow(10, spl_jet/10) + Math.pow(10, spl_fan/10));
 
-    setResults({
+    return {
       thrust: currentThrust,
       fuelFlow: currentThrust * 0.5, // Rough TSFC estimate
       splTotal: total_spl,
@@ -94,11 +92,7 @@ const AcousticSimulator = ({ onClose }) => {
       splFan: spl_fan,
       vJet: v_jet,
       vTip: v_tip
-    });
-  };
-
-  useEffect(() => {
-    calculateNoise();
+    };
   }, [selectedEngine, n1, distance, angle]);
 
   return (

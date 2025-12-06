@@ -263,10 +263,8 @@ const calculatePerformance = (engineSpecs, flightCond, n1, observer) => {
 
 // --- 2. Components ---
 
-const EngineDiagram = ({ n1, mach, engineType }) => {
+const EngineDiagram = ({ n1, mach }) => {
   // Simple SVG visualization of a turbofan
-  // Animation speed based on N1
-  const fanSpeed = n1 > 0 ? 2000 / n1 : 0; 
   
   return (
     <div className="relative w-full h-64 bg-gray-900 rounded-xl overflow-hidden border border-gray-700 flex items-center justify-center">
@@ -539,32 +537,31 @@ const NoiseContourMap = ({ acoustics }) => {
     );
 }
 
+// Parameters configuration
+const TRADE_PARAMS = {
+    bpr: { label: 'Bypass Ratio', min: 0, max: 12, step: 0.5 },
+    prC: { label: 'Compressor PR', min: 5, max: 50, step: 2 },
+    prF: { label: 'Fan PR', min: 1.1, max: 2.0, step: 0.05 },
+    n1: { label: 'Throttle (N1%)', min: 50, max: 105, step: 2 },
+    mach: { label: 'Mach Number', min: 0, max: 0.95, step: 0.05 },
+    altitude: { label: 'Altitude (ft)', min: 0, max: 45000, step: 2000 }
+};
+
+const TRADE_METRICS = {
+    F_net: { label: 'Net Thrust (lbf)', color: '#2563eb' },
+    tsfc_curr: { label: 'TSFC (lb/lbf-hr)', color: '#16a34a' },
+    eta_overall: { label: 'Overall Efficiency', color: '#9333ea' },
+    spl_total: { label: 'Noise Level (dB)', color: '#dc2626' },
+    bwr: { label: 'Back Work Ratio', color: '#ea580c' }
+};
+
 const TradeStudy = ({ baseSpecs, flightCond, n1, observer }) => {
     const [paramX, setParamX] = useState('bpr');
     const [paramY, setParamY] = useState('tsfc_curr');
-    const [dataPoints, setDataPoints] = useState([]);
 
-    // Parameters configuration
-    const params = {
-        bpr: { label: 'Bypass Ratio', min: 0, max: 12, step: 0.5 },
-        prC: { label: 'Compressor PR', min: 5, max: 50, step: 2 },
-        prF: { label: 'Fan PR', min: 1.1, max: 2.0, step: 0.05 },
-        n1: { label: 'Throttle (N1%)', min: 50, max: 105, step: 2 },
-        mach: { label: 'Mach Number', min: 0, max: 0.95, step: 0.05 },
-        altitude: { label: 'Altitude (ft)', min: 0, max: 45000, step: 2000 }
-    };
-
-    const metrics = {
-        F_net: { label: 'Net Thrust (lbf)', color: '#2563eb' },
-        tsfc_curr: { label: 'TSFC (lb/lbf-hr)', color: '#16a34a' },
-        eta_overall: { label: 'Overall Efficiency', color: '#9333ea' },
-        spl_total: { label: 'Noise Level (dB)', color: '#dc2626' },
-        bwr: { label: 'Back Work Ratio', color: '#ea580c' }
-    };
-
-    useEffect(() => {
+    const dataPoints = useMemo(() => {
         // Generate Data
-        const config = params[paramX];
+        const config = TRADE_PARAMS[paramX];
         const points = [];
         
         for (let val = config.min; val <= config.max; val += config.step) {
@@ -593,7 +590,7 @@ const TradeStudy = ({ baseSpecs, flightCond, n1, observer }) => {
 
             points.push({ x: val, y: yVal });
         }
-        setDataPoints(points);
+        return points;
     }, [paramX, paramY, baseSpecs, flightCond, n1, observer]);
 
     // Chart Scaling
@@ -619,14 +616,14 @@ const TradeStudy = ({ baseSpecs, flightCond, n1, observer }) => {
                         onChange={(e) => setParamX(e.target.value)}
                         className="text-xs border border-gray-300 rounded p-1 bg-gray-50"
                     >
-                        {Object.keys(params).map(k => <option key={k} value={k}>X: {params[k].label}</option>)}
+                        {Object.keys(TRADE_PARAMS).map(k => <option key={k} value={k}>X: {TRADE_PARAMS[k].label}</option>)}
                     </select>
                     <select 
                         value={paramY} 
                         onChange={(e) => setParamY(e.target.value)}
                         className="text-xs border border-gray-300 rounded p-1 bg-gray-50"
                     >
-                        {Object.keys(metrics).map(k => <option key={k} value={k}>Y: {metrics[k].label}</option>)}
+                        {Object.keys(TRADE_METRICS).map(k => <option key={k} value={k}>Y: {TRADE_METRICS[k].label}</option>)}
                     </select>
                 </div>
             </div>
@@ -642,7 +639,7 @@ const TradeStudy = ({ baseSpecs, flightCond, n1, observer }) => {
                     {/* Data Path */}
                     <polyline 
                         fill="none" 
-                        stroke={metrics[paramY].color} 
+                        stroke={TRADE_METRICS[paramY].color} 
                         strokeWidth="3" 
                         points={dataPoints.map(p => `${normalizeX(p.x)},${normalizeY(p.y)}`).join(' ')}
                     />
@@ -655,7 +652,7 @@ const TradeStudy = ({ baseSpecs, flightCond, n1, observer }) => {
                             cy={normalizeY(p.y)} 
                             r="3" 
                             fill="white" 
-                            stroke={metrics[paramY].color} 
+                            stroke={TRADE_METRICS[paramY].color} 
                             strokeWidth="2"
                             className="hover:r-4 transition-all"
                         >
@@ -667,11 +664,11 @@ const TradeStudy = ({ baseSpecs, flightCond, n1, observer }) => {
                 {/* Labels */}
                 <div className="absolute -bottom-6 left-0 text-xs text-gray-500">{minX.toFixed(1)}</div>
                 <div className="absolute -bottom-6 right-0 text-xs text-gray-500">{maxX.toFixed(1)}</div>
-                <div className="absolute bottom-[-25px] w-full text-center text-xs font-medium text-gray-600">{params[paramX].label}</div>
+                <div className="absolute bottom-[-25px] w-full text-center text-xs font-medium text-gray-600">{TRADE_PARAMS[paramX].label}</div>
 
                 <div className="absolute -left-8 bottom-0 text-xs text-gray-500">{minY.toFixed(1)}</div>
                 <div className="absolute -left-8 top-0 text-xs text-gray-500">{maxY.toFixed(1)}</div>
-                <div className="absolute top-[50%] -left-12 -rotate-90 text-xs font-medium text-gray-600 whitespace-nowrap">{metrics[paramY].label}</div>
+                <div className="absolute top-[50%] -left-12 -rotate-90 text-xs font-medium text-gray-600 whitespace-nowrap">{TRADE_METRICS[paramY].label}</div>
             </div>
         </div>
     );
