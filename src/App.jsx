@@ -172,7 +172,7 @@ function App() {
         <div className="mb-4">
            <div className="flex justify-between items-baseline">
             <h3 className="font-bold">M.Eng. Aerospace Engineering</h3>
-            <span className="text-sm text-gray-500">In Progress (75% Complete)</span>
+            <span className="text-sm text-gray-500">2016 – 2019 (75% Complete)</span>
           </div>
           <p className="text-gray-600 italic">University of Texas at Arlington (UTA)</p>
           <ul className="list-disc pl-5 mt-2 text-sm text-gray-700">
