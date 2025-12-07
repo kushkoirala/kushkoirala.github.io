@@ -90,8 +90,8 @@
           "attributes": {
             "attr_id": "SYS-ARCH-01",
             "attr_source": "Legacy Report",
-            "attr_text": "Configuration: Twin-boom pusher with generative lattice internal structure.\r\n              Material: Carbon Fiber Skin (CATIA Icem surfaces) with Balsa/Spruce core elements.",
-            "description": "Configuration: Twin-boom pusher with generative lattice internal structure.\r\n              Material: Carbon Fiber Skin (CATIA Icem surfaces) with Balsa/Spruce core elements."
+            "attr_text": "Configuration: Twin-boom pusher with generative lattice internal structure.\n              Material: Carbon Fiber Skin (CATIA Icem surfaces) with Balsa/Spruce core elements.",
+            "description": "Configuration: Twin-boom pusher with generative lattice internal structure.\n              Material: Carbon Fiber Skin (CATIA Icem surfaces) with Balsa/Spruce core elements."
           }
         },
         {
@@ -100,8 +100,8 @@
           "attributes": {
             "attr_id": "SYS-ARCH-02",
             "attr_source": "AIDA Proposal",
-            "attr_text": "Hardware: GPU-accelerated edge module (e.g., NVIDIA Jetson).\r\n              Software: Hybrid AI with LLM for voice interface and Deterministic Rules Engine for flight envelope protection.",
-            "description": "Hardware: GPU-accelerated edge module (e.g., NVIDIA Jetson).\r\n              Software: Hybrid AI with LLM for voice interface and Deterministic Rules Engine for flight envelope protection."
+            "attr_text": "Hardware: GPU-accelerated edge module (e.g., NVIDIA Jetson).\n              Software: Hybrid AI with LLM for voice interface and Deterministic Rules Engine for flight envelope protection.",
+            "description": "Hardware: GPU-accelerated edge module (e.g., NVIDIA Jetson).\n              Software: Hybrid AI with LLM for voice interface and Deterministic Rules Engine for flight envelope protection."
           }
         }
       ],

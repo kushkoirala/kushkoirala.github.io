@@ -351,7 +351,7 @@ const EngineDiagram = ({ n1, mach }) => {
   );
 };
 
-const StationAnalysis = ({ stations }) => {
+const StationAnalysis = ({ stations, formatValue, unitSystem }) => {
     const maxP = Math.max(...stations.map(s => s.P));
     const maxT = Math.max(...stations.map(s => s.T));
 
@@ -382,18 +382,18 @@ const StationAnalysis = ({ stations }) => {
                         {/* Tooltip */}
                         <div className="absolute bottom-20 hidden group-hover:block bg-gray-900 text-white text-xs p-2 rounded z-10 whitespace-nowrap shadow-xl">
                             <div className="font-bold mb-1">{s.name} (Stn {s.id})</div>
-                            <div className="text-blue-200">P: {(s.P/1000).toFixed(1)} kPa</div>
-                            <div className="text-red-200">T: {(s.T - 273.15).toFixed(1)} °C</div>
+                            <div className="text-blue-200">P: {formatValue(s.P, 'pressure')}</div>
+                            <div className="text-red-200">T: {formatValue(s.T, 'temp')}</div>
                         </div>
                     </div>
                 ))}
             </div>
             <div className="flex justify-center gap-6 mt-6 text-xs font-medium border-t border-gray-100 pt-4">
                 <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 bg-blue-500 rounded"></div> Total Pressure (kPa)
+                    <div className="w-3 h-3 bg-blue-500 rounded"></div> Total Pressure ({unitSystem === 'SI' ? 'kPa' : 'psi'})
                 </div>
                 <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 bg-red-500 rounded"></div> Total Temperature (°C)
+                    <div className="w-3 h-3 bg-red-500 rounded"></div> Total Temperature ({unitSystem === 'SI' ? 'K' : '°F'})
                 </div>
             </div>
         </div>
@@ -559,6 +559,7 @@ const TRADE_METRICS = {
 const TradeStudy = ({ baseSpecs, flightCond, n1, observer }) => {
     const [paramX, setParamX] = useState('bpr');
     const [paramY, setParamY] = useState('tsfc_curr');
+    const [hoveredPoint, setHoveredPoint] = useState(null);
 
     const dataPoints = useMemo(() => {
         // Generate Data
@@ -594,82 +595,228 @@ const TradeStudy = ({ baseSpecs, flightCond, n1, observer }) => {
         return points;
     }, [paramX, paramY, baseSpecs, flightCond, n1, observer]);
 
-    // Chart Scaling
+    // Chart Scaling with proper margins
     const xVals = dataPoints.map(p => p.x);
     const yVals = dataPoints.map(p => p.y);
     const minX = Math.min(...xVals);
     const maxX = Math.max(...xVals);
     const minY = Math.min(...yVals);
     const maxY = Math.max(...yVals);
+    
+    // Add 5% padding to ranges for better visualization
+    const xRange = maxX - minX;
+    const yRange = maxY - minY;
+    const xPadding = xRange * 0.05;
+    const yPadding = yRange * 0.05;
 
-    const normalizeX = (val) => (val - minX) / (maxX - minX) * 350; // Width 350
-    const normalizeY = (val) => 200 - (val - minY) / (maxY - minY) * 200; // Height 200
+    const chartWidth = 100; // Use percentage-based viewBox
+    const chartHeight = 60;
+    const normalizeX = (val) => ((val - minX) / xRange) * chartWidth;
+    const normalizeY = (val) => chartHeight - ((val - minY) / yRange) * chartHeight;
+
+    // Generate tick marks
+    const xTicks = 5;
+    const yTicks = 5;
+    const xTickValues = Array.from({ length: xTicks }, (_, i) => minX + (xRange * i) / (xTicks - 1));
+    const yTickValues = Array.from({ length: yTicks }, (_, i) => minY + (yRange * i) / (yTicks - 1));
 
     return (
         <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm h-full flex flex-col">
-            <div className="flex justify-between items-center mb-6">
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
                 <h3 className="font-semibold text-gray-800 flex items-center gap-2">
-                    <Activity size={16} /> Parametric Trade Study
+                    <Activity size={16} className="text-blue-600" /> Parametric Trade Study
                 </h3>
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap">
                     <select 
                         value={paramX} 
                         onChange={(e) => setParamX(e.target.value)}
-                        className="text-xs border border-gray-300 rounded p-1 bg-gray-50"
+                        className="text-xs border border-gray-300 rounded-lg px-3 py-2 bg-white hover:border-blue-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
                     >
-                        {Object.keys(TRADE_PARAMS).map(k => <option key={k} value={k}>X: {TRADE_PARAMS[k].label}</option>)}
+                        {Object.keys(TRADE_PARAMS).map(k => 
+                            <option key={k} value={k}>X: {TRADE_PARAMS[k].label}</option>
+                        )}
                     </select>
                     <select 
                         value={paramY} 
                         onChange={(e) => setParamY(e.target.value)}
-                        className="text-xs border border-gray-300 rounded p-1 bg-gray-50"
+                        className="text-xs border border-gray-300 rounded-lg px-3 py-2 bg-white hover:border-blue-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
                     >
-                        {Object.keys(TRADE_METRICS).map(k => <option key={k} value={k}>Y: {TRADE_METRICS[k].label}</option>)}
+                        {Object.keys(TRADE_METRICS).map(k => 
+                            <option key={k} value={k}>Y: {TRADE_METRICS[k].label}</option>
+                        )}
                     </select>
                 </div>
             </div>
 
-            <div className="flex-1 relative border-l border-b border-gray-200 m-4">
-                {/* Chart Area */}
-                <svg className="w-full h-full overflow-visible" viewBox="0 0 350 200">
+            {/* Chart Container */}
+            <div className="flex-1 relative bg-gradient-to-br from-gray-50 to-white rounded-lg p-8 min-h-0">
+                <svg 
+                    className="w-full h-full" 
+                    viewBox="0 0 120 80" 
+                    preserveAspectRatio="xMidYMid meet"
+                    style={{ overflow: 'visible' }}
+                >
+                    <defs>
+                        {/* Gradient for area under curve */}
+                        <linearGradient id="chartGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" style={{ stopColor: TRADE_METRICS[paramY].color, stopOpacity: 0.2 }} />
+                            <stop offset="100%" style={{ stopColor: TRADE_METRICS[paramY].color, stopOpacity: 0.05 }} />
+                        </linearGradient>
+                    </defs>
+
+                    {/* Chart area background */}
+                    <rect x="10" y="5" width={chartWidth} height={chartHeight} fill="white" stroke="#e5e7eb" strokeWidth="0.3" rx="1" />
+
                     {/* Grid Lines */}
-                    {[0, 0.25, 0.5, 0.75, 1].map(t => (
-                        <line key={t} x1="0" y1={t*200} x2="350" y2={t*200} stroke="#f3f4f6" strokeWidth="1" />
-                    ))}
+                    {yTickValues.map((tick, i) => {
+                        const y = normalizeY(tick) + 5;
+                        return (
+                            <g key={`y-grid-${i}`}>
+                                <line 
+                                    x1="10" 
+                                    y1={y} 
+                                    x2={10 + chartWidth} 
+                                    y2={y} 
+                                    stroke="#f3f4f6" 
+                                    strokeWidth="0.3" 
+                                    strokeDasharray="1,1"
+                                />
+                            </g>
+                        );
+                    })}
+                    
+                    {xTickValues.map((tick, i) => {
+                        const x = normalizeX(tick) + 10;
+                        return (
+                            <g key={`x-grid-${i}`}>
+                                <line 
+                                    x1={x} 
+                                    y1="5" 
+                                    x2={x} 
+                                    y2={5 + chartHeight} 
+                                    stroke="#f3f4f6" 
+                                    strokeWidth="0.3" 
+                                    strokeDasharray="1,1"
+                                />
+                            </g>
+                        );
+                    })}
+
+                    {/* Area under curve */}
+                    <path
+                        d={`M 10,${5 + chartHeight} L ${dataPoints.map(p => `${normalizeX(p.x) + 10},${normalizeY(p.y) + 5}`).join(' L ')} L ${10 + chartWidth},${5 + chartHeight} Z`}
+                        fill="url(#chartGradient)"
+                    />
                     
                     {/* Data Path */}
                     <polyline 
                         fill="none" 
                         stroke={TRADE_METRICS[paramY].color} 
-                        strokeWidth="3" 
-                        points={dataPoints.map(p => `${normalizeX(p.x)},${normalizeY(p.y)}`).join(' ')}
+                        strokeWidth="0.6" 
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        points={dataPoints.map(p => `${normalizeX(p.x) + 10},${normalizeY(p.y) + 5}`).join(' ')}
+                        style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.1))' }}
                     />
 
-                    {/* Points */}
+                    {/* Data Points */}
                     {dataPoints.map((p, i) => (
                         <circle 
                             key={i} 
-                            cx={normalizeX(p.x)} 
-                            cy={normalizeY(p.y)} 
-                            r="3" 
+                            cx={normalizeX(p.x) + 10} 
+                            cy={normalizeY(p.y) + 5} 
+                            r={hoveredPoint === i ? "1.2" : "0.8"} 
                             fill="white" 
                             stroke={TRADE_METRICS[paramY].color} 
-                            strokeWidth="2"
-                            className="hover:r-4 transition-all"
-                        >
-                            <title>{`X: ${p.x.toFixed(2)}\nY: ${p.y.toFixed(4)}`}</title>
-                        </circle>
+                            strokeWidth="0.4"
+                            className="cursor-pointer transition-all hover:r-2"
+                            onMouseEnter={() => setHoveredPoint(i)}
+                            onMouseLeave={() => setHoveredPoint(null)}
+                            style={{ filter: hoveredPoint === i ? 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))' : 'none' }}
+                        />
                     ))}
-                </svg>
-                
-                {/* Labels */}
-                <div className="absolute -bottom-6 left-0 text-xs text-gray-500">{minX.toFixed(1)}</div>
-                <div className="absolute -bottom-6 right-0 text-xs text-gray-500">{maxX.toFixed(1)}</div>
-                <div className="absolute bottom-[-25px] w-full text-center text-xs font-medium text-gray-600">{TRADE_PARAMS[paramX].label}</div>
 
-                <div className="absolute -left-8 bottom-0 text-xs text-gray-500">{minY.toFixed(1)}</div>
-                <div className="absolute -left-8 top-0 text-xs text-gray-500">{maxY.toFixed(1)}</div>
-                <div className="absolute top-[50%] -left-12 -rotate-90 text-xs font-medium text-gray-600 whitespace-nowrap">{TRADE_METRICS[paramY].label}</div>
+                    {/* X-Axis Ticks and Labels */}
+                    {xTickValues.map((tick, i) => {
+                        const x = normalizeX(tick) + 10;
+                        return (
+                            <g key={`x-tick-${i}`}>
+                                <line x1={x} y1={5 + chartHeight} x2={x} y2={5 + chartHeight + 1} stroke="#9ca3af" strokeWidth="0.3" />
+                                <text 
+                                    x={x} 
+                                    y={5 + chartHeight + 4} 
+                                    textAnchor="middle" 
+                                    fontSize="2.5" 
+                                    fill="#6b7280"
+                                    fontFamily="monospace"
+                                >
+                                    {tick.toFixed(tick < 10 ? 1 : 0)}
+                                </text>
+                            </g>
+                        );
+                    })}
+
+                    {/* Y-Axis Ticks and Labels */}
+                    {yTickValues.map((tick, i) => {
+                        const y = normalizeY(tick) + 5;
+                        return (
+                            <g key={`y-tick-${i}`}>
+                                <line x1="10" y1={y} x2="9" y2={y} stroke="#9ca3af" strokeWidth="0.3" />
+                                <text 
+                                    x="8" 
+                                    y={y + 0.8} 
+                                    textAnchor="end" 
+                                    fontSize="2.5" 
+                                    fill="#6b7280"
+                                    fontFamily="monospace"
+                                >
+                                    {tick.toFixed(tick < 10 ? 2 : 0)}
+                                </text>
+                            </g>
+                        );
+                    })}
+
+                    {/* Axis Labels */}
+                    <text 
+                        x={10 + chartWidth / 2} 
+                        y="78" 
+                        textAnchor="middle" 
+                        fontSize="3" 
+                        fill="#374151"
+                        fontWeight="600"
+                    >
+                        {TRADE_PARAMS[paramX].label}
+                    </text>
+
+                    <text 
+                        x="-40" 
+                        y="3" 
+                        textAnchor="middle" 
+                        fontSize="3" 
+                        fill="#374151"
+                        fontWeight="600"
+                        transform="rotate(-90)"
+                    >
+                        {TRADE_METRICS[paramY].label}
+                    </text>
+                </svg>
+
+                {/* Hover Tooltip */}
+                {hoveredPoint !== null && (
+                    <div 
+                        className="absolute bg-gray-900 text-white text-xs px-3 py-2 rounded-lg shadow-lg pointer-events-none"
+                        style={{
+                            left: '50%',
+                            top: '10px',
+                            transform: 'translateX(-50%)',
+                            zIndex: 10
+                        }}
+                    >
+                        <div className="font-semibold">{TRADE_PARAMS[paramX].label}: {dataPoints[hoveredPoint].x.toFixed(2)}</div>
+                        <div className="text-gray-300">{TRADE_METRICS[paramY].label}: {dataPoints[hoveredPoint].y.toFixed(4)}</div>
+                    </div>
+                )}
             </div>
         </div>
     );
@@ -696,6 +843,63 @@ const TurbofanAnalysis = ({ onClose }) => {
   const [optimizationStatus, setOptimizationStatus] = useState('');
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [showBuilder, setShowBuilder] = useState(false);
+  const [isNewEngineDesign, setIsNewEngineDesign] = useState(false); // Track if designing new engine
+  const [unitSystem, setUnitSystem] = useState('SI'); // 'SI' or 'Imperial'
+  const [flightPhase, setFlightPhase] = useState('cruise'); // 'takeoff', 'landing', 'cruise', 'supersonic'
+
+  // Unit conversion helpers
+  const convert = {
+    // Length
+    m_to_ft: (m) => m * 3.28084,
+    ft_to_m: (ft) => ft / 3.28084,
+    // Speed
+    ms_to_kt: (ms) => ms * 1.94384,
+    kt_to_ms: (kt) => kt / 1.94384,
+    // Force
+    N_to_lbf: (N) => N * 0.224809,
+    lbf_to_N: (lbf) => lbf / 0.224809,
+    // Mass flow
+    kgs_to_lbms: (kgs) => kgs * 2.20462,
+    lbms_to_kgs: (lbms) => lbms / 2.20462,
+    // Fuel consumption
+    kgkNs_to_lbmlbfh: (kgkNs) => kgkNs * 101972, // kg/(kN·s) to lbm/(lbf·hr)
+    // Temperature (C to F)
+    C_to_F: (C) => C * 9/5 + 32,
+    F_to_C: (F) => (F - 32) * 5/9,
+    // Pressure
+    Pa_to_psi: (Pa) => Pa * 0.000145038,
+    psi_to_Pa: (psi) => psi / 0.000145038,
+  };
+
+  const formatValue = (value, type) => {
+    if (unitSystem === 'SI') {
+      switch(type) {
+        case 'thrust': return `${(value/1000).toFixed(1)} kN`;
+        case 'massFlow': return `${value.toFixed(1)} kg/s`;
+        case 'velocity': return `${value.toFixed(0)} m/s`;
+        case 'tsfc': return `${value.toFixed(4)} kg/(kN·s)`;
+        case 'altitude': return `${value.toLocaleString()} ft`; // Keep ft for now (standard aviation)
+        case 'temp': return `${value.toFixed(0)} K`;
+        case 'tempC': return `${value.toFixed(0)}°C`; // For delta ISA
+        case 'pressure': return `${(value/1000).toFixed(1)} kPa`;
+        case 'diameter': return `${value.toFixed(2)} m`;
+        default: return value.toFixed(2);
+      }
+    } else {
+      switch(type) {
+        case 'thrust': return `${convert.N_to_lbf(value).toFixed(0)} lbf`;
+        case 'massFlow': return `${convert.kgs_to_lbms(value).toFixed(1)} lbm/s`;
+        case 'velocity': return `${convert.ms_to_kt(value).toFixed(0)} kt`;
+        case 'tsfc': return `${convert.kgkNs_to_lbmlbfh(value).toFixed(4)} lbm/(lbf·hr)`;
+        case 'altitude': return `${value.toLocaleString()} ft`; // Keep ft (standard)
+        case 'temp': return `${convert.C_to_F(value).toFixed(0)}°F`; // Converts from Celsius input
+        case 'tempC': return `${convert.C_to_F(value).toFixed(0)}°F`; // For delta ISA
+        case 'pressure': return `${convert.Pa_to_psi(value).toFixed(2)} psi`;
+        case 'diameter': return `${convert.m_to_ft(value).toFixed(2)} ft`;
+        default: return value.toFixed(2);
+      }
+    }
+  };
 
   const handleSaveEngine = (id, data) => {
     const newEngines = { ...engines, [id]: data };
@@ -712,6 +916,7 @@ const TurbofanAnalysis = ({ onClose }) => {
     
         setEngineKey(id);
         setDesignSpecs(data);
+        setIsNewEngineDesign(true); // Mark as new/custom design
     setShowBuilder(false);
   };
 
@@ -743,10 +948,48 @@ const TurbofanAnalysis = ({ onClose }) => {
   const [observerDist, setObserverDist] = useState(100); // m
   const [observerAngle, setObserverAngle] = useState(135); // deg
 
+  // Flight phase presets
+  const applyFlightPhase = (phase) => {
+    setFlightPhase(phase);
+    switch(phase) {
+      case 'takeoff':
+        setAltitude(0);
+        setMach(0.25);
+        setN1(100);
+        setDeltaIsa(15); // Hot day
+        break;
+      case 'landing':
+        setAltitude(1500);
+        setMach(0.20);
+        setN1(30); // Idle descent
+        setDeltaIsa(0);
+        break;
+      case 'cruise':
+        setAltitude(35000);
+        setMach(0.80);
+        setN1(85);
+        setDeltaIsa(0);
+        break;
+      case 'supersonic':
+        setAltitude(45000);
+        setMach(1.5);
+        setN1(95);
+        setDeltaIsa(-10);
+        break;
+      default:
+        break;
+    }
+  };
+
+  // Determine if noise analysis is relevant
+  const isNoiseRelevant = flightPhase === 'takeoff' || flightPhase === 'landing' || flightPhase === 'supersonic';
+
     const handleSelectEngine = (key) => {
         setEngineKey(key);
         if (engines[key]) {
             setDesignSpecs(engines[key]);
+            // Check if it's a custom engine (not in DEFAULT_ENGINES)
+            setIsNewEngineDesign(!DEFAULT_ENGINES[key]);
         }
     };
 
@@ -915,6 +1158,16 @@ const TurbofanAnalysis = ({ onClose }) => {
           </div>
         </div>
         <div className="flex items-center gap-2 lg:gap-4">
+            {/* Unit System Toggle */}
+            <button
+              onClick={() => setUnitSystem(unitSystem === 'SI' ? 'Imperial' : 'SI')}
+              className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-gray-100 text-gray-700 text-xs font-medium rounded-lg hover:bg-gray-200 transition"
+              title="Toggle Unit System"
+            >
+              <Settings size={14} />
+              <span>{unitSystem === 'SI' ? 'SI' : 'Imperial'}</span>
+            </button>
+            
             <div className="flex items-center gap-2">
               <select 
                   value={engineKey}
@@ -961,7 +1214,8 @@ const TurbofanAnalysis = ({ onClose }) => {
             ${showMobileMenu ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         `}>
             
-            {/* 1. Cycle Design Solver */}
+            {/* 1. Cycle Design Solver - Only for New Engine Design */}
+            {isNewEngineDesign && (
             <section className="bg-blue-50 p-4 rounded-xl border border-blue-100">
                 <h3 className="text-xs font-semibold text-blue-800 uppercase tracking-wider mb-2 flex items-center gap-2">
                     <Cpu size={14} /> Cycle Design Solver
@@ -996,6 +1250,7 @@ const TurbofanAnalysis = ({ onClose }) => {
                     </button>
                 </div>
             </section>
+            )}
 
             {/* 2. Flight Profile Optimizer */}
             <section className="bg-purple-50 p-4 rounded-xl border border-purple-100">
@@ -1030,48 +1285,105 @@ const TurbofanAnalysis = ({ onClose }) => {
                 )}
             </section>
 
-            {/* Design Parameters (Editable) */}
+            {/* Design Parameters (Editable for New Engines, Read-Only for Existing) */}
             <section>
                 <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-                    <Settings size={14} /> Cycle Design
+                    <Settings size={14} /> {isNewEngineDesign ? 'Cycle Design' : 'Engine Specs'}
                 </h3>
+                {!isNewEngineDesign && (
+                    <p className="text-[10px] text-gray-500 mb-3 italic">
+                        Fixed specs for existing engine. Create new engine to modify.
+                    </p>
+                )}
                 <div className="space-y-4">
                     <div>
                         <label className="flex justify-between text-sm font-medium text-gray-700 mb-1">
                             <span>Bypass Ratio</span>
-                            <span className="text-blue-600">{designSpecs.bpr.toFixed(1)}</span>
+                            <span className={isNewEngineDesign ? "text-blue-600" : "text-gray-600"}>{designSpecs.bpr.toFixed(1)}</span>
                         </label>
                         <input 
                             type="range" min="0" max="15" step="0.1" 
                             value={designSpecs.bpr} 
                             onChange={(e) => setDesignSpecs({...designSpecs, bpr: Number(e.target.value)})} 
-                            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600" 
+                            disabled={!isNewEngineDesign}
+                            className={`w-full h-2 bg-gray-200 rounded-lg appearance-none ${isNewEngineDesign ? 'cursor-pointer accent-blue-600' : 'cursor-not-allowed opacity-50'}`} 
                         />
                     </div>
                     <div>
                         <label className="flex justify-between text-sm font-medium text-gray-700 mb-1">
                             <span>Compressor PR</span>
-                            <span className="text-blue-600">{designSpecs.prC.toFixed(1)}</span>
+                            <span className={isNewEngineDesign ? "text-blue-600" : "text-gray-600"}>{designSpecs.prC.toFixed(1)}</span>
                         </label>
                         <input 
                             type="range" min="5" max="60" step="1" 
                             value={designSpecs.prC} 
                             onChange={(e) => setDesignSpecs({...designSpecs, prC: Number(e.target.value)})} 
-                            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600" 
+                            disabled={!isNewEngineDesign}
+                            className={`w-full h-2 bg-gray-200 rounded-lg appearance-none ${isNewEngineDesign ? 'cursor-pointer accent-blue-600' : 'cursor-not-allowed opacity-50'}`} 
                         />
                     </div>
                     <div>
                         <label className="flex justify-between text-sm font-medium text-gray-700 mb-1">
                             <span>Fan PR</span>
-                            <span className="text-blue-600">{designSpecs.prF.toFixed(2)}</span>
+                            <span className={isNewEngineDesign ? "text-blue-600" : "text-gray-600"}>{designSpecs.prF.toFixed(2)}</span>
                         </label>
                         <input 
                             type="range" min="1.1" max="2.5" step="0.05" 
                             value={designSpecs.prF} 
                             onChange={(e) => setDesignSpecs({...designSpecs, prF: Number(e.target.value)})} 
-                            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600" 
+                            disabled={!isNewEngineDesign}
+                            className={`w-full h-2 bg-gray-200 rounded-lg appearance-none ${isNewEngineDesign ? 'cursor-pointer accent-blue-600' : 'cursor-not-allowed opacity-50'}`} 
                         />
                     </div>
+                </div>
+            </section>
+
+            {/* Flight Phase Selector */}
+            <section>
+                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+                    <Wind size={14} /> Flight Phase
+                </h3>
+                <div className="grid grid-cols-2 gap-2 mb-4">
+                    <button
+                        onClick={() => applyFlightPhase('takeoff')}
+                        className={`px-3 py-2 text-xs font-medium rounded-lg transition ${
+                            flightPhase === 'takeoff'
+                                ? 'bg-blue-600 text-white shadow-md'
+                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                    >
+                        🛫 Takeoff
+                    </button>
+                    <button
+                        onClick={() => applyFlightPhase('landing')}
+                        className={`px-3 py-2 text-xs font-medium rounded-lg transition ${
+                            flightPhase === 'landing'
+                                ? 'bg-blue-600 text-white shadow-md'
+                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                    >
+                        🛬 Landing
+                    </button>
+                    <button
+                        onClick={() => applyFlightPhase('cruise')}
+                        className={`px-3 py-2 text-xs font-medium rounded-lg transition ${
+                            flightPhase === 'cruise'
+                                ? 'bg-blue-600 text-white shadow-md'
+                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                    >
+                        ✈️ Cruise
+                    </button>
+                    <button
+                        onClick={() => applyFlightPhase('supersonic')}
+                        className={`px-3 py-2 text-xs font-medium rounded-lg transition ${
+                            flightPhase === 'supersonic'
+                                ? 'bg-blue-600 text-white shadow-md'
+                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                    >
+                        🚀 Supersonic
+                    </button>
                 </div>
             </section>
 
@@ -1119,7 +1431,8 @@ const TurbofanAnalysis = ({ onClose }) => {
                 </div>
             </section>
 
-            {/* Acoustic Setup */}
+            {/* Acoustic Setup - Only show for relevant phases */}
+            {isNoiseRelevant && (
             <section>
                 <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4 flex items-center gap-2">
                     <Volume2 size={14} /> Acoustic Setup
@@ -1141,6 +1454,7 @@ const TurbofanAnalysis = ({ onClose }) => {
                     </div>
                 </div>
             </section>
+            )}
         </div>
 
         {/* CENTER PANEL: Visuals & Dashboard */}
@@ -1160,12 +1474,14 @@ const TurbofanAnalysis = ({ onClose }) => {
                 >
                     Thermodynamics
                 </button>
-                <button 
-                    onClick={() => setActiveTab('noise')}
-                    className={`px-4 py-2 text-sm font-medium rounded-md transition ${activeTab === 'noise' ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-50'}`}
-                >
-                    Noise Map
-                </button>
+                {isNoiseRelevant && (
+                    <button 
+                        onClick={() => setActiveTab('noise')}
+                        className={`px-4 py-2 text-sm font-medium rounded-md transition ${activeTab === 'noise' ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-50'}`}
+                    >
+                        Noise Map
+                    </button>
+                )}
                 <button 
                     onClick={() => setActiveTab('trade')}
                     className={`px-4 py-2 text-sm font-medium rounded-md transition ${activeTab === 'trade' ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-50'}`}
@@ -1211,29 +1527,29 @@ const TurbofanAnalysis = ({ onClose }) => {
                             <div className="p-4 space-y-4">
                                 <div className="flex justify-between items-end border-b border-gray-100 pb-2">
                                     <span className="text-sm text-gray-600">Net Thrust</span>
-                                    <span className="text-2xl font-bold text-gray-900">{results.F_net.toFixed(0)} <span className="text-sm font-normal text-gray-500">lbf</span></span>
+                                    <span className="text-2xl font-bold text-gray-900">{formatValue(results.F_net, 'thrust')}</span>
                                 </div>
                                 <div className="grid grid-cols-2 gap-4 border-b border-gray-100 pb-2">
                                     <div>
                                         <span className="text-xs text-gray-500 block">Gross Thrust</span>
-                                        <span className="text-sm font-semibold text-gray-700">{results.F_gross.toFixed(0)} lbf</span>
+                                        <span className="text-sm font-semibold text-gray-700">{formatValue(results.F_gross, 'thrust')}</span>
                                     </div>
                                     <div>
                                         <span className="text-xs text-gray-500 block">Ram Drag</span>
-                                        <span className="text-sm font-semibold text-red-400">-{results.Ram_Drag.toFixed(0)} lbf</span>
+                                        <span className="text-sm font-semibold text-red-400">-{formatValue(results.Ram_Drag, 'thrust')}</span>
                                     </div>
                                 </div>
                                 <div className="flex justify-between items-end border-b border-gray-100 pb-2">
                                     <span className="text-sm text-gray-600">Fuel Flow</span>
-                                    <span className="text-xl font-semibold text-gray-900">{results.fuel_flow.toFixed(0)} <span className="text-sm font-normal text-gray-500">lb/hr</span></span>
+                                    <span className="text-xl font-semibold text-gray-900">{formatValue(results.fuel_flow, 'massFlow')}</span>
                                 </div>
                                 <div className="flex justify-between items-end border-b border-gray-100 pb-2">
                                     <span className="text-sm text-gray-600">TSFC</span>
-                                    <span className="text-lg font-mono text-gray-900">{results.tsfc_curr.toFixed(3)}</span>
+                                    <span className="text-lg font-mono text-gray-900">{formatValue(results.tsfc_curr, 'tsfc')}</span>
                                 </div>
                                 <div className="flex justify-between items-end">
                                     <span className="text-sm text-gray-600">Mass Flow</span>
-                                    <span className="text-lg font-mono text-gray-900">{results.m_dot_total.toFixed(1)} <span className="text-sm font-normal text-gray-500">lb/s</span></span>
+                                    <span className="text-lg font-mono text-gray-900">{formatValue(results.m_dot_total, 'massFlow')}</span>
                                 </div>
                             </div>
                         </div>
@@ -1287,7 +1603,7 @@ const TurbofanAnalysis = ({ onClose }) => {
             )}
 
             {activeTab === 'thermo' && (
-                <StationAnalysis stations={results.stations} />
+                <StationAnalysis stations={results.stations} formatValue={formatValue} unitSystem={unitSystem} />
             )}
 
             {activeTab === 'noise' && (
