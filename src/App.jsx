@@ -332,7 +332,7 @@ function App() {
               <X className="h-4 w-4" /> Close
             </button>
           </div>
-          <div className="flex-1 overflow-auto p-4 bg-gray-100">
+          <div className="flex-1 overflow-hidden bg-gray-100 relative">
             {fullScreen === 'reqif' ? <ReqIFViewer reqifFile="udaan.reqif" /> : <DigitalTwin />}
           </div>
         </div>

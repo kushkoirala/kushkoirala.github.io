@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Gauge, Wind, Thermometer, Activity, 
-  ArrowLeft, Settings, Volume2, Info, Cpu, Zap
+  ArrowLeft, Settings, Volume2, Info, Cpu, Zap, Menu, X
 } from 'lucide-react';
 
 // --- 1. Physics & Math Models ---
@@ -681,6 +681,7 @@ const TurbofanAnalysis = ({ onClose }) => {
   const [designSpecs, setDesignSpecs] = useState(ENGINES['TFE731-2']);
   const [isOptimizing, setIsOptimizing] = useState(false);
   const [optimizationStatus, setOptimizationStatus] = useState('');
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
 
   const [n1, setN1] = useState(85); // %
   const [altitude, setAltitude] = useState(0); // ft
@@ -847,37 +848,47 @@ const TurbofanAnalysis = ({ onClose }) => {
   return (
     <div className="fixed inset-0 bg-gray-100 z-50 overflow-hidden flex flex-col">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between shadow-sm z-20">
-        <div className="flex items-center gap-4">
+      <div className="bg-white border-b border-gray-200 px-4 lg:px-6 py-3 lg:py-4 flex items-center justify-between shadow-sm z-20">
+        <div className="flex items-center gap-3 lg:gap-4">
           <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition">
             <ArrowLeft size={20} className="text-gray-600" />
           </button>
           <div>
-            <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-              <Activity className="text-blue-600" />
-              Turbofan Performance & Acoustic Analysis
+            <h1 className="text-lg lg:text-xl font-bold text-gray-900 flex items-center gap-2">
+              <Activity className="text-blue-600 hidden sm:block" />
+              Turbofan Analysis
             </h1>
-            <p className="text-xs text-gray-500">Real-time cycle estimation • Standard Atmosphere • Lighthill Acoustics</p>
+            <p className="text-[10px] lg:text-xs text-gray-500 hidden sm:block">Real-time cycle estimation • Standard Atmosphere • Lighthill Acoustics</p>
           </div>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 lg:gap-4">
             <select 
                 value={engineKey}
                 onChange={(e) => setEngineKey(e.target.value)}
-                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5"
+                className="bg-gray-50 border border-gray-300 text-gray-900 text-xs lg:text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2"
             >
                 {Object.keys(ENGINES).map(k => (
                     <option key={k} value={k}>{ENGINES[k].name}</option>
                 ))}
             </select>
+            {/* Mobile Menu Toggle */}
+            <button 
+              className="lg:hidden p-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+              onClick={() => setShowMobileMenu(!showMobileMenu)}
+            >
+              {showMobileMenu ? <X size={24} /> : <Menu size={24} />}
+            </button>
         </div>
       </div>
 
       {/* Main Content Grid */}
-      <div className="flex-1 overflow-hidden flex flex-col lg:flex-row">
+      <div className="flex-1 overflow-hidden flex flex-col lg:flex-row relative">
         
         {/* LEFT PANEL: Inputs */}
-        <div className="w-full lg:w-80 bg-white border-r border-gray-200 overflow-y-auto p-6 space-y-8">
+        <div className={`
+            absolute inset-0 z-30 bg-white lg:static lg:w-80 lg:block border-r border-gray-200 overflow-y-auto p-6 space-y-8 transition-transform duration-300 ease-in-out
+            ${showMobileMenu ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+        `}>
             
             {/* 1. Cycle Design Solver */}
             <section className="bg-blue-50 p-4 rounded-xl border border-blue-100">
@@ -1062,10 +1073,10 @@ const TurbofanAnalysis = ({ onClose }) => {
         </div>
 
         {/* CENTER PANEL: Visuals & Dashboard */}
-        <div className="flex-1 bg-gray-50 p-6 overflow-y-auto">
+        <div className="flex-1 bg-gray-50 p-4 lg:p-6 overflow-y-auto w-full">
             
             {/* Tab Navigation */}
-            <div className="flex gap-2 mb-6 bg-white p-1 rounded-lg border border-gray-200 w-fit shadow-sm">
+            <div className="flex gap-2 mb-6 bg-white p-1 rounded-lg border border-gray-200 w-full lg:w-fit shadow-sm overflow-x-auto">
                 <button 
                     onClick={() => setActiveTab('dashboard')}
                     className={`px-4 py-2 text-sm font-medium rounded-md transition ${activeTab === 'dashboard' ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-50'}`}

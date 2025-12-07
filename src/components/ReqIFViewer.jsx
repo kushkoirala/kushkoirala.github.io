@@ -256,8 +256,8 @@ const ReqIFViewer = ({ reqifFile = 'udaan.reqif' }) => {
   );
 
   return (
-    <div className="w-full bg-white border rounded-lg shadow-sm overflow-hidden">
-      <div className="border-b bg-gray-50 px-4 py-3 flex flex-wrap items-center gap-4">
+    <div className="w-full h-full bg-white border rounded-lg shadow-sm overflow-hidden flex flex-col">
+      <div className="border-b bg-gray-50 px-4 py-3 flex flex-wrap items-center gap-4 flex-shrink-0">
         <div>
           <div className="text-sm font-semibold text-gray-900">Requirements (ReqIF)</div>
           <div className="text-xs text-gray-500">Choose a ReqIF file and search within it.</div>
@@ -297,8 +297,8 @@ const ReqIFViewer = ({ reqifFile = 'udaan.reqif' }) => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_1fr] divide-y lg:divide-y-0 lg:divide-x">
-        <div className="max-h-[520px] overflow-y-auto p-3 bg-gray-50">
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-[1fr_1fr] divide-y lg:divide-y-0 lg:divide-x overflow-hidden">
+        <div className="h-full overflow-y-auto p-3 bg-gray-50">
           {search ? (
             filtered.length === 0 ? (
               <div className="flex flex-col items-center justify-center p-6 text-gray-500">
@@ -336,7 +336,7 @@ const ReqIFViewer = ({ reqifFile = 'udaan.reqif' }) => {
           )}
         </div>
 
-        <div className="max-h-[520px] overflow-y-auto bg-gray-50">
+        <div className="h-full overflow-y-auto bg-gray-50">
           {selected ? (
             <div className="p-4 space-y-4">
               <div>

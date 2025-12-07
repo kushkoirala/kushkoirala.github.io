@@ -21,7 +21,7 @@ const DigitalTwin = () => {
   };
 
   return (
-    <div className="w-full h-96 bg-gray-50 rounded-lg overflow-hidden border border-gray-200 relative mb-6">
+    <div className="w-full h-full bg-gray-50 overflow-hidden relative">
       {!isRendering ? (
         <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
           <div className="text-center p-8">
