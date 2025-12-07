@@ -69,7 +69,7 @@ const EngineBuilder = ({ onSave, onCancel }) => {
           return;
         }
         setFormData(prev => ({ ...prev, ...importedData }));
-      } catch (err) {
+      } catch {
         alert('Failed to parse JSON');
       }
     };
