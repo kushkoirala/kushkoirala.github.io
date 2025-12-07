@@ -321,18 +321,14 @@ const StepViewer = ({ url }) => {
         const modelAlignmentGroup = new THREE.Group();
         modelAlignmentGroup.add(group);
 
-        // Explicit alignment: assume CAD +X = forward, +Y = right, +Z = up
+        // Explicit alignment: assume CAD +X = right, +Y = up, +Z = forward
         // Map to sim axes: forward -> -Z, right -> +X, up -> +Y
-        const xAxis = new THREE.Vector3(0, 0, -1); // model +X to world -Z
-        const yAxis = new THREE.Vector3(1, 0, 0);  // model +Y to world +X
-        const zAxis = new THREE.Vector3(0, 1, 0);  // model +Z to world +Y
+        const xAxis = new THREE.Vector3(1, 0, 0);   // model +X (right) to world +X
+        const yAxis = new THREE.Vector3(0, 1, 0);   // model +Y (up) to world +Y
+        const zAxis = new THREE.Vector3(0, 0, -1);  // model +Z (forward) to world -Z
         const basis = new THREE.Matrix4().makeBasis(xAxis, yAxis, zAxis);
         const quat = new THREE.Quaternion().setFromRotationMatrix(basis);
         modelAlignmentGroup.setRotationFromQuaternion(quat);
-
-        // Rotate 180° about forward axis to correct inversion
-        const forwardAxis = new THREE.Vector3(0, 0, -1);
-        modelAlignmentGroup.rotateOnAxis(forwardAxis, Math.PI);
 
         aircraftGroup.add(modelAlignmentGroup);
         scene.add(aircraftGroup);
