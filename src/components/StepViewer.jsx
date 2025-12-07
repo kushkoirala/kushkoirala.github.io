@@ -8,6 +8,8 @@ const StepViewer = ({ url }) => {
   const [status, setStatus] = useState('Initializing CAD Kernel...');
   const [error, setError] = useState(null);
   const [isFullScreen, setIsFullScreen] = useState(false);
+  const [meshList, setMeshList] = useState([]);
+  const [showTree, setShowTree] = useState(false);
   
   // Flight Simulation State
   const [flightMode, setFlightMode] = useState(false);
@@ -245,15 +247,16 @@ const StepViewer = ({ url }) => {
         console.log('Found', result.meshes.length, 'meshes to render');
 
         // 4. Render Meshes
-        const material = new THREE.MeshStandardMaterial({ 
-            color: 0x0366d6, 
-            metalness: 0.3, 
-            roughness: 0.4 
+        const defaultMaterial = new THREE.MeshStandardMaterial({ 
+          color: 0xc19a6b, // wood tone
+          metalness: 0.05, 
+          roughness: 0.7 
         });
 
         const group = new THREE.Group();
 
         // Process each mesh from the result
+        const meshNames = [];
         for (const meshData of result.meshes) {
           try {
             // Check if mesh has required data
@@ -275,20 +278,25 @@ const StepViewer = ({ url }) => {
             // Set index
             geometry.setIndex(new THREE.Uint16BufferAttribute(meshData.index.array, 1));
 
-            // Use mesh color if available
-            let meshMaterial = material;
-            if (meshData.color && Array.isArray(meshData.color) && meshData.color.length >= 3) {
+            // Apply color overrides: wood default; green for balls/spheres; dark gray for rods/struts
+            let meshMaterial = defaultMaterial;
+            const nameLower = (meshData.name || '').toLowerCase();
+            if (nameLower.includes('ball') || nameLower.includes('sphere')) {
+              meshMaterial = new THREE.MeshStandardMaterial({ color: 0x2e8b57, metalness: 0.1, roughness: 0.4 });
+            } else if (nameLower.includes('rod') || nameLower.includes('strut') || nameLower.includes('tube')) {
+              meshMaterial = new THREE.MeshStandardMaterial({ color: 0x222222, metalness: 0.2, roughness: 0.5 });
+            } else if (meshData.color && Array.isArray(meshData.color) && meshData.color.length >= 3) {
               meshMaterial = new THREE.MeshStandardMaterial({ 
                 color: new THREE.Color(meshData.color[0] / 255, meshData.color[1] / 255, meshData.color[2] / 255),
-                metalness: 0.3, 
-                roughness: 0.4 
+                metalness: 0.1, 
+                roughness: 0.6 
               });
             }
 
             const mesh = new THREE.Mesh(geometry, meshMaterial);
-            if (meshData.name) {
-              mesh.name = meshData.name;
-            }
+            const mName = meshData.name || `mesh-${meshNames.length}`;
+            mesh.name = mName;
+            meshNames.push(mName);
             group.add(mesh);
           } catch (meshErr) {
             console.error('Error processing mesh:', meshErr, meshData);
@@ -298,6 +306,8 @@ const StepViewer = ({ url }) => {
         if (group.children.length === 0) {
           throw new Error('No valid meshes could be created from STEP file');
         }
+
+        setMeshList(meshNames);
 
         // Center the model
         const box = new THREE.Box3().setFromObject(group);
@@ -311,45 +321,18 @@ const StepViewer = ({ url }) => {
         const modelAlignmentGroup = new THREE.Group();
         modelAlignmentGroup.add(group);
 
-        // Auto-align axes: map longest -> right (+X), middle -> forward (-Z), shortest -> up (+Y)
-        const sizeVec = box.getSize(new THREE.Vector3());
-        const axes = [
-          { key: 'x', len: sizeVec.x },
-          { key: 'y', len: sizeVec.y },
-          { key: 'z', len: sizeVec.z }
-        ].sort((a, b) => b.len - a.len); // desc
-
-        const rightAxis = axes[0].key;   // longest (likely wingspan)
-        const forwardAxis = axes[1].key; // middle (likely fuselage length)
-        const upAxis = axes[2].key;      // shortest (thickness)
-
-        const targetForward = new THREE.Vector3(0, 0, -1);
-        const targetUp = new THREE.Vector3(0, 1, 0);
-        const targetRight = new THREE.Vector3(1, 0, 0);
-
-        const axisTargetMap = {
-          x: new THREE.Vector3(),
-          y: new THREE.Vector3(),
-          z: new THREE.Vector3()
-        };
-
-        axisTargetMap[forwardAxis] = targetForward;
-        axisTargetMap[upAxis] = targetUp;
-        axisTargetMap[rightAxis] = targetRight;
-
-        // Ensure right-handed basis; flip right vector if needed
-        const rx = axisTargetMap.x.clone();
-        const ry = axisTargetMap.y.clone();
-        let rz = axisTargetMap.z.clone();
-        const det = rx.clone().cross(ry).dot(rz);
-        if (det < 0) {
-          rz.multiplyScalar(-1);
-          axisTargetMap.z = rz;
-        }
-
-        const basis = new THREE.Matrix4().makeBasis(axisTargetMap.x, axisTargetMap.y, axisTargetMap.z);
+        // Explicit alignment: assume CAD +X = forward, +Y = right, +Z = up
+        // Map to sim axes: forward -> -Z, right -> +X, up -> +Y
+        const xAxis = new THREE.Vector3(0, 0, -1); // model +X to world -Z
+        const yAxis = new THREE.Vector3(1, 0, 0);  // model +Y to world +X
+        const zAxis = new THREE.Vector3(0, 1, 0);  // model +Z to world +Y
+        const basis = new THREE.Matrix4().makeBasis(xAxis, yAxis, zAxis);
         const quat = new THREE.Quaternion().setFromRotationMatrix(basis);
         modelAlignmentGroup.setRotationFromQuaternion(quat);
+
+        // Rotate 180° about forward axis to correct inversion
+        const forwardAxis = new THREE.Vector3(0, 0, -1);
+        modelAlignmentGroup.rotateOnAxis(forwardAxis, Math.PI);
 
         aircraftGroup.add(modelAlignmentGroup);
         scene.add(aircraftGroup);
@@ -477,6 +460,27 @@ const StepViewer = ({ url }) => {
       {/* Flight Test Controls Overlay */}
       {!status && !error && (
         <>
+          {/* Mesh tree toggle */}
+          <div className="absolute top-4 left-4 z-20">
+            <button
+              onClick={() => setShowTree(!showTree)}
+              className="px-3 py-2 rounded-full font-bold shadow-lg transition-all bg-white text-gray-700 hover:bg-gray-50 border"
+            >
+              {showTree ? 'Hide Mesh Tree' : 'Show Mesh Tree'}
+            </button>
+          </div>
+
+          {showTree && meshList.length > 0 && (
+            <div className="absolute top-16 left-4 z-20 bg-white/90 backdrop-blur px-3 py-2 rounded text-xs text-gray-700 border border-gray-200 shadow-sm max-h-64 overflow-auto w-60">
+              <div className="font-semibold mb-1">Meshes ({meshList.length})</div>
+              <ul className="space-y-1">
+                {meshList.map((name, idx) => (
+                  <li key={idx} className="truncate" title={name}>• {name}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           {/* Toggle Switch */}
           <div className="absolute top-4 right-4 z-20 flex gap-2">
             {flightMode && (
