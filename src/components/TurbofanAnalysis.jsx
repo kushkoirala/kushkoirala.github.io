@@ -677,7 +677,18 @@ const TradeStudy = ({ baseSpecs, flightCond, n1, observer }) => {
 
 const TurbofanAnalysis = ({ onClose }) => {
   // --- State ---
-  const [engines, setEngines] = useState(DEFAULT_ENGINES);
+    const [engines, setEngines] = useState(() => {
+        try {
+            const saved = localStorage.getItem('custom_engines');
+            if (saved) {
+                const custom = JSON.parse(saved);
+                return { ...DEFAULT_ENGINES, ...custom };
+            }
+        } catch (e) {
+            console.error('Failed to load custom engines', e);
+        }
+        return DEFAULT_ENGINES;
+    });
   const [activeTab, setActiveTab] = useState('dashboard');
   const [engineKey, setEngineKey] = useState('TFE731-2');
   const [designSpecs, setDesignSpecs] = useState(DEFAULT_ENGINES['TFE731-2']);
@@ -685,19 +696,6 @@ const TurbofanAnalysis = ({ onClose }) => {
   const [optimizationStatus, setOptimizationStatus] = useState('');
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [showBuilder, setShowBuilder] = useState(false);
-
-  // Load custom engines from localStorage on mount
-  useEffect(() => {
-    const saved = localStorage.getItem('custom_engines');
-    if (saved) {
-      try {
-        const custom = JSON.parse(saved);
-        setEngines(prev => ({ ...prev, ...custom }));
-      } catch (e) {
-        console.error('Failed to load custom engines', e);
-      }
-    }
-  }, []);
 
   const handleSaveEngine = (id, data) => {
     const newEngines = { ...engines, [id]: data };
@@ -712,7 +710,8 @@ const TurbofanAnalysis = ({ onClose }) => {
     });
     localStorage.setItem('custom_engines', JSON.stringify(customEngines));
     
-    setEngineKey(id);
+        setEngineKey(id);
+        setDesignSpecs(data);
     setShowBuilder(false);
   };
 
@@ -731,7 +730,8 @@ const TurbofanAnalysis = ({ onClose }) => {
     });
     localStorage.setItem('custom_engines', JSON.stringify(customEngines));
     
-    setEngineKey('TFE731-2');
+        setEngineKey('TFE731-2');
+        setDesignSpecs(DEFAULT_ENGINES['TFE731-2']);
   };
 
   const [n1, setN1] = useState(85); // %
@@ -743,12 +743,12 @@ const TurbofanAnalysis = ({ onClose }) => {
   const [observerDist, setObserverDist] = useState(100); // m
   const [observerAngle, setObserverAngle] = useState(135); // deg
 
-  // Update design specs when engine key changes
-  useEffect(() => {
-    if (engines[engineKey]) {
-      setDesignSpecs(engines[engineKey]);
-    }
-  }, [engineKey, engines]);
+    const handleSelectEngine = (key) => {
+        setEngineKey(key);
+        if (engines[key]) {
+            setDesignSpecs(engines[key]);
+        }
+    };
 
   // --- Calculations ---
   const results = useMemo(() => {
@@ -918,7 +918,7 @@ const TurbofanAnalysis = ({ onClose }) => {
             <div className="flex items-center gap-2">
               <select 
                   value={engineKey}
-                  onChange={(e) => setEngineKey(e.target.value)}
+                  onChange={(e) => handleSelectEngine(e.target.value)}
                   className="bg-gray-50 border border-gray-300 text-gray-900 text-xs lg:text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2 max-w-[150px] lg:max-w-xs"
               >
                   {Object.keys(engines).map(k => (
