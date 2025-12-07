@@ -9,6 +9,7 @@ export default defineConfig(({ mode }) => ({
   // If using a subdirectory repo like kush-resume, use '/kush-resume/'
   base: mode === 'production' ? '/' : '/',
   server: {
+    host: true, // Expose to network
     fs: {
       // Allow serving files from node_modules for WASM
       allow: ['..']

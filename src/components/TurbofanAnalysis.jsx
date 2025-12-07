@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Gauge, Wind, Thermometer, Activity, 
-  ArrowLeft, Settings, Volume2, Info, Cpu, Zap, Menu, X
+  ArrowLeft, Settings, Volume2, Info, Cpu, Zap, Menu, X, Plus
 } from 'lucide-react';
+import EngineBuilder from './EngineBuilder';
 
 // --- 1. Physics & Math Models ---
 
@@ -55,7 +56,7 @@ const getAtmosphere = (altitudeFt, deltaIsa = 0) => {
   return { T, P, rho, a };
 };
 
-const ENGINES = {
+const DEFAULT_ENGINES = {
   'TFE731-2': {
     name: 'Honeywell TFE731-2',
     massFlowSl: 51.25, // kg/s (approx 113 lb/s)
@@ -676,12 +677,62 @@ const TradeStudy = ({ baseSpecs, flightCond, n1, observer }) => {
 
 const TurbofanAnalysis = ({ onClose }) => {
   // --- State ---
+  const [engines, setEngines] = useState(DEFAULT_ENGINES);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [engineKey, setEngineKey] = useState('TFE731-2');
-  const [designSpecs, setDesignSpecs] = useState(ENGINES['TFE731-2']);
+  const [designSpecs, setDesignSpecs] = useState(DEFAULT_ENGINES['TFE731-2']);
   const [isOptimizing, setIsOptimizing] = useState(false);
   const [optimizationStatus, setOptimizationStatus] = useState('');
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [showBuilder, setShowBuilder] = useState(false);
+
+  // Load custom engines from localStorage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem('custom_engines');
+    if (saved) {
+      try {
+        const custom = JSON.parse(saved);
+        setEngines(prev => ({ ...prev, ...custom }));
+      } catch (e) {
+        console.error('Failed to load custom engines', e);
+      }
+    }
+  }, []);
+
+  const handleSaveEngine = (id, data) => {
+    const newEngines = { ...engines, [id]: data };
+    setEngines(newEngines);
+    
+    // Separate custom engines to save to localStorage
+    const customEngines = {};
+    Object.keys(newEngines).forEach(key => {
+      if (!DEFAULT_ENGINES[key]) {
+        customEngines[key] = newEngines[key];
+      }
+    });
+    localStorage.setItem('custom_engines', JSON.stringify(customEngines));
+    
+    setEngineKey(id);
+    setShowBuilder(false);
+  };
+
+  const handleDeleteEngine = (key) => {
+    if (DEFAULT_ENGINES[key]) return; // Cannot delete default
+    
+    const newEngines = { ...engines };
+    delete newEngines[key];
+    setEngines(newEngines);
+    
+    const customEngines = {};
+    Object.keys(newEngines).forEach(k => {
+      if (!DEFAULT_ENGINES[k]) {
+        customEngines[k] = newEngines[k];
+      }
+    });
+    localStorage.setItem('custom_engines', JSON.stringify(customEngines));
+    
+    setEngineKey('TFE731-2');
+  };
 
   const [n1, setN1] = useState(85); // %
   const [altitude, setAltitude] = useState(0); // ft
@@ -694,8 +745,10 @@ const TurbofanAnalysis = ({ onClose }) => {
 
   // Update design specs when engine key changes
   useEffect(() => {
-    setDesignSpecs(ENGINES[engineKey]);
-  }, [engineKey]);
+    if (engines[engineKey]) {
+      setDesignSpecs(engines[engineKey]);
+    }
+  }, [engineKey, engines]);
 
   // --- Calculations ---
   const results = useMemo(() => {
@@ -862,15 +915,33 @@ const TurbofanAnalysis = ({ onClose }) => {
           </div>
         </div>
         <div className="flex items-center gap-2 lg:gap-4">
-            <select 
-                value={engineKey}
-                onChange={(e) => setEngineKey(e.target.value)}
-                className="bg-gray-50 border border-gray-300 text-gray-900 text-xs lg:text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2"
-            >
-                {Object.keys(ENGINES).map(k => (
-                    <option key={k} value={k}>{ENGINES[k].name}</option>
-                ))}
-            </select>
+            <div className="flex items-center gap-2">
+              <select 
+                  value={engineKey}
+                  onChange={(e) => setEngineKey(e.target.value)}
+                  className="bg-gray-50 border border-gray-300 text-gray-900 text-xs lg:text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2 max-w-[150px] lg:max-w-xs"
+              >
+                  {Object.keys(engines).map(k => (
+                      <option key={k} value={k}>{engines[k].name}</option>
+                  ))}
+              </select>
+              <button 
+                onClick={() => setShowBuilder(true)}
+                className="p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition"
+                title="Create Custom Engine"
+              >
+                <Plus size={18} />
+              </button>
+              {!DEFAULT_ENGINES[engineKey] && (
+                <button 
+                  onClick={() => handleDeleteEngine(engineKey)}
+                  className="p-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition"
+                  title="Delete Custom Engine"
+                >
+                  <X size={18} />
+                </button>
+              )}
+            </div>
             {/* Mobile Menu Toggle */}
             <button 
               className="lg:hidden p-2 text-gray-600 hover:bg-gray-100 rounded-lg"
@@ -1238,6 +1309,14 @@ const TurbofanAnalysis = ({ onClose }) => {
 
         </div>
       </div>
+
+      {/* Engine Builder Modal */}
+      {showBuilder && (
+        <EngineBuilder 
+          onSave={handleSaveEngine} 
+          onCancel={() => setShowBuilder(false)} 
+        />
+      )}
     </div>
   );
 };
