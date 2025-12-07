@@ -606,8 +606,6 @@ const TradeStudy = ({ baseSpecs, flightCond, n1, observer }) => {
     // Add 5% padding to ranges for better visualization
     const xRange = maxX - minX;
     const yRange = maxY - minY;
-    const xPadding = xRange * 0.05;
-    const yPadding = yRange * 0.05;
 
     const chartWidth = 100; // Use percentage-based viewBox
     const chartHeight = 60;
