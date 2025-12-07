@@ -310,25 +310,47 @@ const StepViewer = ({ url }) => {
         // Create an inner container for model alignment (fixing CAD orientation)
         const modelAlignmentGroup = new THREE.Group();
         modelAlignmentGroup.add(group);
-        
-        // Default Alignment for common Z-up CAD models to fly along -Z (Three.js Forward)
-        // Rotate -90 deg around X to bring Z-up to Y-up
-        // Then rotate +180 deg around Y to face -Z (if nose was +Y after first rotation? No.)
-        // Let's assume standard CAD: X=Right, Y=Back, Z=Up? Or X=Forward?
-        // Common: Z-up. X-Forward.
-        // To map X-Forward (CAD) to -Z-Forward (Three.js):
-        // Rotate -90 X: Z->Y (Up), Y->-Z (Forward? No, Y->Z). X->X (Right).
-        // If CAD Y was Right, now it is Back (Z).
-        // If CAD X was Forward, now it is Right (X).
-        // This is messy.
-        
-        // Let's try a standard correction for "Z-up" models to "Y-up"
-        modelAlignmentGroup.rotation.x = -Math.PI / 2; 
-        modelAlignmentGroup.rotation.z = Math.PI; // Flip 180 degrees to fix front/back orientation
-        
-        // If the model is still sideways, we might need another rotation.
-        // For now, let's assume this fixes the "up" direction.
-        
+
+        // Auto-align axes: map longest -> right (+X), middle -> forward (-Z), shortest -> up (+Y)
+        const sizeVec = box.getSize(new THREE.Vector3());
+        const axes = [
+          { key: 'x', len: sizeVec.x },
+          { key: 'y', len: sizeVec.y },
+          { key: 'z', len: sizeVec.z }
+        ].sort((a, b) => b.len - a.len); // desc
+
+        const rightAxis = axes[0].key;   // longest (likely wingspan)
+        const forwardAxis = axes[1].key; // middle (likely fuselage length)
+        const upAxis = axes[2].key;      // shortest (thickness)
+
+        const targetForward = new THREE.Vector3(0, 0, -1);
+        const targetUp = new THREE.Vector3(0, 1, 0);
+        const targetRight = new THREE.Vector3(1, 0, 0);
+
+        const axisTargetMap = {
+          x: new THREE.Vector3(),
+          y: new THREE.Vector3(),
+          z: new THREE.Vector3()
+        };
+
+        axisTargetMap[forwardAxis] = targetForward;
+        axisTargetMap[upAxis] = targetUp;
+        axisTargetMap[rightAxis] = targetRight;
+
+        // Ensure right-handed basis; flip right vector if needed
+        const rx = axisTargetMap.x.clone();
+        const ry = axisTargetMap.y.clone();
+        let rz = axisTargetMap.z.clone();
+        const det = rx.clone().cross(ry).dot(rz);
+        if (det < 0) {
+          rz.multiplyScalar(-1);
+          axisTargetMap.z = rz;
+        }
+
+        const basis = new THREE.Matrix4().makeBasis(axisTargetMap.x, axisTargetMap.y, axisTargetMap.z);
+        const quat = new THREE.Quaternion().setFromRotationMatrix(basis);
+        modelAlignmentGroup.setRotationFromQuaternion(quat);
+
         aircraftGroup.add(modelAlignmentGroup);
         scene.add(aircraftGroup);
         
