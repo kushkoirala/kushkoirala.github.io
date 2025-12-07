@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   Gauge, Wind, Thermometer, Activity, 
   ArrowLeft, Settings, Volume2, Info, Cpu, Zap, Menu, X, Plus
