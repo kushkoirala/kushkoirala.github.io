@@ -1,10 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
-import { Gauge, Activity, Wind, Plane, RotateCw, ArrowUpFromLine, RotateCcw, Maximize, Minimize, Pause, Play, Droplets } from 'lucide-react';
+import { Gauge, Activity, Wind, Plane, RotateCw, ArrowUpFromLine, RotateCcw, Maximize, Minimize, Pause, Play, Droplets, AlertTriangle, Shield, Weight } from 'lucide-react';
 import { createComponentGroups, COMPONENT_DEFINITIONS } from '../utils/componentManager';
 import AerodynamicCalculator from '../utils/aerodynamics';
 import { PressureVisualizer } from '../utils/pressureVisualizer';
+import StructuralAnalyzer from '../utils/structuralAnalyzer';
+import StructuralVisualizer from '../utils/structuralVisualizer';
+import { weightModel } from '../utils/weightModel';
 
 const StepViewer = ({ url }) => {
   const containerRef = useRef(null);
@@ -44,6 +47,15 @@ const StepViewer = ({ url }) => {
   const aeroRef = useRef(new AerodynamicCalculator());
   const pressureVisualizerRef = useRef(null);
   const pressureUpdateTimeRef = useRef(0);
+  
+  // Structural Analysis
+  const structuralAnalyzerRef = useRef(new StructuralAnalyzer());
+  const structuralVisualizerRef = useRef(null);
+  const [structuralState, setStructuralState] = useState({});
+  const [structuralWarnings, setStructuralWarnings] = useState([]);
+  const [showStructural, setShowStructural] = useState(false);
+  const [showWeight, setShowWeight] = useState(true); // Show weight by default
+  
   const [telemetry, setTelemetry] = useState({
     airspeed: 0,
     CL: 0,
@@ -214,8 +226,9 @@ const StepViewer = ({ url }) => {
         dirLight.position.set(10, 10, 10);
         scene.add(dirLight);
         
-        // Initialize Pressure Visualizer
+        // Initialize Visualizers
         pressureVisualizerRef.current = new PressureVisualizer(scene);
+        structuralVisualizerRef.current = new StructuralVisualizer(scene);
 
         camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 10000);
         camera.position.set(1000, 1000, 1000); // Far out start
@@ -476,6 +489,11 @@ const StepViewer = ({ url }) => {
         // Store reference for flight simulation
         aircraftRef.current = aircraftGroup;
         
+        // Register meshes for structural visualization
+        if (structuralVisualizerRef.current) {
+          structuralVisualizerRef.current.registerMeshes(aircraftGroup);
+        }
+        
         // Store the base orientation (after Roskam alignment)
         baseQuaternionRef.current.copy(aircraftGroup.quaternion);
         flightQuaternionRef.current.copy(aircraftGroup.quaternion);
@@ -541,6 +559,7 @@ const StepViewer = ({ url }) => {
         // Animation Loop
         const animate = () => {
           requestID = requestAnimationFrame(animate);
+          const now = Date.now(); // Declare once per frame
           
           if (flightModeRef.current && aircraftRef.current && !isPausedRef.current) {
             // Show Grid
@@ -567,9 +586,9 @@ const StepViewer = ({ url }) => {
             // X-axis (forward) = pitch control
             // Y-axis (right wing) = roll control  
             // Z-axis (down) = yaw control
-            const bodyPitchAxis = new THREE.Vector3(0, 1, 0); // Pitch about Y (right wing axis)
-            const bodyRollAxis = new THREE.Vector3(1, 0, 0);  // Roll about X (forward axis)
-            const bodyYawAxis = new THREE.Vector3(0, 0, 1);   // Yaw about Z (down axis)
+            const bodyPitchAxis = new THREE.Vector3(1, 0, 0); // Pitch about Y (right wing axis)
+            const bodyRollAxis = new THREE.Vector3(0, 0, 1);  // Roll about X (forward axis)
+            const bodyYawAxis = new THREE.Vector3(0, 1, 0);   // Yaw about Z (down axis)
             
             // Create incremental rotation quaternions for this frame
             const pitchQuat = new THREE.Quaternion().setFromAxisAngle(bodyPitchAxis, pitch);
@@ -643,8 +662,45 @@ const StepViewer = ({ url }) => {
                 flightPhase: flightPhase
               });
               
+              // Update structural analysis (throttle to every 200ms)
+              if (structuralAnalyzerRef.current && showStructural && (now - pressureUpdateTimeRef.current) > 200) {
+                pressureUpdateTimeRef.current = now;
+                
+                // Calculate g-loading
+                const gLoad = Math.sqrt(
+                  (aeroSummary.lift / (aeroRef.current.mass * 9.81)) ** 2 +
+                  (aeroSummary.drag / (aeroRef.current.mass * 9.81)) ** 2 +
+                  1  // Gravity
+                );
+                
+                // Calculate moments (approximate)
+                const rollingMoment = aeroSummary.lift * Math.abs(controlsRef.current.roll);
+                const pitchingMoment = aeroSummary.lift * controlsRef.current.pitch;
+                const yawingMoment = aeroSummary.drag * controlsRef.current.yaw;
+                
+                const analysis = structuralAnalyzerRef.current.calculateAerodynamicLoads(
+                  aeroSummary.lift,
+                  aeroSummary.drag,
+                  gLoad,
+                  rollingMoment,
+                  pitchingMoment,
+                  yawingMoment
+                );
+                
+                setStructuralState(analysis.structuralState);
+                setStructuralWarnings(analysis.warnings);
+                
+                // Visualize structural stress on meshes (every 100ms)
+                if (structuralVisualizerRef.current && showStructural && (now - pressureUpdateTimeRef.current) > 100) {
+                  console.log('🎨 Calling visualizeStress with', Object.keys(analysis.structuralState).length, 'components, showStructural:', showStructural);
+                  structuralVisualizerRef.current.visualizeStress(analysis.structuralState);
+                  structuralVisualizerRef.current.animateCriticalStress(analysis.structuralState, now / 1000);
+                }
+                
+                console.log('🏗️ Structural analysis: Health', (analysis.overallHealth * 100).toFixed(1) + '%');
+              }
+              
               // Update pressure visualization (throttle to every 100ms)
-              const now = Date.now();
               if (pressureVisualizerRef.current && showPressureRef.current && (now - pressureUpdateTimeRef.current) > 100) {
                 pressureUpdateTimeRef.current = now;
                 const meshes = [];
@@ -668,19 +724,6 @@ const StepViewer = ({ url }) => {
                   console.warn('⚠️ No meshes found in aircraft');
                 }
               }
-            }
-            
-            // Rotate propeller based on throttle
-            if (componentsRef.current.propeller && componentsRef.current.propeller.meshes) {
-              const throttle = controlsRef.current.throttle || 0.6;
-              const propellerRPM = 10000 * throttle; // Max 10,000 RPM
-              const propellerRadPerFrame = (propellerRPM / 60) * (2 * Math.PI / 60); // Convert RPM to rad/frame (~60fps)
-              
-              // Rotate each propeller mesh about the Z-axis (boom's long axis - forward direction)
-              const propellerAxis = new THREE.Vector3(0, 0, 1);
-              componentsRef.current.propeller.meshes.forEach(mesh => {
-                mesh.rotateOnWorldAxis(propellerAxis, propellerRadPerFrame);
-              });
             }
             
             // Simulate subtle vibration/movement
@@ -835,7 +878,7 @@ const StepViewer = ({ url }) => {
                 {/* Pressure Visualization Toggle */}
                 <button
                   onClick={() => setShowPressure(!showPressure)}
-                  className={`w-full mb-4 px-3 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition ${
+                  className={`w-full mb-2 px-3 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition ${
                     showPressure
                       ? 'bg-cyan-600 text-white ring-2 ring-cyan-300'
                       : 'bg-cyan-900/50 text-cyan-300 hover:bg-cyan-900/70'
@@ -843,6 +886,32 @@ const StepViewer = ({ url }) => {
                 >
                   <Droplets size={14} />
                   {showPressure ? 'Pressure ON' : 'Pressure OFF'}
+                </button>
+                
+                {/* Structural Analysis Toggle */}
+                <button
+                  onClick={() => setShowStructural(!showStructural)}
+                  className={`w-full mb-2 px-3 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition ${
+                    showStructural
+                      ? 'bg-orange-600 text-white ring-2 ring-orange-300'
+                      : 'bg-orange-900/50 text-orange-300 hover:bg-orange-900/70'
+                  }`}
+                >
+                  <Shield size={14} />
+                  {showStructural ? 'Structural ON' : 'Structural OFF'}
+                </button>
+
+                {/* Weight Information Toggle */}
+                <button
+                  onClick={() => setShowWeight(!showWeight)}
+                  className={`w-full mb-4 px-3 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition ${
+                    showWeight
+                      ? 'bg-purple-600 text-white ring-2 ring-purple-300'
+                      : 'bg-purple-900/50 text-purple-300 hover:bg-purple-900/70'
+                  }`}
+                >
+                  <Weight size={14} />
+                  {showWeight ? 'Weight ON' : 'Weight OFF'}
                 </button>
                 
                 <div className="space-y-4" key={resetKey}>
@@ -1072,6 +1141,119 @@ const StepViewer = ({ url }) => {
                     </div>
                   </div>
                 )}
+                
+                {/* Structural Analysis Panel */}
+                {showStructural && (
+                  <div className="mt-4 pt-4 border-t border-white/10">
+                    <h5 className="text-[10px] font-bold text-orange-400 uppercase mb-2 flex items-center gap-2">
+                      <Shield size={12} /> Structural Integrity
+                    </h5>
+                    
+                    {/* Overall Health */}
+                    <div className="mb-3 p-2 bg-white/5 rounded">
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-[9px] text-gray-300">Overall Health</span>
+                        <span className={`text-xs font-bold ${
+                          Object.values(structuralState).length > 0 
+                            ? (Object.values(structuralState).reduce((sum, s) => sum + s.healthFactor, 0) / Object.values(structuralState).length > 0.8 ? 'text-green-300' : 'text-yellow-300')
+                            : 'text-gray-300'
+                        }`}>
+                          {Object.values(structuralState).length > 0 
+                            ? ((Object.values(structuralState).reduce((sum, s) => sum + s.healthFactor, 0) / Object.values(structuralState).length) * 100).toFixed(0)
+                            : 0}%
+                        </span>
+                      </div>
+                      <div className="w-full h-1 bg-gray-600 rounded overflow-hidden">
+                        <div 
+                          className="h-full bg-gradient-to-r from-green-500 to-red-500 transition-all"
+                          style={{
+                            width: Object.values(structuralState).length > 0 
+                              ? ((Object.values(structuralState).reduce((sum, s) => sum + s.healthFactor, 0) / Object.values(structuralState).length) * 100) + '%'
+                              : '100%'
+                          }}
+                        />
+                      </div>
+                    </div>
+                    
+                    {/* Critical Warnings */}
+                    {structuralWarnings.filter(w => w.severity === 'CRITICAL').length > 0 && (
+                      <div className="mb-2 p-2 bg-red-900/30 border border-red-500/50 rounded">
+                        {structuralWarnings.filter(w => w.severity === 'CRITICAL').map((warning, i) => (
+                          <div key={i} className="flex gap-1 items-start mb-1">
+                            <AlertTriangle size={10} className="text-red-400 flex-shrink-0 mt-0.5" />
+                            <span className="text-[8px] text-red-300">{warning.message}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    
+                    {/* Component Status */}
+                    <div className="space-y-1 text-[9px]">
+                      {['wing', 'boom', 'ailerons', 'elevator', 'landingGear'].map(comp => 
+                        structuralState[comp] && (
+                          <div key={comp} className="flex justify-between items-center p-1 bg-white/5 rounded">
+                            <span className="text-gray-400 capitalize">{comp}:</span>
+                            <div className="flex items-center gap-2">
+                              <span className="font-mono text-orange-300">{(structuralState[comp].stress/1e6).toFixed(1)} MPa</span>
+                              <div 
+                                className="w-6 h-3 rounded"
+                                style={{backgroundColor: `hsl(${structuralState[comp].healthFactor * 120}, 100%, 50%)`}}
+                              />
+                            </div>
+                          </div>
+                        )
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Weight Information Panel */}
+                {showWeight && (
+                  <div className="mt-4 pt-4 border-t border-white/10">
+                    <h5 className="text-[10px] font-bold text-purple-400 uppercase mb-2 flex items-center gap-2">
+                      <Weight size={12} /> Aircraft Weight
+                    </h5>
+                    
+                    {/* Total Weight */}
+                    <div className="mb-3 p-2 bg-white/5 rounded">
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-[9px] text-gray-300">Total Weight (Empty)</span>
+                        <span className="text-xs font-bold text-purple-300">{weightModel.getEmptyWeight().toFixed(2)} kg</span>
+                      </div>
+                      <div className="text-[8px] text-gray-400">Structure + systems, no remote control</div>
+                    </div>
+
+                    {/* Weight Breakdown */}
+                    <div className="space-y-1 text-[8px]">
+                      {Object.entries(weightModel.getWeightBreakdown()).map(([category, weight]) => (
+                        <div key={category} className="flex justify-between items-center p-1 bg-white/5 rounded">
+                          <span className="text-gray-400">{category}</span>
+                          <span className="font-mono text-purple-300">{weight.toFixed(2)} kg</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Component Details */}
+                    <div className="mt-3 pt-3 border-t border-white/10">
+                      <h6 className="text-[8px] font-bold text-purple-300 uppercase mb-2">Major Components</h6>
+                      <div className="space-y-0.5 text-[7px]">
+                        {[
+                          { name: 'Wing', weight: 0.85 },
+                          { name: 'Boom/Fuselage', weight: 0.35 },
+                          { name: 'Landing Gear', weight: 0.45 },
+                          { name: 'Battery & Electronics', weight: 0.80 },
+                          { name: 'Propulsion (Motor+ESC)', weight: 0.35 },
+                          { name: 'RC Payload', weight: 0.15 }
+                        ].map((comp, i) => (
+                          <div key={i} className="flex justify-between px-1 py-0.5 bg-white/5 rounded">
+                            <span className="text-gray-400">{comp.name}</span>
+                            <span className="font-mono text-purple-300">{comp.weight} kg</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
             </div>
@@ -1083,3 +1265,4 @@ const StepViewer = ({ url }) => {
 };
 
 export default StepViewer;
+

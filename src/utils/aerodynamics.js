@@ -6,6 +6,8 @@
  * for your aircraft based on flight conditions
  */
 
+import { weightModel } from './weightModel.js';
+
 export class AerodynamicCalculator {
   /**
    * Initialize with aircraft parameters
@@ -27,8 +29,10 @@ export class AerodynamicCalculator {
     this.horzTailArea = config.horzTailArea || 0.8;  // m²
     this.vertTailArea = config.vertTailArea || 0.5;  // m²
 
-    // Aircraft mass
-    this.mass = config.mass || 4.0;  // kg
+    // Aircraft mass - use accurate weight model including pilot
+    this.totalMass = config.totalMass || weightModel.getTotalWeight();  // kg with pilot
+    this.emptyMass = config.emptyMass || weightModel.getEmptyWeight(); // kg empty
+    this.mass = this.totalMass; // Default to total mass for flight calculations
 
     // Environmental conditions
     this.density = config.density || 1.225;  // kg/m³ at sea level
@@ -343,6 +347,21 @@ export class AerodynamicCalculator {
       cruiseSpeed: parseFloat(cruiseSpeed.toFixed(2)),
       climbRate: parseFloat((climbRate * 60).toFixed(1)),  // Convert to m/min
       gLoad: parseFloat(gLoad.toFixed(2))
+    };
+  }
+
+  /**
+   * Get weight and mass properties of the aircraft
+   */
+  getWeightReport() {
+    const report = weightModel.getDetailedReport();
+    return {
+      emptyWeight: parseFloat(report.emptyWeight),
+      payloadWeight: report.payloadWeight,
+      totalWeight: parseFloat(report.totalWeight),
+      breakdown: report.breakdown,
+      centerOfGravity: weightModel.getCenterOfGravity(),
+      weightDistribution: weightModel.getWeightDistribution()
     };
   }
 }
