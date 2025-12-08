@@ -2,13 +2,13 @@ import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { Gauge, Activity, Wind, Plane, RotateCw, ArrowUpFromLine, RotateCcw, Maximize, Minimize, Pause, Play } from 'lucide-react';
+import { createComponentGroups, COMPONENT_DEFINITIONS } from '../utils/componentManager';
 
 const StepViewer = ({ url }) => {
   const containerRef = useRef(null);
   const [status, setStatus] = useState('Initializing CAD Kernel...');
   const [error, setError] = useState(null);
   const [isFullScreen, setIsFullScreen] = useState(false);
-  const [meshList, setMeshList] = useState([]);
   const [showTree, setShowTree] = useState(false);
   
   // Flight Simulation State
@@ -17,6 +17,11 @@ const StepViewer = ({ url }) => {
   const flightModeRef = useRef(false); // Ref for access inside animation loop
   const isPausedRef = useRef(false);
   const aircraftRef = useRef(null);
+  const componentsRef = useRef({}); // Reference to individual components for animation
+  
+  // Component selection state
+  const [selectedComponent, setSelectedComponent] = useState(null);
+  const [components, setComponents] = useState([]);
   
   // Camera & Controls Refs
   const cameraRef = useRef(null);
@@ -26,6 +31,12 @@ const StepViewer = ({ url }) => {
 
   // Control inputs (Refs for performance in animation loop)
   const controlsRef = useRef({ pitch: 0, roll: 0, yaw: 0, throttle: 0.6 });
+  
+  // Quaternion storage for proper rotation accumulation
+  const baseQuaternionRef = useRef(new THREE.Quaternion());
+  const flightQuaternionRef = useRef(new THREE.Quaternion());
+  const accumulatedYawRef = useRef(0);
+  const telemetryRef = useRef({ heading: 0, pitch: 0, roll: 0 });
 
   // Sync state with ref
   useEffect(() => {
@@ -40,6 +51,46 @@ const StepViewer = ({ url }) => {
       }
     }
   }, [flightMode, isPaused]);
+
+  // Handle component selection highlighting
+  useEffect(() => {
+    // Store original materials before highlighting
+    if (!componentsRef.current._originalMaterials) {
+      componentsRef.current._originalMaterials = {};
+    }
+    
+    // Clear previous highlights
+    Object.values(componentsRef.current).forEach((comp) => {
+      if (comp.meshes && Array.isArray(comp.meshes)) {
+        comp.meshes.forEach((mesh) => {
+          if (componentsRef.current._originalMaterials[mesh.uuid]) {
+            mesh.material = componentsRef.current._originalMaterials[mesh.uuid];
+          }
+        });
+      }
+    });
+    
+    // Apply highlight to selected component
+    if (selectedComponent && componentsRef.current[selectedComponent]) {
+      const component = componentsRef.current[selectedComponent];
+      if (component.meshes && Array.isArray(component.meshes)) {
+        const highlightMaterial = new THREE.MeshStandardMaterial({
+          color: 0xffff00,
+          emissive: 0xaaaa00,
+          metalness: 0.3,
+          roughness: 0.4
+        });
+        
+        component.meshes.forEach(mesh => {
+          // Save original material if not already saved
+          if (!componentsRef.current._originalMaterials[mesh.uuid]) {
+            componentsRef.current._originalMaterials[mesh.uuid] = mesh.material.clone();
+          }
+          mesh.material = highlightMaterial;
+        });
+      }
+    }
+  }, [selectedComponent]);
 
   const handleControlChange = (axis, value) => {
     controlsRef.current[axis] = parseFloat(value);
@@ -61,9 +112,11 @@ const StepViewer = ({ url }) => {
     // Reset Flight Controls
     controlsRef.current = { pitch: 0, roll: 0, yaw: 0, throttle: 0.6 };
     
-    // Reset Aircraft Rotation
+    // Reset Aircraft Rotation to base quaternion
     if (aircraftRef.current) {
-      aircraftRef.current.rotation.set(0, 0, 0);
+      aircraftRef.current.quaternion.copy(baseQuaternionRef.current);
+      flightQuaternionRef.current.copy(baseQuaternionRef.current);
+      accumulatedYawRef.current = 0;
     }
 
     // Force re-render of inputs
@@ -256,7 +309,8 @@ const StepViewer = ({ url }) => {
         const group = new THREE.Group();
 
         // Process each mesh from the result
-        const meshNames = [];
+        const meshObjects = []; // Track all mesh objects for component organization
+        
         for (const meshData of result.meshes) {
           try {
             // Check if mesh has required data
@@ -294,9 +348,9 @@ const StepViewer = ({ url }) => {
             }
 
             const mesh = new THREE.Mesh(geometry, meshMaterial);
-            const mName = meshData.name || `mesh-${meshNames.length}`;
+            const mName = meshData.name || `mesh-${meshObjects.length}`;
             mesh.name = mName;
-            meshNames.push(mName);
+            meshObjects.push(mesh); // Store for component organization
             group.add(mesh);
           } catch (meshErr) {
             console.error('Error processing mesh:', meshErr, meshData);
@@ -307,7 +361,22 @@ const StepViewer = ({ url }) => {
           throw new Error('No valid meshes could be created from STEP file');
         }
 
-        setMeshList(meshNames);
+        // Organize meshes into components and create component references
+        const componentOrganization = createComponentGroups(meshObjects);
+        console.log('Component Organization:', componentOrganization);
+        
+        // Store component references for animation control
+        componentsRef.current = componentOrganization.components;
+        
+        // Update components state for tree view
+        const componentsList = Object.entries(componentOrganization.components).map(([key, data]) => ({
+          id: key,
+          name: data.definition.description || key,
+          type: data.definition.type,
+          meshCount: data.meshCount,
+          icon: key === 'propeller' ? '✈️' : key === 'wing' ? '🪶' : key.includes('control') ? '🎚️' : '📦'
+        }));
+        setComponents(componentsList);
 
         // Center the model
         const box = new THREE.Box3().setFromObject(group);
@@ -321,21 +390,87 @@ const StepViewer = ({ url }) => {
         const modelAlignmentGroup = new THREE.Group();
         modelAlignmentGroup.add(group);
 
-        // Explicit alignment: assume CAD +X = right, +Y = up, +Z = forward
-        // Map to sim axes: forward -> -Z, right -> +X, up -> +Y
-        const xAxis = new THREE.Vector3(1, 0, 0);   // model +X (right) to world +X
-        const yAxis = new THREE.Vector3(0, 1, 0);   // model +Y (up) to world +Y
-        const zAxis = new THREE.Vector3(0, 0, -1);  // model +Z (forward) to world -Z
-        const basis = new THREE.Matrix4().makeBasis(xAxis, yAxis, zAxis);
-        const quat = new THREE.Quaternion().setFromRotationMatrix(basis);
-        modelAlignmentGroup.setRotationFromQuaternion(quat);
+        // Roskam Body-Fixed Coordinate System Transformation
+        // STEP file native axes: X=height, Y=wing span, Z=fuselage length
+        // Target Roskam axes: X=forward (nose), Y=right wing, Z=down
+        // The model geometry is already offset/rotated in a specific way relative to the inertial frame
+        // We apply these rotations to align it correctly, then preserve this as the BASE orientation
+        
+        const yAxis = new THREE.Vector3(0, 1, 0);  // Y-axis (wing span)
+        const rotationQuat = new THREE.Quaternion();
+        rotationQuat.setFromAxisAngle(yAxis, Math.PI / 2); // 90° about Y
+        
+        // Flip aircraft 180° about X-axis (to correct upside-down orientation from CAD)
+        const xAxis = new THREE.Vector3(1, 0, 0);
+        const flipQuat = new THREE.Quaternion();
+        flipQuat.setFromAxisAngle(xAxis, Math.PI); // 180° flip
+
+        // Apply 90° clockwise rotation about Z (default orientation for viewing)
+        const zAxis = new THREE.Vector3(0, 0, 1);
+        const defaultOrientQuat = new THREE.Quaternion();
+        defaultOrientQuat.setFromAxisAngle(zAxis, -Math.PI / 2); // 90° clockwise
+
+        // Apply 180° rotation about Y-axis (wing axis) - part of geometric alignment
+        const yFlipAxis = new THREE.Vector3(0, 1, 0);
+        const yFlipQuat = new THREE.Quaternion();
+        yFlipQuat.setFromAxisAngle(yFlipAxis, Math.PI); // 180° about Y
+        
+        // Combine all alignment rotations into base orientation
+        const alignmentQuat = new THREE.Quaternion();
+        alignmentQuat.multiplyQuaternions(defaultOrientQuat, rotationQuat);
+        alignmentQuat.multiplyQuaternions(yFlipQuat, alignmentQuat);
+        alignmentQuat.multiplyQuaternions(flipQuat, alignmentQuat);
+        
+        modelAlignmentGroup.setRotationFromQuaternion(alignmentQuat);
 
         aircraftGroup.add(modelAlignmentGroup);
         scene.add(aircraftGroup);
         
         // Store reference for flight simulation
         aircraftRef.current = aircraftGroup;
+        
+        // Store the base orientation (after Roskam alignment)
+        baseQuaternionRef.current.copy(aircraftGroup.quaternion);
+        flightQuaternionRef.current.copy(aircraftGroup.quaternion);
+        accumulatedYawRef.current = 0;
+        
         const initialY = aircraftGroup.position.y;
+
+        // Add coordinate system visualization
+        // Earth-fixed (inertial) axes at world origin
+        const axesHelper = new THREE.AxesHelper(150);
+        scene.add(axesHelper);
+
+        // Roskam Body-Fixed coordinate frame (attached to aircraft)
+        const bodyAxesHelper = new THREE.AxesHelper(100);
+        bodyAxesHelper.position.copy(aircraftGroup.position);
+        aircraftGroup.add(bodyAxesHelper);
+
+        // Add coordinate system labels
+        // Create text labels for world frame (at corners)
+        const labelPositions = [
+          { pos: [250, 0, 0], text: 'X (North)', color: '#FF0000' },
+          { pos: [0, 250, 0], text: 'Y (East)', color: '#00FF00' },
+          { pos: [0, 0, 250], text: 'Z (Down)', color: '#0000FF' }
+        ];
+        
+        labelPositions.forEach(({ pos, text, color }) => {
+          const canvas = document.createElement('canvas');
+          canvas.width = 512;
+          canvas.height = 128;
+          const ctx = canvas.getContext('2d');
+          ctx.fillStyle = color;
+          ctx.font = 'Bold 48px Arial';
+          ctx.fillText(text, 20, 80);
+          
+          const texture = new THREE.CanvasTexture(canvas);
+          const material = new THREE.MeshBasicMaterial({ map: texture, transparent: true });
+          const geometry = new THREE.PlaneGeometry(60, 20);
+          const label = new THREE.Mesh(geometry, material);
+          label.position.set(...pos);
+          label.lookAt(0, 0, 0);
+          scene.add(label);
+        });
 
         // Adjust Camera to fit object
         const size = box.getSize(new THREE.Vector3()).length();
@@ -375,24 +510,53 @@ const StepViewer = ({ url }) => {
                 }
             }
 
-            // Apply flight controls
-            // Smooth interpolation could be added here
+            // Apply flight controls using body-fixed rotations
             const { pitch, roll, yaw } = controlsRef.current;
             
-            // Update rotation based on controls
-            // Note: Order of rotation matters (Euler angles)
-            // Roskam Body Frame to Three.js World Frame Mapping:
-            // Pitch (Theta): Rotation about Body Y-axis -> Three.js X-axis
-            aircraftRef.current.rotation.x = pitch; 
+            // Accumulate yaw (it's a rate, not an angle)
+            accumulatedYawRef.current += (yaw * 0.01) + (roll * 0.005);
             
-            // Roll (Phi): Rotation about Body X-axis -> Three.js Z-axis (Negative)
-            aircraftRef.current.rotation.z = -roll;  
+            // Create incremental rotations in body-fixed frame (Roskam axes)
+            // X-axis (forward) = pitch control
+            // Y-axis (right wing) = roll control  
+            // Z-axis (down) = yaw control
+            const bodyPitchAxis = new THREE.Vector3(0, 1, 0); // Pitch about Y (right wing axis)
+            const bodyRollAxis = new THREE.Vector3(1, 0, 0);  // Roll about X (forward axis)
+            const bodyYawAxis = new THREE.Vector3(0, 0, 1);   // Yaw about Z (down axis)
             
-            // Yaw (Psi): Rotation about Body Z-axis -> Three.js Y-axis (Negative)
-            // Coordinated Turn: Roll induces Yaw rate
-            // In a steady turn, Rate of Turn = (g * tan(BankAngle)) / Velocity
-            // Note: Yaw is accumulative (rate), Pitch/Roll are state (angle)
-            aircraftRef.current.rotation.y -= (yaw * 0.01) + (roll * 0.005); 
+            // Create incremental rotation quaternions for this frame
+            const pitchQuat = new THREE.Quaternion().setFromAxisAngle(bodyPitchAxis, pitch);
+            const rollQuat = new THREE.Quaternion().setFromAxisAngle(bodyRollAxis, roll);
+            const yawQuat = new THREE.Quaternion().setFromAxisAngle(bodyYawAxis, accumulatedYawRef.current);
+            
+            // Combine control rotations: yaw * roll * pitch (order matters for body-fixed rotations)
+            const controlQuat = new THREE.Quaternion();
+            controlQuat.multiplyQuaternions(yawQuat, rollQuat);
+            controlQuat.multiplyQuaternions(controlQuat, pitchQuat);
+            
+            // Apply: final orientation = base alignment * body-fixed rotations
+            flightQuaternionRef.current.multiplyQuaternions(baseQuaternionRef.current, controlQuat);
+            
+            aircraftRef.current.quaternion.copy(flightQuaternionRef.current);
+            
+            // Calculate telemetry: extract attitude from final quaternion
+            const euler = new THREE.Euler().setFromQuaternion(aircraftRef.current.quaternion, 'YXZ');
+            telemetryRef.current.roll = euler.x * (180 / Math.PI);
+            telemetryRef.current.pitch = euler.y * (180 / Math.PI);
+            telemetryRef.current.heading = ((euler.z * (180 / Math.PI)) % 360 + 360) % 360;
+            
+            // Rotate propeller based on throttle
+            if (componentsRef.current.propeller && componentsRef.current.propeller.meshes) {
+              const throttle = controlsRef.current.throttle || 0.6;
+              const propellerRPM = 10000 * throttle; // Max 10,000 RPM
+              const propellerRadPerFrame = (propellerRPM / 60) * (2 * Math.PI / 60); // Convert RPM to rad/frame (~60fps)
+              
+              // Rotate each propeller mesh about the Z-axis (boom's long axis - forward direction)
+              const propellerAxis = new THREE.Vector3(0, 0, 1);
+              componentsRef.current.propeller.meshes.forEach(mesh => {
+                mesh.rotateOnWorldAxis(propellerAxis, propellerRadPerFrame);
+              });
+            }
             
             // Simulate subtle vibration/movement
             const time = Date.now() * 0.001;
@@ -462,18 +626,34 @@ const StepViewer = ({ url }) => {
               onClick={() => setShowTree(!showTree)}
               className="px-3 py-2 rounded-full font-bold shadow-lg transition-all bg-white text-gray-700 hover:bg-gray-50 border"
             >
-              {showTree ? 'Hide Mesh Tree' : 'Show Mesh Tree'}
+              {showTree ? 'Hide Component Tree' : 'Show Component Tree'}
             </button>
           </div>
 
-          {showTree && meshList.length > 0 && (
-            <div className="absolute top-16 left-4 z-20 bg-white/90 backdrop-blur px-3 py-2 rounded text-xs text-gray-700 border border-gray-200 shadow-sm max-h-64 overflow-auto w-60">
-              <div className="font-semibold mb-1">Meshes ({meshList.length})</div>
-              <ul className="space-y-1">
-                {meshList.map((name, idx) => (
-                  <li key={idx} className="truncate" title={name}>• {name}</li>
+          {showTree && components.length > 0 && (
+            <div className="absolute top-16 left-4 z-20 bg-white/95 backdrop-blur px-4 py-3 rounded-lg text-xs text-gray-800 border border-gray-300 shadow-lg max-h-96 overflow-auto w-72">
+              <div className="font-bold mb-3 text-sm text-gray-900">Aircraft Components ({components.length})</div>
+              <ul className="space-y-2">
+                {components.map((comp) => (
+                  <li 
+                    key={comp.id}
+                    onClick={() => setSelectedComponent(selectedComponent === comp.id ? null : comp.id)}
+                    className={`p-2 rounded cursor-pointer transition-all truncate ${
+                      selectedComponent === comp.id 
+                        ? 'bg-blue-500 text-white font-semibold shadow-md' 
+                        : 'bg-gray-100 hover:bg-gray-200'
+                    }`}
+                    title={comp.name}
+                  >
+                    <span className="mr-2">{comp.icon}</span>
+                    <span className="font-medium">{comp.name}</span>
+                    <span className="text-[10px] ml-1 opacity-75">({comp.meshCount})</span>
+                  </li>
                 ))}
               </ul>
+              {components.length === 0 && (
+                <div className="text-gray-500 text-xs">No components identified</div>
+              )}
             </div>
           )}
 
@@ -566,6 +746,19 @@ const StepViewer = ({ url }) => {
                       className="w-full h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer accent-blue-500"
                     />
                   </div>
+
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-xs text-gray-400">
+                      <span>Throttle</span>
+                      <span>{(controlsRef.current.throttle * 100).toFixed(0)}%</span>
+                    </div>
+                    <input 
+                      type="range" min="0" max="1" step="0.01" 
+                      defaultValue="0.6"
+                      onChange={(e) => handleControlChange('throttle', e.target.value)}
+                      className="w-full h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer accent-red-500"
+                    />
+                  </div>
                 </div>
 
                 <div className="mt-4 pt-4 border-t border-white/10">
@@ -587,27 +780,27 @@ const StepViewer = ({ url }) => {
                 </h4>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="flex flex-col">
-                    <span className="text-[10px] text-gray-400 uppercase">Airspeed</span>
-                    <span className="text-xl font-mono font-bold flex items-baseline gap-1">
-                      450 <span className="text-xs font-normal text-gray-500">kts</span>
+                    <span className="text-[10px] text-gray-400 uppercase">Heading</span>
+                    <span className="text-xl font-mono font-bold">
+                      {telemetryRef.current.heading.toFixed(1)}°
                     </span>
                   </div>
                   <div className="flex flex-col">
-                    <span className="text-[10px] text-gray-400 uppercase">Altitude</span>
-                    <span className="text-xl font-mono font-bold flex items-baseline gap-1">
-                      35,000 <span className="text-xs font-normal text-gray-500">ft</span>
+                    <span className="text-[10px] text-gray-400 uppercase">Pitch</span>
+                    <span className="text-xl font-mono font-bold">
+                      {telemetryRef.current.pitch.toFixed(1)}°
                     </span>
                   </div>
                   <div className="flex flex-col">
-                    <span className="text-[10px] text-gray-400 uppercase">AoA</span>
-                    <span className="text-xl font-mono font-bold flex items-baseline gap-1">
-                      2.4 <span className="text-xs font-normal text-gray-500">deg</span>
+                    <span className="text-[10px] text-gray-400 uppercase">Roll</span>
+                    <span className="text-xl font-mono font-bold">
+                      {telemetryRef.current.roll.toFixed(1)}°
                     </span>
                   </div>
                   <div className="flex flex-col">
-                    <span className="text-[10px] text-gray-400 uppercase">G-Load</span>
-                    <span className="text-xl font-mono font-bold flex items-baseline gap-1">
-                      1.0 <span className="text-xs font-normal text-gray-500">g</span>
+                    <span className="text-[10px] text-gray-400 uppercase">Throttle</span>
+                    <span className="text-xl font-mono font-bold">
+                      {(controlsRef.current.throttle * 100).toFixed(0)}%
                     </span>
                   </div>
                 </div>
