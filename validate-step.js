@@ -100,7 +100,7 @@ class StepValidator {
       this.suggestions.push(`Found ${hasNumbers} components with large ID numbers in names - consider simplifying`);
     }
 
-    const hasSpecialChars = this.components.filter(c => /[^a-zA-Z0-9_\s\-]/.test(c.name)).length;
+    const hasSpecialChars = this.components.filter(c => /[^a-zA-Z0-9_\s-]/.test(c.name)).length;
     if (hasSpecialChars > 0) {
       this.warnings.push(`${hasSpecialChars} components have special characters - may cause issues`);
     }

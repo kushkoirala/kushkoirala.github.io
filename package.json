@@ -10,7 +10,9 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "npm run lint && npm run build",
-    "test:full": "npm run lint && npm run build && npm run preview"
+    "test:full": "npm run lint && npm run build && npm run preview",
+    "validate:step": "node validate-step.js",
+    "analyze:step": "node analyze_step.js"
   },
   "dependencies": {
     "@types/three": "^0.181.0",

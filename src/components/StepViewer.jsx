@@ -1,8 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
-import { Gauge, Activity, Wind, Plane, RotateCw, ArrowUpFromLine, RotateCcw, Maximize, Minimize, Pause, Play } from 'lucide-react';
+import { Gauge, Activity, Wind, Plane, RotateCw, ArrowUpFromLine, RotateCcw, Maximize, Minimize, Pause, Play, Droplets } from 'lucide-react';
 import { createComponentGroups, COMPONENT_DEFINITIONS } from '../utils/componentManager';
+import AerodynamicCalculator from '../utils/aerodynamics';
+import { PressureVisualizer } from '../utils/pressureVisualizer';
 
 const StepViewer = ({ url }) => {
   const containerRef = useRef(null);
@@ -37,6 +39,48 @@ const StepViewer = ({ url }) => {
   const flightQuaternionRef = useRef(new THREE.Quaternion());
   const accumulatedYawRef = useRef(0);
   const telemetryRef = useRef({ heading: 0, pitch: 0, roll: 0 });
+  
+  // Aerodynamics
+  const aeroRef = useRef(new AerodynamicCalculator());
+  const pressureVisualizerRef = useRef(null);
+  const pressureUpdateTimeRef = useRef(0);
+  const [telemetry, setTelemetry] = useState({
+    airspeed: 0,
+    CL: 0,
+    CD: 0,
+    lift: 0,
+    drag: 0,
+    stallSpeed: 0,
+    climbRate: 0,
+    gLoad: 0
+  });
+  
+  // Digital Twin State (Extended telemetry)
+  const [digitalTwin, setDigitalTwin] = useState({
+    power: 0,
+    powerRequired: 0,
+    excessPower: 0,
+    turnRate: 0,
+    wingLoading: 0,
+    liftToDrag: 0,
+    efficiency: 0,
+    stallMargin: 0,
+    isStalling: false,
+    flightPhase: 'idle'
+  });
+  
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [showPressure, setShowPressure] = useState(false);
+  const showPressureRef = useRef(false);
+
+  // Handle pressure visualization toggle
+  useEffect(() => {
+    showPressureRef.current = showPressure;
+    if (!showPressure && pressureVisualizerRef.current) {
+      // Restore original materials when turning off pressure
+      pressureVisualizerRef.current.restoreOriginalMaterials();
+    }
+  }, [showPressure]);
 
   // Sync state with ref
   useEffect(() => {
@@ -169,6 +213,9 @@ const StepViewer = ({ url }) => {
         const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
         dirLight.position.set(10, 10, 10);
         scene.add(dirLight);
+        
+        // Initialize Pressure Visualizer
+        pressureVisualizerRef.current = new PressureVisualizer(scene);
 
         camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 10000);
         camera.position.set(1000, 1000, 1000); // Far out start
@@ -545,6 +592,84 @@ const StepViewer = ({ url }) => {
             telemetryRef.current.pitch = euler.y * (180 / Math.PI);
             telemetryRef.current.heading = ((euler.z * (180 / Math.PI)) % 360 + 360) % 360;
             
+            // Calculate aerodynamic telemetry
+            const throttle = controlsRef.current.throttle || 0.6;
+            const airspeed = throttle * 20; // Approximate: 0-20 m/s based on throttle
+            const angleOfAttack = telemetryRef.current.pitch * (Math.PI / 180); // Convert pitch to radians for AOA
+            
+            if (aeroRef.current && flightModeRef.current) {
+              const aeroSummary = aeroRef.current.getSummary(airspeed, angleOfAttack, 1500); // Power: 1500W
+              
+              // Calculate advanced metrics
+              const stallMargin = airspeed > 0 ? ((airspeed - aeroSummary.stallSpeed) / aeroSummary.stallSpeed * 100) : 0;
+              const isStalling = stallMargin < 10 && stallMargin > -5; // Stall warning at 10% above stall speed
+              const liftToDrag = aeroSummary.CD > 0.001 ? (aeroSummary.CL / aeroSummary.CD) : 0;
+              const bankRad = controlsRef.current.roll;
+              const turnRate = airspeed > 0 ? Math.tan(bankRad) * 9.81 / airspeed * (180 / Math.PI) : 0;
+              
+              // Determine flight phase
+              let flightPhase = 'idle';
+              if (throttle > 0.05) {
+                if (Math.abs(controlsRef.current.pitch) > 0.2) {
+                  flightPhase = telemetryRef.current.pitch > 0 ? 'climbing' : 'descending';
+                } else if (Math.abs(controlsRef.current.roll) > 0.15) {
+                  flightPhase = 'turning';
+                } else {
+                  flightPhase = 'cruising';
+                }
+              }
+              
+              setTelemetry({
+                airspeed: aeroSummary.airspeed,
+                CL: aeroSummary.CL,
+                CD: aeroSummary.CD,
+                lift: aeroSummary.lift,
+                drag: aeroSummary.drag,
+                stallSpeed: aeroSummary.stallSpeed,
+                climbRate: aeroSummary.climbRate,
+                gLoad: aeroSummary.gLoad
+              });
+              
+              setDigitalTwin({
+                power: aeroSummary.powerRequired || 0,
+                powerRequired: aeroSummary.powerRequired || 0,
+                excessPower: Math.max(0, 1500 - (aeroSummary.powerRequired || 0)),
+                turnRate: turnRate,
+                wingLoading: (aeroRef.current.mass * 9.81) / aeroRef.current.wingArea,
+                liftToDrag: liftToDrag,
+                efficiency: Math.min(100, (liftToDrag / 15) * 100), // Normalized to L/D of 15
+                stallMargin: Math.max(-50, stallMargin),
+                isStalling: isStalling,
+                flightPhase: flightPhase
+              });
+              
+              // Update pressure visualization (throttle to every 100ms)
+              const now = Date.now();
+              if (pressureVisualizerRef.current && showPressureRef.current && (now - pressureUpdateTimeRef.current) > 100) {
+                pressureUpdateTimeRef.current = now;
+                const meshes = [];
+                // Collect all meshes from the aircraft model
+                aircraftRef.current.traverse((child) => {
+                  if (child.isMesh) {
+                    meshes.push(child);
+                  }
+                });
+                
+                if (meshes.length > 0) {
+                  console.log('🌊 Updating pressure on', meshes.length, 'meshes. CL:', aeroSummary.CL.toFixed(2), 'CD:', aeroSummary.CD.toFixed(2), 'Airspeed:', airspeed.toFixed(1));
+                  pressureVisualizerRef.current.visualizePressure(
+                    meshes,
+                    aeroSummary.CL,
+                    aeroSummary.CD,
+                    airspeed,
+                    { density: 1.225, wingArea: aeroRef.current.wingArea }
+                  );
+                } else {
+                  console.warn('⚠️ No meshes found in aircraft');
+                }
+              }
+            }
+            
             // Rotate propeller based on throttle
             if (componentsRef.current.propeller && componentsRef.current.propeller.meshes) {
               const throttle = controlsRef.current.throttle || 0.6;
@@ -707,6 +832,19 @@ const StepViewer = ({ url }) => {
                   <RotateCw size={14} /> Flight Controls
                 </h4>
                 
+                {/* Pressure Visualization Toggle */}
+                <button
+                  onClick={() => setShowPressure(!showPressure)}
+                  className={`w-full mb-4 px-3 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition ${
+                    showPressure
+                      ? 'bg-cyan-600 text-white ring-2 ring-cyan-300'
+                      : 'bg-cyan-900/50 text-cyan-300 hover:bg-cyan-900/70'
+                  }`}
+                >
+                  <Droplets size={14} />
+                  {showPressure ? 'Pressure ON' : 'Pressure OFF'}
+                </button>
+                
                 <div className="space-y-4" key={resetKey}>
                   <div className="space-y-1">
                     <div className="flex justify-between text-xs text-gray-400">
@@ -774,36 +912,166 @@ const StepViewer = ({ url }) => {
               </div>
 
               {/* Telemetry (Right) */}
-              <div className="bg-black/80 backdrop-blur-md p-4 rounded-xl border border-white/20 text-white w-full md:w-auto min-w-[200px] pointer-events-auto">
-                <h4 className="text-xs font-bold text-green-400 uppercase mb-3 flex items-center gap-2">
-                  <Activity size={14} /> Live Telemetry
-                </h4>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="flex flex-col">
-                    <span className="text-[10px] text-gray-400 uppercase">Heading</span>
-                    <span className="text-xl font-mono font-bold">
-                      {telemetryRef.current.heading.toFixed(1)}°
-                    </span>
+              <div className={`backdrop-blur-md p-4 rounded-xl border text-white w-full md:w-auto max-w-sm pointer-events-auto max-h-96 overflow-y-auto transition-all ${
+                digitalTwin.isStalling 
+                  ? 'bg-red-900/80 border-red-400 shadow-lg shadow-red-500/50' 
+                  : 'bg-black/80 border-white/20'
+              }`}>
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-xs font-bold text-green-400 uppercase flex items-center gap-2">
+                    <Activity size={14} /> Live Telemetry
+                  </h4>
+                  <button
+                    onClick={() => setShowAdvanced(!showAdvanced)}
+                    className="text-[10px] px-2 py-1 bg-white/10 hover:bg-white/20 rounded transition"
+                  >
+                    {showAdvanced ? 'Basic' : 'Advanced'}
+                  </button>
+                </div>
+                
+                {/* Stall Warning Banner */}
+                {digitalTwin.isStalling && (
+                  <div className="mb-3 p-2 bg-red-600 rounded animate-pulse text-center font-bold text-sm">
+                    ⚠️ STALL WARNING ⚠️
                   </div>
-                  <div className="flex flex-col">
-                    <span className="text-[10px] text-gray-400 uppercase">Pitch</span>
-                    <span className="text-xl font-mono font-bold">
-                      {telemetryRef.current.pitch.toFixed(1)}°
-                    </span>
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-[10px] text-gray-400 uppercase">Roll</span>
-                    <span className="text-xl font-mono font-bold">
-                      {telemetryRef.current.roll.toFixed(1)}°
-                    </span>
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-[10px] text-gray-400 uppercase">Throttle</span>
-                    <span className="text-xl font-mono font-bold">
-                      {(controlsRef.current.throttle * 100).toFixed(0)}%
-                    </span>
+                )}
+                
+                {/* Attitude */}
+                <div className="mb-4 pb-4 border-b border-white/10">
+                  <h5 className="text-[10px] font-bold text-gray-400 uppercase mb-2">Attitude</h5>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="flex flex-col">
+                      <span className="text-[10px] text-gray-400 uppercase">Heading</span>
+                      <span className="text-lg font-mono font-bold">
+                        {telemetryRef.current.heading.toFixed(1)}°
+                      </span>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[10px] text-gray-400 uppercase">Pitch</span>
+                      <span className="text-lg font-mono font-bold">
+                        {telemetryRef.current.pitch.toFixed(1)}°
+                      </span>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[10px] text-gray-400 uppercase">Roll</span>
+                      <span className="text-lg font-mono font-bold">
+                        {telemetryRef.current.roll.toFixed(1)}°
+                      </span>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[10px] text-gray-400 uppercase">Throttle</span>
+                      <span className="text-lg font-mono font-bold">
+                        {(controlsRef.current.throttle * 100).toFixed(0)}%
+                      </span>
+                    </div>
                   </div>
                 </div>
+
+                {/* Aerodynamics */}
+                <div className="mb-4 pb-4 border-b border-white/10">
+                  <h5 className="text-[10px] font-bold text-blue-400 uppercase mb-2">Aerodynamics</h5>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div className="flex flex-col">
+                      <span className="text-[10px] text-gray-400 uppercase">Airspeed</span>
+                      <span className="text-lg font-mono font-bold text-blue-300">
+                        {telemetry.airspeed.toFixed(1)} m/s
+                      </span>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[10px] text-gray-400 uppercase">Stall Speed</span>
+                      <span className={`text-lg font-mono font-bold ${telemetry.airspeed < telemetry.stallSpeed * 1.1 ? 'text-red-400 animate-pulse' : 'text-green-300'}`}>
+                        {telemetry.stallSpeed.toFixed(1)} m/s
+                      </span>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[10px] text-gray-400 uppercase">CL</span>
+                      <span className="text-lg font-mono font-bold text-cyan-300">
+                        {telemetry.CL.toFixed(2)}
+                      </span>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[10px] text-gray-400 uppercase">CD</span>
+                      <span className="text-lg font-mono font-bold text-cyan-300">
+                        {telemetry.CD.toFixed(3)}
+                      </span>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[10px] text-gray-400 uppercase">Lift</span>
+                      <span className="text-lg font-mono font-bold text-orange-300">
+                        {telemetry.lift.toFixed(2)} N
+                      </span>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[10px] text-gray-400 uppercase">Drag</span>
+                      <span className="text-lg font-mono font-bold text-orange-300">
+                        {telemetry.drag.toFixed(2)} N
+                      </span>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[10px] text-gray-400 uppercase">Climb Rate</span>
+                      <span className="text-lg font-mono font-bold text-purple-300">
+                        {telemetry.climbRate.toFixed(0)} m/min
+                      </span>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[10px] text-gray-400 uppercase">G Load</span>
+                      <span className="text-lg font-mono font-bold text-purple-300">
+                        {telemetry.gLoad.toFixed(2)} g
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Advanced Telemetry */}
+                {showAdvanced && (
+                  <div className="space-y-3 pt-2 border-t border-white/10">
+                    <h5 className="text-[10px] font-bold text-yellow-400 uppercase">Digital Twin Analysis</h5>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="flex flex-col">
+                        <span className="text-[10px] text-gray-400">Power Used</span>
+                        <span className="text-sm font-mono font-bold text-yellow-300">
+                          {digitalTwin.power.toFixed(0)} W
+                        </span>
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-[10px] text-gray-400">Excess Power</span>
+                        <span className="text-sm font-mono font-bold text-lime-300">
+                          {digitalTwin.excessPower.toFixed(0)} W
+                        </span>
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-[10px] text-gray-400">L/D Ratio</span>
+                        <span className="text-sm font-mono font-bold text-teal-300">
+                          {digitalTwin.liftToDrag.toFixed(1)}
+                        </span>
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-[10px] text-gray-400">Turn Rate</span>
+                        <span className="text-sm font-mono font-bold text-indigo-300">
+                          {digitalTwin.turnRate.toFixed(1)}°/s
+                        </span>
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-[10px] text-gray-400">Wing Loading</span>
+                        <span className="text-sm font-mono font-bold text-pink-300">
+                          {digitalTwin.wingLoading.toFixed(2)} N/m²
+                        </span>
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-[10px] text-gray-400">Stall Margin</span>
+                        <span className={`text-sm font-mono font-bold ${digitalTwin.stallMargin > 20 ? 'text-green-300' : digitalTwin.stallMargin > 10 ? 'text-yellow-300' : 'text-red-300'}`}>
+                          {digitalTwin.stallMargin.toFixed(0)}%
+                        </span>
+                      </div>
+                      <div className="flex flex-col col-span-2">
+                        <span className="text-[10px] text-gray-400">Flight Phase</span>
+                        <span className="text-sm font-bold text-white capitalize">
+                          {digitalTwin.flightPhase}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
             </div>
