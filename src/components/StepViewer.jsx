@@ -759,7 +759,7 @@ const StepViewer = ({ url }) => {
       // Note: ResizeObserver cleanup is handled by garbage collection when element is removed, 
       // but explicit disconnect is good practice if we had the observer instance here.
     };
-  }, [url]);
+  }, [url, showStructural, showWeight]);
 
   return (
     <div 

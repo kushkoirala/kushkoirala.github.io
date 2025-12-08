@@ -181,10 +181,10 @@ export class StructuralAnalyzer {
     this.failureWarnings = [];
 
     // Wing bending stress (primary concern)
-    this.analyzeWingStructure(lift, pitchingMoment, gLoad);
+    this.analyzeWingStructure(lift, pitchingMoment);
     
     // Boom compression/bending
-    this.analyzeBoom(drag, gLoad);
+    this.analyzeBoom(drag);
     
     // Tail surface loads
     this.analyzeHorizontalStabilizer(pitchingMoment);
@@ -210,7 +210,7 @@ export class StructuralAnalyzer {
    * σ = M * c / I
    * where M = bending moment, c = distance to neutral axis, I = moment of inertia
    */
-  analyzeWingStructure(lift, pitchingMoment, gLoad) {
+  analyzeWingStructure(lift, pitchingMoment) {
     const wing = this.components.wing;
     const material = this.materials.spruce;
     
@@ -221,10 +221,10 @@ export class StructuralAnalyzer {
     
     // Approximate moment of inertia for spar
     // I ≈ (thickness * chord³) / 12
-    const momentOfInertia = (wing.thickness * Math.pow(wing.chord, 3)) / 12;
+    const wingMomentOfInertia = (wing.thickness * Math.pow(wing.chord, 3)) / 12;
     
     // Bending stress at root (critical location)
-    const bendingStress = (wingBendingMoment * (wing.chord / 2)) / momentOfInertia;
+    const bendingStress = (wingBendingMoment * (wing.chord / 2)) / wingMomentOfInertia;
     
     // Shear stress (V/A where V = shear force = lift)
     const shearStress = lift / (wing.thickness * wing.chord);
@@ -242,7 +242,7 @@ export class StructuralAnalyzer {
     // Elastic deflection (tip of cantilever)
     // δ = (F * L³) / (3 * E * I)
     const deflection = (lift * Math.pow(semiSpan, 3)) / 
-                       (3 * material.elasticityParallel * momentOfInertia);
+                       (3 * material.elasticityParallel * wingMomentOfInertia);
     
     // Strain = stress / Young's modulus
     const strain = combinedStress / material.elasticityParallel;
@@ -283,7 +283,7 @@ export class StructuralAnalyzer {
    * For circular tube:
    * I = π * (D⁴ - d⁴) / 64
    */
-  analyzeBoom(drag, gLoad) {
+  analyzeBoom(drag) {
     const boom = this.components.boom;
     const material = this.materials.aluminum2024;
     
@@ -378,7 +378,6 @@ export class StructuralAnalyzer {
     
     const combinedLoad = Math.sqrt(tailLoad ** 2 + shearFromDrag ** 2);
     
-    const momentOfInertia = (vtail.chord * Math.pow(0.04, 3)) / 12;
     const stress = (combinedLoad * (vtail.spanwise / 2)) / 
                    (vtail.chord * 0.04); // Approximate beam formula
     
