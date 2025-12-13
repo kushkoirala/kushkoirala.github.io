@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Linkedin, Mail, X, FileText, Box, Activity, ArrowRight } from 'lucide-react';
+import { Linkedin, Mail, X, FileText, Box, Activity, ArrowRight, Brain } from 'lucide-react';
 import UniversalModal from './components/UniversalModal';
 import DigitalTwin from './components/DigitalTwin';
 import ReqIFViewer from './components/ReqIFViewer';
@@ -175,7 +175,7 @@ function App() {
           Explore interactive demonstrations of my engineering capabilities, from requirements management to physics-based simulations.
         </p>
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {/* Card 1: Requirements */}
           <div 
             className="group bg-white rounded-xl p-6 border border-gray-200 hover:shadow-lg hover:border-blue-300 transition cursor-pointer flex flex-col" 
@@ -226,6 +226,25 @@ function App() {
                 Run Simulation <ArrowRight size={16} className="ml-1" />
              </div>
           </div>
+
+          {/* Card 4: AIDA Research */}
+          <a 
+            className="group bg-white rounded-xl p-6 border border-gray-200 hover:shadow-lg hover:border-teal-300 transition cursor-pointer flex flex-col" 
+            href="https://github.com/kushkoirala/AIDA"
+            target="_blank"
+            rel="noreferrer"
+          >
+             <div className="h-12 w-12 bg-teal-50 rounded-lg flex items-center justify-center text-teal-600 mb-4 group-hover:bg-teal-600 group-hover:text-white transition">
+                <Brain size={24} />
+             </div>
+             <h3 className="font-bold text-xl text-gray-900 mb-2">AIDA Flight Control</h3>
+             <p className="text-base text-gray-600 mb-4 flex-1">
+               Reinforcement-learning based adaptive flight control research. Explore the source, proposal, and control design artifacts.
+             </p>
+             <div className="flex items-center text-teal-600 text-base font-medium group-hover:translate-x-1 transition-transform">
+                View Repository <ArrowRight size={16} className="ml-1" />
+             </div>
+          </a>
         </div>
       </section>
 

@@ -19,6 +19,26 @@ const CP_F = (GAMMA_F * R_GAS) / (GAMMA_F - 1);
 const CP_T = (GAMMA_T * R_GAS) / (GAMMA_T - 1);
 const CP_N = (GAMMA_N * R_GAS) / (GAMMA_N - 1);
 
+// Utility: A-weighting (IEC 61672) in dB for a given frequency (Hz)
+const aWeightDb = (freqHz) => {
+  const f2 = freqHz * freqHz;
+  const ra = (
+    (12194 ** 2) * (f2 ** 2)
+  ) / (
+    (f2 + 20.6 ** 2)
+    * Math.sqrt((f2 + 107.7 ** 2) * (f2 + 737.9 ** 2))
+    * (f2 + 12194 ** 2)
+  );
+  const a = 20 * Math.log10(ra) + 2.00;
+  return isFinite(a) ? a : 0;
+};
+
+// Utility: simple atmospheric absorption (ISO 9613-ish, broadband approx)
+const atmosphericAbsorptionDb = (freqHz, distanceM) => {
+  const alphaDbPerM = 0.0001 * Math.pow(Math.max(freqHz, 50) / 1000, 1.7);
+  return alphaDbPerM * Math.max(distanceM, 1);
+};
+
 // Efficiencies
 const ETA_D = 0.97; // Diffuser
 const ETA_F = 0.85; // Fan
@@ -140,17 +160,17 @@ const calculatePerformance = (engineSpecs, flightCond, n1, observer) => {
     // --- Nozzles (Core & Fan) ---
     let UeC = 0;
     if (P05 > Pa) {
-        const expansion = 1 - Math.pow(Pa / P05, (GAMMA_N - 1) / GAMMA_N);
+        const expansion = Math.max(0, 1 - Math.pow(Pa / P05, (GAMMA_N - 1) / GAMMA_N));
         if (expansion > 0) {
-            UeC = Math.sqrt(2 * ETA_N * CP_N * T05 * expansion);
+            UeC = Math.sqrt(Math.max(0, 2 * ETA_N * CP_N * T05 * expansion));
         }
     }
 
     let UeF = 0;
     if (P08 > Pa) {
-        const expansion = 1 - Math.pow(Pa / P08, (GAMMA_F - 1) / GAMMA_F);
+        const expansion = Math.max(0, 1 - Math.pow(Pa / P08, (GAMMA_F - 1) / GAMMA_F));
         if (expansion > 0) {
-            UeF = Math.sqrt(2 * ETA_N * CP_F * T08 * expansion);
+            UeF = Math.sqrt(Math.max(0, 2 * ETA_N * CP_F * T08 * expansion));
         }
     }
 
@@ -162,8 +182,20 @@ const calculatePerformance = (engineSpecs, flightCond, n1, observer) => {
     const m_dot_core = m_dot_total / (1 + engineSpecs.bpr);
     const m_dot_fan = m_dot_total - m_dot_core;
 
-    // Gross Thrust components
-    const F_gross_N = (m_dot_core * UeC) + (m_dot_fan * UeF);
+    // Gross Thrust components (mixed or separate)
+    const isMixedFlow = engineSpecs.mixedFlow ?? engineSpecs.bpr <= 5;
+    let Ue_mix = 0;
+    let F_gross_N = 0;
+    if (isMixedFlow) {
+        const totalMdot = m_dot_core + m_dot_fan;
+        const energyWeightedVel = Math.sqrt(
+            Math.max(0, ((m_dot_core * UeC * UeC) + (m_dot_fan * UeF * UeF)) / Math.max(totalMdot, 1e-6))
+        );
+        Ue_mix = energyWeightedVel;
+        F_gross_N = totalMdot * Ue_mix;
+    } else {
+        F_gross_N = (m_dot_core * UeC) + (m_dot_fan * UeF);
+    }
     const Ram_Drag_N = m_dot_total * v_flight;
     
     // Net Thrust
@@ -205,9 +237,9 @@ const calculatePerformance = (engineSpecs, flightCond, n1, observer) => {
     // BWR usually refers to Core Compressor Work / Total Turbine Work
     const bwr = work_turb_req > 0 ? work_comp / work_turb_req : 0;
 
-    // --- Acoustics (Lighthill) ---
+    // --- Acoustics (Lighthill + A-weighting + absorption) ---
     const dist_attn = 20 * Math.log10(dist);
-    const v_jet_eff = UeC; 
+    const v_jet_eff = isMixedFlow ? Ue_mix : UeC; 
     
     // Source Levels (at 1m, no directivity)
     const spl_jet_source = 135 + 80 * Math.log10(Math.max(v_jet_eff, 10) / 340);
@@ -217,7 +249,12 @@ const calculatePerformance = (engineSpecs, flightCond, n1, observer) => {
     
     const spl_fan_source = 130 + 60 * Math.log10(Math.max(v_tip, 10) / 340);
 
-    // Observer SPL
+    // Representative frequencies for weighting and absorption
+    const jet_freq = Math.min(800, Math.max(80, v_jet_eff / 2)); // crude proxy
+    const bladeCount = 24;
+    const fan_freq = Math.max(50, (bladeCount * fan_rpm) / 60); // BPF estimate
+
+    // Observer SPL with directivity
     let spl_jet = spl_jet_source - dist_attn;
     const angle_rad = angle * (Math.PI / 180);
     spl_jet += 10 * Math.log10(Math.pow(Math.sin(angle_rad/2), 4) + 0.1);
@@ -225,7 +262,14 @@ const calculatePerformance = (engineSpecs, flightCond, n1, observer) => {
     let spl_fan = spl_fan_source - dist_attn;
     spl_fan += 5 * Math.cos(2 * angle_rad);
 
+    // Apply atmospheric absorption and A-weighting
+    const absorbJet = atmosphericAbsorptionDb(jet_freq, dist);
+    const absorbFan = atmosphericAbsorptionDb(fan_freq, dist);
+    const spl_jet_a = spl_jet + aWeightDb(jet_freq) - absorbJet;
+    const spl_fan_a = spl_fan + aWeightDb(fan_freq) - absorbFan;
+
     const spl_total = 10 * Math.log10(Math.pow(10, spl_jet/10) + Math.pow(10, spl_fan/10));
+    const spl_total_a = 10 * Math.log10(Math.pow(10, spl_jet_a/10) + Math.pow(10, spl_fan_a/10));
 
     return {
       atm,
@@ -236,9 +280,12 @@ const calculatePerformance = (engineSpecs, flightCond, n1, observer) => {
       fuel_flow: fuel_flow_lb_hr,
       m_dot_total: m_dot_total * 2.20462, // lb/s
       spl_total,
+      spl_total_a,
       spl_jet,
       spl_fan,
-      v_jet: UeC,
+      spl_jet_a,
+      spl_fan_a,
+      v_jet: isMixedFlow ? Ue_mix : UeC,
       tsfc_curr,
       metrics: {
           eta_thermal,
@@ -257,7 +304,14 @@ const calculatePerformance = (engineSpecs, flightCond, n1, observer) => {
       ],
       acoustics: {
           jet_source: spl_jet_source,
-          fan_source: spl_fan_source
+          fan_source: spl_fan_source,
+          jet_source_a: spl_jet_source + aWeightDb(jet_freq),
+          fan_source_a: spl_fan_source + aWeightDb(fan_freq),
+          jet_freq,
+          fan_freq,
+          absorb_jet: absorbJet,
+          absorb_fan: absorbFan,
+          isMixedFlow
       }
     };
 };
@@ -440,20 +494,24 @@ const NoiseContourMap = ({ acoustics }) => {
                 
                 // Calculate SPL at this point
                 const dist_attn = 20 * Math.log10(dist);
+                const jetFreq = acoustics.jet_freq || 200;
+                const fanFreq = acoustics.fan_freq || 800;
                 
                 // Jet Noise
-                let spl_jet = acoustics.jet_source - dist_attn;
+                let spl_jet = (acoustics.jet_source_a ?? acoustics.jet_source) - dist_attn;
                 // Directivity: 10*log10(sin(theta/2)^4 + 0.1)
                 // theta is 0 at inlet, PI at exhaust.
                 // sin(theta/2) is 0 at inlet, 1 at exhaust.
                 // So jet noise peaks at exhaust. Correct.
                 spl_jet += 10 * Math.log10(Math.pow(Math.sin(theta/2), 4) + 0.1);
+                spl_jet -= atmosphericAbsorptionDb(jetFreq, dist);
 
                 // Fan Noise
-                let spl_fan = acoustics.fan_source - dist_attn;
+                let spl_fan = (acoustics.fan_source_a ?? acoustics.fan_source) - dist_attn;
                 // Directivity: 5*cos(2*theta)
                 // Peaks at 0 (inlet) and PI (exhaust). Dips at 90.
                 spl_fan += 5 * Math.cos(2 * theta);
+                spl_fan -= atmosphericAbsorptionDb(fanFreq, dist);
 
                 const spl_total = 10 * Math.log10(Math.pow(10, spl_jet/10) + Math.pow(10, spl_fan/10));
 
@@ -552,7 +610,7 @@ const TRADE_METRICS = {
     F_net: { label: 'Net Thrust (lbf)', color: '#2563eb' },
     tsfc_curr: { label: 'TSFC (lb/lbf-hr)', color: '#16a34a' },
     eta_overall: { label: 'Overall Efficiency', color: '#9333ea' },
-    spl_total: { label: 'Noise Level (dB)', color: '#dc2626' },
+    spl_total: { label: 'Noise Level (dBA)', color: '#dc2626' },
     bwr: { label: 'Back Work Ratio', color: '#ea580c' }
 };
 
@@ -586,6 +644,8 @@ const TradeStudy = ({ baseSpecs, flightCond, n1, observer }) => {
             let yVal = 0;
             if (['eta_overall', 'bwr'].includes(paramY)) {
                 yVal = res.metrics[paramY];
+            } else if (paramY === 'spl_total') {
+                yVal = res.spl_total_a ?? res.spl_total;
             } else {
                 yVal = res[paramY];
             }
@@ -604,8 +664,10 @@ const TradeStudy = ({ baseSpecs, flightCond, n1, observer }) => {
     const maxY = Math.max(...yVals);
     
     // Add 5% padding to ranges for better visualization
-    const xRange = maxX - minX;
-    const yRange = maxY - minY;
+    const rawXRange = maxX - minX;
+    const rawYRange = maxY - minY;
+    const xRange = rawXRange === 0 ? 1e-6 : rawXRange;
+    const yRange = rawYRange === 0 ? 1e-6 : rawYRange;
 
     const chartWidth = 100; // Use percentage-based viewBox
     const chartHeight = 60;
@@ -844,6 +906,7 @@ const TurbofanAnalysis = ({ onClose }) => {
   const [isNewEngineDesign, setIsNewEngineDesign] = useState(false); // Track if designing new engine
   const [unitSystem, setUnitSystem] = useState('SI'); // 'SI' or 'Imperial'
   const [flightPhase, setFlightPhase] = useState('cruise'); // 'takeoff', 'landing', 'cruise', 'supersonic'
+  const [snapshots, setSnapshots] = useState([]);
 
   // Unit conversion helpers
   const convert = {
@@ -1000,6 +1063,57 @@ const TurbofanAnalysis = ({ onClose }) => {
         { dist: observerDist, angle: observerAngle }
     );
   }, [designSpecs, n1, altitude, mach, deltaIsa, observerDist, observerAngle]);
+  const noiseDb = results.spl_total_a ?? results.spl_total;
+  const noiseJetDb = results.spl_jet_a ?? results.spl_jet;
+  const noiseFanDb = results.spl_fan_a ?? results.spl_fan;
+
+  // --- Scenario Snapshots ---
+  const saveSnapshot = () => {
+    setSnapshots(prev => {
+        const id = `snap-${Date.now()}`;
+        const name = `Scenario ${prev.length + 1}`;
+        const snapshot = {
+            id,
+            name,
+            inputs: {
+                engineKey,
+                designSpecs: { ...designSpecs },
+                n1,
+                altitude,
+                mach,
+                deltaIsa,
+                observerDist,
+                observerAngle,
+                unitSystem
+            },
+            results: {
+                thrust_lbf: results.F_net,
+                tsfc: results.tsfc_curr,
+                noise_dba: results.spl_total_a ?? results.spl_total
+            }
+        };
+        return [...prev, snapshot];
+    });
+  };
+
+  const applySnapshot = (snapshot) => {
+    const { inputs } = snapshot;
+    if (inputs.engineKey && !engines[inputs.engineKey]) {
+        setEngines(prev => ({ ...prev, [inputs.engineKey]: inputs.designSpecs }));
+    }
+    setEngineKey(inputs.engineKey || 'snapshot');
+    setDesignSpecs(inputs.designSpecs);
+    setIsNewEngineDesign(!DEFAULT_ENGINES[inputs.engineKey]);
+    setN1(inputs.n1);
+    setAltitude(inputs.altitude);
+    setMach(inputs.mach);
+    setDeltaIsa(inputs.deltaIsa);
+    setObserverDist(inputs.observerDist);
+    setObserverAngle(inputs.observerAngle);
+    if (inputs.unitSystem) setUnitSystem(inputs.unitSystem);
+  };
+
+  const deleteSnapshot = (id) => setSnapshots(prev => prev.filter(s => s.id !== id));
 
   // --- Optimization Logic ---
   
@@ -1047,7 +1161,8 @@ const TurbofanAnalysis = ({ onClose }) => {
 
                     if (objective === 'Quiet Takeoff') {
                         // Maximize Thrust / Noise Penalty
-                        if (res.F_net > 1000) score = res.F_net / Math.pow(res.spl_total, 3);
+                        const noiseScore = res.spl_total_a ?? res.spl_total;
+                        if (res.F_net > 1000) score = res.F_net / Math.pow(noiseScore, 3);
                     } else if (objective === 'Eco Cruise') {
                         // Minimize TSFC
                         if (res.F_net > 500) score = -res.tsfc_curr;
@@ -1489,6 +1604,64 @@ const TurbofanAnalysis = ({ onClose }) => {
             </div>
 
             {/* Top Cards: Atmosphere */}
+            <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm mb-4">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div>
+                        <div className="text-sm font-semibold text-gray-800">Scenario Snapshots</div>
+                        <p className="text-xs text-gray-500">Save the current setup, replay it later, or compare deltas.</p>
+                    </div>
+                    <div className="flex gap-2">
+                        <button 
+                            onClick={saveSnapshot}
+                            className="px-3 py-2 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700 transition"
+                        >
+                            Save Current
+                        </button>
+                        {snapshots.length > 0 && (
+                            <button 
+                                onClick={() => setSnapshots([])}
+                                className="px-3 py-2 bg-gray-100 text-gray-700 text-xs font-medium rounded-lg hover:bg-gray-200 transition"
+                            >
+                                Clear All
+                            </button>
+                        )}
+                    </div>
+                </div>
+                {snapshots.length === 0 ? (
+                    <div className="text-xs text-gray-500 mt-3">No snapshots yet.</div>
+                ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+                        {snapshots.map((snap) => (
+                            <div key={snap.id} className="p-3 rounded-lg border border-gray-200 bg-gray-50 flex flex-col gap-2">
+                                <div className="flex justify-between items-center">
+                                    <div className="font-semibold text-sm text-gray-800">{snap.name}</div>
+                                    <div className="flex gap-1">
+                                        <button 
+                                            onClick={() => applySnapshot(snap)}
+                                            className="px-3 py-1 text-xs bg-green-100 text-green-700 rounded hover:bg-green-200 transition"
+                                        >
+                                            Apply
+                                        </button>
+                                        <button 
+                                            onClick={() => deleteSnapshot(snap.id)}
+                                            className="px-3 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200 transition"
+                                        >
+                                            Delete
+                                        </button>
+                                    </div>
+                                </div>
+                                <div className="text-xs text-gray-600">
+                                    Thrust {snap.results?.thrust_lbf ? snap.results.thrust_lbf.toFixed(0) : '--'} lbf • TSFC {snap.results?.tsfc ? snap.results.tsfc.toFixed(4) : '--'} • Noise {(snap.results?.noise_dba ?? 0).toFixed(1)} dBA
+                                </div>
+                                <div className="text-[11px] text-gray-500">
+                                    Alt {snap.inputs.altitude.toLocaleString()} ft • Mach {snap.inputs.mach.toFixed(2)} • N1 {snap.inputs.n1}%
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                 <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
                     <div className="text-xs text-gray-500 mb-1">Static Temp</div>
@@ -1558,16 +1731,16 @@ const TurbofanAnalysis = ({ onClose }) => {
                                 <h3 className="font-semibold text-gray-800 flex items-center gap-2">
                                     <Volume2 size={16} /> Acoustic Analysis
                                 </h3>
-                                <span className={`text-xs px-2 py-1 rounded-full ${results.spl_total > 100 ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
-                                    {results.spl_total > 100 ? 'High Noise' : 'Nominal'}
+                                <span className={`text-xs px-2 py-1 rounded-full ${noiseDb > 100 ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
+                                    {noiseDb > 100 ? 'High Noise' : 'Nominal'}
                                 </span>
                             </div>
                             <div className="p-4">
                                 <div className="flex items-center justify-center mb-6">
                                     <div className="relative w-32 h-32 flex items-center justify-center rounded-full border-4 border-gray-100">
                                         <div className="text-center">
-                                            <div className="text-3xl font-bold text-gray-900">{results.spl_total.toFixed(1)}</div>
-                                            <div className="text-xs text-gray-500">dB SPL</div>
+                                            <div className="text-3xl font-bold text-gray-900">{noiseDb.toFixed(1)}</div>
+                                            <div className="text-xs text-gray-500">dBA</div>
                                         </div>
                                         <svg className="absolute inset-0 w-full h-full -rotate-90">
                                             <circle 
@@ -1576,9 +1749,9 @@ const TurbofanAnalysis = ({ onClose }) => {
                                             />
                                             <circle 
                                                 cx="64" cy="64" r="60" 
-                                                fill="none" stroke={results.spl_total > 110 ? '#EF4444' : '#3B82F6'} strokeWidth="8"
+                                                fill="none" stroke={noiseDb > 110 ? '#EF4444' : '#3B82F6'} strokeWidth="8"
                                                 strokeDasharray="377"
-                                                strokeDashoffset={377 - (Math.min(results.spl_total, 140) / 140) * 377}
+                                                strokeDashoffset={377 - (Math.min(noiseDb, 140) / 140) * 377}
                                                 className="transition-all duration-500"
                                             />
                                         </svg>
@@ -1587,11 +1760,11 @@ const TurbofanAnalysis = ({ onClose }) => {
                                 <div className="grid grid-cols-2 gap-4 text-sm">
                                     <div className="bg-gray-50 p-2 rounded">
                                         <div className="text-gray-500">Jet Noise</div>
-                                        <div className="font-semibold">{results.spl_jet.toFixed(1)} dB</div>
+                                        <div className="font-semibold">{noiseJetDb.toFixed(1)} dBA</div>
                                     </div>
                                     <div className="bg-gray-50 p-2 rounded">
                                         <div className="text-gray-500">Fan Noise</div>
-                                        <div className="font-semibold">{results.spl_fan.toFixed(1)} dB</div>
+                                        <div className="font-semibold">{noiseFanDb.toFixed(1)} dBA</div>
                                     </div>
                                 </div>
                             </div>
