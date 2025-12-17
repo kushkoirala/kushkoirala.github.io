@@ -61,7 +61,7 @@ function App() {
           </div>
         </div>
         <p className="text-base leading-relaxed text-gray-700 max-w-2xl">
-          <strong>Aerospace Engineer × Software Architect.</strong> Building production-grade digital twins and simulation engines. Expert in CAD automation, physics-based modeling, and cloud infrastructure. Proven track record shipping enterprise systems from concept to deployment.
+          <strong>Aerospace Engineer × Solutions Architect.</strong> Building production-grade digital twins and simulation engines. Physics-based modeling, CAD and cloud infrastructure. Building enterprise systems from concept to deployment.
         </p>
         <button onClick={() => window.print()} className="mt-4 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded hover:bg-blue-700 transition print:hidden">
           Print Resume
@@ -81,10 +81,10 @@ function App() {
             <span className="text-sm text-gray-500 italic">July 2018 – Present</span>
           </div>
           <ul className="list-disc pl-4 space-y-1 text-gray-800 text-sm">
-            <li><strong>Automated Workflow Orchestration:</strong> Architected auto-provisioning pipeline for Materials & Processes (EnoviaSLS/CAA), reducing deployment time from weeks to days. Deployed across multiple major OEMs.</li>
-            <li><strong>Real-Time Traceability Infrastructure:</strong> Built Linux-based 3DExperience + Cameo Systems Modeler stack with live OSLC federation. Enabled bidirectional sync between CAD, PLM, and SysML.</li>
-            <li><strong>Custom Framework (UAF Extension):</strong> Developed proprietary Capability Assessment Layer in DoDAF/UAF using Python + Neo4j graph DB. Now standard tooling across enterprise engagements.</li>
+            <li><strong>Real-Time Traceability Infrastructure:</strong> A Linux-based 3DExperience + Cameo Systems Modeler stack with live OSLC federation was built. This infrastructure enabled bidirectional synchronization between CAD, PLM, and SysML.</li>
+            <li><strong>Custom Framework (UAF Extension):</strong> Reference Architectures for Multi Industry Enterprises using UAF and their Products as systems using MagicGrid/SysML.</li>
             <li><strong>Technical Leadership:</strong> Led cross-functional proof-of-concepts for Aerospace/Defense clients. Direct technical advisor to C-suite on digital transformation roadmaps.</li>
+            <li><strong>Custom Framework (Technical Support):</strong> Provide technical consulting to elite engineering corporations on enhancing their engineering capabilities.</li>
           </ul>
         </div>
 
