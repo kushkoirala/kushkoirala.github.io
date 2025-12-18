@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { 
   Gauge, Wind, Thermometer, Activity, 
-  ArrowLeft, Settings, Volume2, Info, Cpu, Zap, Menu, X, Plus
+  ArrowLeft, ChevronsLeft, Settings, Volume2, Info, Cpu, Zap, Menu, X, Plus
 } from 'lucide-react';
 import EngineBuilder from './EngineBuilder';
 
@@ -13,11 +13,86 @@ const GAMMA_C = 1.37; // Compressor
 const GAMMA_F = 1.4;  // Fan
 const GAMMA_T = 1.33; // Turbine
 const GAMMA_N = 1.36; // Nozzle
+const GAMMA_AIR = 1.4;
 
 const CP_C = (GAMMA_C * R_GAS) / (GAMMA_C - 1);
 const CP_F = (GAMMA_F * R_GAS) / (GAMMA_F - 1);
 const CP_T = (GAMMA_T * R_GAS) / (GAMMA_T - 1);
 const CP_N = (GAMMA_N * R_GAS) / (GAMMA_N - 1);
+
+const clamp = (val, min, max) => Math.min(max, Math.max(min, val));
+
+const normalShockM2 = (M1, gamma = GAMMA_AIR) => {
+  const numerator = 1 + 0.5 * (gamma - 1) * M1 * M1;
+  const denominator = gamma * M1 * M1 - 0.5 * (gamma - 1);
+  return Math.sqrt(Math.max(1e-6, numerator / denominator));
+};
+
+const normalShockTotalPressureRatio = (M1, gamma = GAMMA_AIR) => {
+  const P2P1 = 1 + (2 * gamma / (gamma + 1)) * (M1 * M1 - 1);
+  const M2 = normalShockM2(M1, gamma);
+  const P0_1P1 = Math.pow(1 + 0.5 * (gamma - 1) * M1 * M1, gamma / (gamma - 1));
+  const P0_2P2 = Math.pow(1 + 0.5 * (gamma - 1) * M2 * M2, gamma / (gamma - 1));
+  const ratio = (P2P1 * P0_2P2) / P0_1P1;
+  return { ratio, M2 };
+};
+
+const solveObliqueShockBeta = (M, thetaRad, gamma = GAMMA_AIR) => {
+  if (thetaRad <= 0 || M <= 1) return Math.asin(1 / Math.max(M, 1.01)) + 0.05;
+  let bestBeta = Math.asin(1 / M) + 0.01;
+  let bestErr = Infinity;
+  const start = thetaRad + 0.01;
+  const end = Math.PI / 2 - 0.01;
+  for (let i = 0; i < 200; i++) {
+    const beta = start + (i / 199) * (end - start);
+    const lhs = Math.tan(thetaRad);
+    const rhs = (2 * Math.pow(Math.sin(beta), -1) * (M * M * Math.sin(beta) * Math.sin(beta) - 1)) 
+      / (M * M * (gamma + Math.cos(2 * beta)) + 2);
+    const diff = Math.abs(lhs - rhs);
+    if (diff < bestErr) {
+      bestErr = diff;
+      bestBeta = beta;
+    }
+  }
+  return bestBeta;
+};
+
+const computeInletLosses = (mach, inletType, shockAngleDeg) => {
+  if (inletType !== 'supersonic' || mach <= 1.0) {
+    const subRec = clamp(0.995 - 0.02 * mach, 0.96, 0.995);
+    return { recovery: subRec, machExit: Math.max(0.2, mach), betaDeg: null, note: 'Subsonic diffuser' };
+  }
+
+  if (mach < 1.02) {
+    const rec = clamp(0.98 - 0.02 * (mach - 1), 0.94, 0.98);
+    return { recovery: rec, machExit: 0.7, betaDeg: null, note: 'Transonic fallback' };
+  }
+
+  const thetaRad = (shockAngleDeg * Math.PI) / 180;
+  const beta = solveObliqueShockBeta(mach, thetaRad, GAMMA_AIR);
+  const Mn1 = mach * Math.sin(beta);
+
+  if (Mn1 <= 1) {
+    return { recovery: 0.9, machExit: 0.9, betaDeg: (beta * 180) / Math.PI, note: 'Weak shock fallback' };
+  }
+
+  const { ratio: p0Loss, M2: Mn2 } = normalShockTotalPressureRatio(Mn1, GAMMA_AIR);
+  const M2 = Mn2 / Math.max(Math.sin(beta - thetaRad), 0.1);
+  const subRec = clamp(0.995 - 0.02 * Math.max(M2, 0.2), 0.94, 0.995);
+  const recovery = clamp(p0Loss * subRec, 0.8, 0.995);
+
+  return {
+    recovery,
+    machExit: Math.max(0.2, M2),
+    betaDeg: (beta * 180) / Math.PI,
+    note: 'Oblique + normal shock with subsonic diffuser'
+  };
+};
+
+const logSum = (db, count) => {
+  if (!isFinite(db) || count <= 0) return db;
+  return 10 * Math.log10(Math.max(1e-12, count * Math.pow(10, db / 10)));
+};
 
 // Utility: A-weighting (IEC 61672) in dB for a given frequency (Hz)
 const aWeightDb = (freqHz) => {
@@ -79,6 +154,8 @@ const getAtmosphere = (altitudeFt, deltaIsa = 0) => {
 const DEFAULT_ENGINES = {
   'TFE731-2': {
     name: 'Honeywell TFE731-2',
+    type: 'subsonic',
+    designCruiseMach: 0.8,
     massFlowSl: 51.25, // kg/s (approx 113 lb/s)
     bpr: 2.8,
     prC: 14.0, // Compressor Pressure Ratio
@@ -89,6 +166,8 @@ const DEFAULT_ENGINES = {
   },
   'CFM56-7B': {
     name: 'CFM56-7B',
+    type: 'subsonic',
+    designCruiseMach: 0.78,
     massFlowSl: 350, // kg/s
     bpr: 5.3,
     prC: 32.0,
@@ -99,6 +178,8 @@ const DEFAULT_ENGINES = {
   },
   'GE90-115B': {
     name: 'GE90-115B',
+    type: 'subsonic',
+    designCruiseMach: 0.84,
     massFlowSl: 1350, // kg/s
     bpr: 9.0,
     prC: 42.0,
@@ -106,19 +187,55 @@ const DEFAULT_ENGINES = {
     t04_max: 1750,
     fanDia: 3.25,
     tsfc_ref: 0.29
+  },
+  'Symphony': {
+    name: 'Boom Symphony (dev)',
+    type: 'supersonic',
+    designCruiseMach: 0.95,
+    designSupercruiseMach: 1.7,
+    massFlowSl: 260,
+    bpr: 3.0,
+    prC: 24.0,
+    prF: 1.8,
+    t04_max: 1650,
+    fanDia: 1.35,
+    tsfc_ref: 0.6
   }
 };
 
+const AIRCRAFT_PROFILES = {
+  'Symphony': [
+    { id: 'single', name: 'Single Engine (dev rig)', engines: 1 },
+    { id: 'overture', name: 'Overture (4 engines)', engines: 4 }
+  ]
+};
+
+const getDefaultAircraft = (engineKey) => {
+  const opts = AIRCRAFT_PROFILES[engineKey];
+  if (opts && opts.length) return opts[0];
+  return { id: 'single', name: 'Single Engine', engines: 1 };
+};
+
 // --- Core Calculation Function (Pure) ---
-const calculatePerformance = (engineSpecs, flightCond, n1, observer) => {
+const calculatePerformance = (engineSpecs, flightCond, n1, observer, componentDesign = null) => {
     const { altitude, mach, deltaIsa } = flightCond;
     const { dist, angle } = observer;
     const atm = getAtmosphere(altitude, deltaIsa);
+    const {
+      inletType = 'subsonic',
+      shockAngle = 12,
+      compressorStages = 8,
+      turbineStages = 2,
+      coolingBleed = 0
+    } = componentDesign || {};
+    const etaT_eff = Math.min(0.92, ETA_T + (Math.max(1, turbineStages) - 1) * 0.005);
     
     // 1. Flight Conditions
     const v_flight = mach * atm.a; // m/s
     const Ta = atm.T;
     const Pa = atm.P;
+    const inletDetails = computeInletLosses(mach, inletType, shockAngle);
+    const inletRecoveryEffective = inletDetails.recovery * ETA_D;
 
     // 2. Thermodynamic Cycle Analysis (Parametric)
     
@@ -128,15 +245,22 @@ const calculatePerformance = (engineSpecs, flightCond, n1, observer) => {
 
     // --- Diffuser (Inlet) ---
     const T02 = Ta * (1 + 0.5 * (GAMMA_C - 1) * mach * mach);
-    const P02 = Pa * Math.pow(1 + ETA_D * (T02 / Ta - 1), GAMMA_C / (GAMMA_C - 1));
+    const P0_free = Pa * Math.pow(1 + 0.5 * (GAMMA_C - 1) * mach * mach, GAMMA_C / (GAMMA_C - 1));
+    const P02 = P0_free * inletRecoveryEffective;
 
     // --- Fan ---
     const P08 = P02 * engineSpecs.prF;
     const T08 = T02 * (1 + (1 / ETA_F) * (Math.pow(engineSpecs.prF, (GAMMA_F - 1) / GAMMA_F) - 1));
 
     // --- Compressor ---
+    const etaC_eff = (() => {
+        const stages = Math.max(1, compressorStages);
+        const prPerStage = Math.pow(engineSpecs.prC, 1 / stages);
+        const loadingPenalty = Math.max(0, prPerStage - 1.4) * 0.05;
+        return Math.max(0.78, Math.min(0.88, ETA_C - loadingPenalty));
+    })();
     const P03 = P02 * engineSpecs.prC;
-    const T03 = T02 * (1 + (1 / ETA_C) * (Math.pow(engineSpecs.prC, (GAMMA_C - 1) / GAMMA_C) - 1));
+    const T03 = T02 * (1 + (1 / etaC_eff) * (Math.pow(engineSpecs.prC, (GAMMA_C - 1) / GAMMA_C) - 1));
 
     // --- Burner ---
     const P04 = P03 * 0.96;
@@ -151,7 +275,7 @@ const calculatePerformance = (engineSpecs, flightCond, n1, observer) => {
 
     let P05 = 0;
     if (T05 < T04) {
-        const term = 1 - (1 / ETA_T) * (1 - T05 / T04);
+        const term = 1 - (1 / etaT_eff) * (1 - T05 / T04);
         if (term > 0) {
             P05 = P04 * Math.pow(term, GAMMA_T / (GAMMA_T - 1));
         }
@@ -179,8 +303,10 @@ const calculatePerformance = (engineSpecs, flightCond, n1, observer) => {
     const theta_inlet = T02 / 288.15;
     const m_dot_total = engineSpecs.massFlowSl * (delta_inlet / Math.sqrt(theta_inlet)) * throttle;
     
-    const m_dot_core = m_dot_total / (1 + engineSpecs.bpr);
-    const m_dot_fan = m_dot_total - m_dot_core;
+    const bleedFrac = Math.min(Math.max(coolingBleed / 100, 0), 0.2);
+    const m_dot_core_raw = m_dot_total / (1 + engineSpecs.bpr);
+    const m_dot_core = m_dot_core_raw * (1 - bleedFrac);
+    const m_dot_fan = m_dot_total - m_dot_core_raw;
 
     // Gross Thrust components (mixed or separate)
     const isMixedFlow = engineSpecs.mixedFlow ?? engineSpecs.bpr <= 5;
@@ -212,8 +338,8 @@ const calculatePerformance = (engineSpecs, flightCond, n1, observer) => {
     const fuel_flow_kg_s = heat_input / Q_R;
     const fuel_flow_lb_hr = fuel_flow_kg_s * 2.20462 * 3600;
 
-    // TSFC
-    const tsfc_curr = F_net_lbf > 10 ? fuel_flow_lb_hr / F_net_lbf : 0;
+    // TSFC (kg/(kN·s))
+    const tsfc_curr = F_net_N > 10 ? fuel_flow_kg_s / (F_net_N / 1000) : 0;
 
     // --- Efficiencies & Work Terms ---
     // Thermal Efficiency: (Kinetic Energy Added) / (Heat Input)
@@ -242,17 +368,40 @@ const calculatePerformance = (engineSpecs, flightCond, n1, observer) => {
     const v_jet_eff = isMixedFlow ? Ue_mix : UeC; 
     
     // Source Levels (at 1m, no directivity)
-    const spl_jet_source = 135 + 80 * Math.log10(Math.max(v_jet_eff, 10) / 340);
+    let spl_jet_source = 135 + 80 * Math.log10(Math.max(v_jet_eff, 10) / 340);
     
     const fan_rpm = (n1 / 100) * (engineSpecs.name.includes('TFE') ? 11000 : engineSpecs.name.includes('CFM') ? 5175 : 2550);
     const v_tip = Math.PI * engineSpecs.fanDia * (fan_rpm / 60);
     
-    const spl_fan_source = 130 + 60 * Math.log10(Math.max(v_tip, 10) / 340);
+    let spl_fan_source = 130 + 60 * Math.log10(Math.max(v_tip, 10) / 340);
 
     // Representative frequencies for weighting and absorption
     const jet_freq = Math.min(800, Math.max(80, v_jet_eff / 2)); // crude proxy
     const bladeCount = 24;
     const fan_freq = Math.max(50, (bladeCount * fan_rpm) / 60); // BPF estimate
+
+    // Supplemental velocity/area acoustic model
+    const a0 = Math.sqrt(GAMMA_AIR * R_GAS * Ta);
+    const rho_exit = P05 > 0 && T05 > 0 ? P05 / (R_GAS * T05) : atm.rho;
+    const Ae_core = Math.max(0.01, m_dot_core / (Math.max(rho_exit, 1e-6) * Math.max(UeC, 1)));
+    const Ae_fan = Math.max(0.01, Math.PI * Math.pow(engineSpecs.fanDia / 2, 2));
+    const intensityFromVelocity = (Ue, Ae) => {
+        if (!isFinite(Ue) || Ue <= 0 || !isFinite(Ae) || Ae <= 0 || !isFinite(dist) || dist <= 0) return null;
+        const Me = Ue / Math.max(a0, 1e-3);
+        let acousticPower;
+        if (Me < 2) {
+            acousticPower = 1e-4 * atm.rho * Math.pow(Ue, 8) * Ae / Math.pow(a0, 5);
+        } else {
+            acousticPower = 0.003 * atm.rho * Math.pow(Me, 3) * Ae * Math.pow(a0, 3);
+        }
+        const I = acousticPower / (4 * Math.PI * Math.pow(dist, 2));
+        if (!isFinite(I) || I <= 0) return null;
+        return 10 * Math.log10(I / 1e-12);
+    };
+    const spl_jet_model = intensityFromVelocity(UeC, Ae_core);
+    const spl_fan_model = intensityFromVelocity(UeF, Ae_fan);
+    if (isFinite(spl_jet_model)) spl_jet_source = spl_jet_model + dist_attn;
+    if (isFinite(spl_fan_model)) spl_fan_source = spl_fan_model + dist_attn;
 
     // Observer SPL with directivity
     let spl_jet = spl_jet_source - dist_attn;
@@ -268,17 +417,21 @@ const calculatePerformance = (engineSpecs, flightCond, n1, observer) => {
     const spl_jet_a = spl_jet + aWeightDb(jet_freq) - absorbJet;
     const spl_fan_a = spl_fan + aWeightDb(fan_freq) - absorbFan;
 
-    const spl_total = 10 * Math.log10(Math.pow(10, spl_jet/10) + Math.pow(10, spl_fan/10));
-    const spl_total_a = 10 * Math.log10(Math.pow(10, spl_jet_a/10) + Math.pow(10, spl_fan_a/10));
+    const spl_total = 10 * Math.log10(Math.max(1e-12, Math.pow(10, spl_jet/10) + Math.pow(10, spl_fan/10)));
+    const spl_total_a = 10 * Math.log10(Math.max(1e-12, Math.pow(10, spl_jet_a/10) + Math.pow(10, spl_fan_a/10)));
 
     return {
       atm,
       v_flight,
-      F_net: F_net_lbf,
-      F_gross: F_gross_lbf,
-      Ram_Drag: Ram_Drag_lbf,
-      fuel_flow: fuel_flow_lb_hr,
-      m_dot_total: m_dot_total * 2.20462, // lb/s
+      F_net: F_net_N,
+      F_gross: F_gross_N,
+      Ram_Drag: Ram_Drag_N,
+      F_net_lbf,
+      F_gross_lbf,
+      Ram_Drag_lbf,
+      fuel_flow: fuel_flow_kg_s,
+      fuel_flow_lb_hr,
+      m_dot_total: m_dot_total, // kg/s
       spl_total,
       spl_total_a,
       spl_jet,
@@ -287,12 +440,23 @@ const calculatePerformance = (engineSpecs, flightCond, n1, observer) => {
       spl_fan_a,
       v_jet: isMixedFlow ? Ue_mix : UeC,
       tsfc_curr,
+      inlet: {
+        type: inletType,
+        shockAngle,
+        betaDeg: inletDetails.betaDeg,
+        recovery: inletRecoveryEffective,
+        machExit: inletDetails.machExit,
+        P0_free,
+        P02
+      },
       metrics: {
           eta_thermal,
           eta_propulsive,
           eta_overall,
           bwr,
-          opr: engineSpecs.prC * engineSpecs.prF // Overall Pressure Ratio approx
+          opr: engineSpecs.prC * engineSpecs.prF, // Overall Pressure Ratio approx
+          etaC_eff,
+          etaT_eff
       },
       stations: [
           { id: '0', name: 'Freestream', T: Ta, P: Pa },
@@ -318,91 +482,143 @@ const calculatePerformance = (engineSpecs, flightCond, n1, observer) => {
 
 // --- 2. Components ---
 
-const EngineDiagram = ({ n1, mach }) => {
-  // Simple SVG visualization of a turbofan
-  
-  return (
-    <div className="relative w-full h-64 bg-gray-900 rounded-xl overflow-hidden border border-gray-700 flex items-center justify-center">
-      {/* Background Airflow Lines */}
-      <svg className="absolute inset-0 w-full h-full opacity-20" preserveAspectRatio="none">
-        <defs>
-          <linearGradient id="flowGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="cyan" stopOpacity="0" />
-            <stop offset="50%" stopColor="cyan" stopOpacity="1" />
-            <stop offset="100%" stopColor="white" stopOpacity="0" />
-          </linearGradient>
-        </defs>
-        {/* Streamlines */}
-        {[...Array(10)].map((_, i) => (
-          <line 
-            key={i}
-            x1="-10%" y1={10 + i * 8 + "%"} 
-            x2="110%" y2={10 + i * 8 + "%"} 
-            stroke="url(#flowGrad)" 
-            strokeWidth="2"
-            strokeDasharray="20, 10"
-            className="animate-flow"
-            style={{ 
-                animation: `flowMove ${2 / (1 + mach)}s linear infinite`,
-                animationDelay: `${i * 0.1}s`
-            }}
-          />
-        ))}
-      </svg>
+const FlightProfileCharts = ({ designSpecs, componentDesign, altitude, mach, deltaIsa, n1, flightPhase, observerDist, observerAngle, engineCount }) => {
+    const observer = useMemo(() => ({ dist: 100, angle: 135 }), []);
+    const machRange = useMemo(() => [0.4, 0.6, 0.7, 0.78, 0.85, 0.9], []);
+    const altRange = useMemo(() => [0, 10000, 20000, 30000, 40000], []);
+    const machSuperRange = useMemo(() => [1.0, 1.2, 1.4, 1.6, 1.8], []);
+    const noiseDistRange = useMemo(() => [50, 100, 200, 400, 800], []);
+    const noiseAngleRange = useMemo(() => [0, 45, 90, 135, 180], []);
 
-      {/* Engine Cutaway SVG */}
-      <svg viewBox="0 0 400 200" className="w-full h-full max-w-2xl z-10 drop-shadow-2xl">
-        {/* Nacelle / Cowling */}
-        <path d="M 50,40 Q 120,35 180,45 L 350,55 L 350,145 L 180,155 Q 120,165 50,160 Z" fill="#374151" stroke="#4B5563" strokeWidth="2" />
-        <path d="M 50,40 Q 120,35 180,45 L 180,155 Q 120,165 50,160 Z" fill="#1F2937" /> {/* Inlet */}
+    const tsfcMachCruise = useMemo(() => machRange.map(m => {
+        const res = calculatePerformance(designSpecs, { altitude, mach: m, deltaIsa }, n1, observer, componentDesign);
+        return { x: m, y: res.tsfc_curr };
+    }), [machRange, designSpecs, altitude, deltaIsa, n1, observer, componentDesign]);
 
-        {/* Core Cowling */}
-        <path d="M 120,70 L 320,80 L 320,120 L 120,130 Z" fill="#4B5563" />
+    const tsfcPoints = useMemo(() => altRange.map(alt => {
+        const res = calculatePerformance(designSpecs, { altitude: alt, mach, deltaIsa }, n1, observer, componentDesign);
+        return { x: alt, y: res.tsfc_curr };
+    }), [altRange, designSpecs, mach, deltaIsa, n1, observer, componentDesign]);
 
-        {/* Fan Blades (Animated) */}
-        <g transform="translate(80, 100)">
-           <circle r="38" fill="#111" stroke="#555" strokeWidth="2" />
-           <g className={n1 > 0 ? "animate-spin" : ""} style={{ animationDuration: `${3000 / Math.max(n1, 1)}ms` }}>
-             {[...Array(12)].map((_, i) => (
-               <path 
-                 key={i}
-                 d="M 0,0 L 35,-5 L 35,5 Z" 
-                 fill="#AAA" 
-                 transform={`rotate(${i * 30})`}
-               />
-             ))}
-           </g>
-           <circle r="10" fill="#333" /> {/* Spinner */}
-        </g>
+    const tsfcMachSuper = useMemo(() => machSuperRange.map(m => {
+        const res = calculatePerformance(designSpecs, { altitude, mach: m, deltaIsa }, n1, observer, componentDesign);
+        return { x: m, y: res.tsfc_curr };
+    }), [machSuperRange, designSpecs, altitude, deltaIsa, n1, observer, componentDesign]);
 
-        {/* Exhaust Plume (Dynamic) */}
-        {n1 > 10 && (
-            <g transform="translate(350, 100)" opacity={n1/100}>
-                <path d="M 0,-45 L 100,-60 L 100,60 L 0,45 Z" fill="url(#bypassGrad)" opacity="0.3" />
-                <path d="M 0,-20 L 150,-30 L 150,30 L 0,20 Z" fill="url(#coreGrad)" opacity="0.6" />
-            </g>
-        )}
+    const thrustMachSuper = useMemo(() => machSuperRange.map(m => {
+        const res = calculatePerformance(designSpecs, { altitude, mach: m, deltaIsa }, n1, observer, componentDesign);
+        return { x: m, y: (res.F_net * engineCount) / 1000 };
+    }), [machSuperRange, designSpecs, altitude, deltaIsa, n1, observer, componentDesign, engineCount]);
 
-        <defs>
-            <linearGradient id="bypassGrad">
-                <stop offset="0%" stopColor="#88CCFF" />
-                <stop offset="100%" stopColor="transparent" />
-            </linearGradient>
-            <linearGradient id="coreGrad">
-                <stop offset="0%" stopColor="#FF8800" />
-                <stop offset="100%" stopColor="transparent" />
-            </linearGradient>
-        </defs>
-      </svg>
-      
-      <style>{`
-        @keyframes flowMove {
-            from { stroke-dashoffset: 100; }
-            to { stroke-dashoffset: 0; }
-        }
-      `}</style>
-    </div>
-  );
+    const noiseDistPoints = useMemo(() => noiseDistRange.map(d => {
+        const res = calculatePerformance(designSpecs, { altitude, mach, deltaIsa }, n1, { dist: d, angle: observerAngle }, componentDesign);
+        const val = res.spl_total_a ?? res.spl_total;
+        return { x: d, y: engineCount > 1 ? logSum(val, engineCount) : val };
+    }), [noiseDistRange, designSpecs, altitude, mach, deltaIsa, n1, observerAngle, componentDesign, engineCount]);
+
+    const noiseAnglePoints = useMemo(() => noiseAngleRange.map(a => {
+        const res = calculatePerformance(designSpecs, { altitude, mach, deltaIsa }, n1, { dist: observerDist, angle: a }, componentDesign);
+        const val = res.spl_total_a ?? res.spl_total;
+        return { x: a, y: engineCount > 1 ? logSum(val, engineCount) : val };
+    }), [noiseAngleRange, designSpecs, altitude, mach, deltaIsa, n1, observerDist, componentDesign, engineCount]);
+
+    const renderLine = (points, { xLabel, yLabel }) => {
+        if (!points.length) return null;
+        const xs = points.map(p => p.x);
+        const ys = points.map(p => p.y);
+        const minX = Math.min(...xs); const maxX = Math.max(...xs);
+        const minY = Math.min(...ys); const maxY = Math.max(...ys);
+        const xRange = Math.max(maxX - minX, 1e-6);
+        const yRange = Math.max(maxY - minY, 1e-6);
+        const toX = (v) => 10 + ((v - minX) / xRange) * 80;
+        const toY = (v) => 80 - ((v - minY) / yRange) * 60;
+        return (
+            <svg viewBox="0 0 100 90" className="w-full h-full">
+                <rect x="8" y="10" width="84" height="68" fill="white" stroke="#e5e7eb" strokeWidth="0.5" rx="2" />
+                <polyline fill="none" stroke="#2563eb" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"
+                    points={points.map(p => `${toX(p.x)},${toY(p.y)}`).join(' ')} />
+                {points.map((p, idx) => (
+                    <circle key={idx} cx={toX(p.x)} cy={toY(p.y)} r="1.2" fill="white" stroke="#2563eb" strokeWidth="0.6" />
+                ))}
+                <text x="50" y="86" textAnchor="middle" fontSize="4" fill="#374151" fontWeight="600">{xLabel}</text>
+                <text x="-45" y="14" textAnchor="middle" fontSize="4" fill="#374151" fontWeight="600" transform="rotate(-90)">{yLabel}</text>
+            </svg>
+        );
+    };
+
+    if (flightPhase === 'takeoff' || flightPhase === 'landing') {
+        return (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                    <div className="flex items-center justify-between mb-2">
+                        <h3 className="font-semibold text-gray-800 flex items-center gap-2"><Volume2 size={14} /> Noise vs Distance</h3>
+                        <span className="text-xs text-gray-500">Angle {observerAngle}°</span>
+                    </div>
+                    <div className="h-48">
+                        {renderLine(noiseDistPoints, { xLabel: 'Distance (m)', yLabel: 'SPL (dBA)' })}
+                    </div>
+                </div>
+                <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                    <div className="flex items-center justify-between mb-2">
+                        <h3 className="font-semibold text-gray-800 flex items-center gap-2"><Volume2 size={14} /> Noise vs Angle</h3>
+                        <span className="text-xs text-gray-500">Dist {observerDist} m</span>
+                    </div>
+                    <div className="h-48">
+                        {renderLine(noiseAnglePoints, { xLabel: 'Angle (deg)', yLabel: 'SPL (dBA)' })}
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    if (flightPhase === 'supercruise') {
+        return (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                    <div className="flex items-center justify-between mb-2">
+                        <h3 className="font-semibold text-gray-800 flex items-center gap-2"><Activity size={14} /> TSFC vs Mach (Supercruise)</h3>
+                        <span className="text-xs text-gray-500">Alt {altitude.toLocaleString()} ft</span>
+                    </div>
+                    <div className="h-48">
+                        {renderLine(tsfcMachSuper, { xLabel: 'Mach', yLabel: 'TSFC (kg/(kN·s))' })}
+                    </div>
+                </div>
+                <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                    <div className="flex items-center justify-between mb-2">
+                        <h3 className="font-semibold text-gray-800 flex items-center gap-2"><Gauge size={14} /> Thrust vs Mach (Supercruise)</h3>
+                        <span className="text-xs text-gray-500">Alt {altitude.toLocaleString()} ft</span>
+                    </div>
+                    <div className="h-48">
+                        {renderLine(thrustMachSuper, { xLabel: 'Mach', yLabel: 'Net Thrust (kN)' })}
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // Cruise/default
+    return (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                <div className="flex items-center justify-between mb-2">
+                    <h3 className="font-semibold text-gray-800 flex items-center gap-2"><Activity size={14} /> TSFC vs Mach</h3>
+                    <span className="text-xs text-gray-500">Alt {altitude.toLocaleString()} ft</span>
+                </div>
+                <div className="h-48">
+                    {renderLine(tsfcMachCruise, { xLabel: 'Mach', yLabel: 'TSFC (kg/(kN·s))' })}
+                </div>
+            </div>
+            <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                <div className="flex items-center justify-between mb-2">
+                    <h3 className="font-semibold text-gray-800 flex items-center gap-2"><Activity size={14} /> TSFC vs Altitude</h3>
+                    <span className="text-xs text-gray-500">Mach {mach.toFixed(2)}</span>
+                </div>
+                <div className="h-48">
+                    {renderLine(tsfcPoints, { xLabel: 'Altitude (ft)', yLabel: 'TSFC (kg/(kN·s))' })}
+                </div>
+            </div>
+        </div>
+    );
 };
 
 const StationAnalysis = ({ stations, formatValue, unitSystem }) => {
@@ -607,14 +823,14 @@ const TRADE_PARAMS = {
 };
 
 const TRADE_METRICS = {
-    F_net: { label: 'Net Thrust (lbf)', color: '#2563eb' },
-    tsfc_curr: { label: 'TSFC (lb/lbf-hr)', color: '#16a34a' },
+    F_net: { label: 'Net Thrust (kN)', color: '#2563eb' },
+    tsfc_curr: { label: 'TSFC (kg/(kN·s))', color: '#16a34a' },
     eta_overall: { label: 'Overall Efficiency', color: '#9333ea' },
     spl_total: { label: 'Noise Level (dBA)', color: '#dc2626' },
     bwr: { label: 'Back Work Ratio', color: '#ea580c' }
 };
 
-const TradeStudy = ({ baseSpecs, flightCond, n1, observer }) => {
+const TradeStudy = ({ baseSpecs, flightCond, n1, observer, componentDesign }) => {
     const [paramX, setParamX] = useState('bpr');
     const [paramY, setParamY] = useState('tsfc_curr');
     const [hoveredPoint, setHoveredPoint] = useState(null);
@@ -638,7 +854,7 @@ const TradeStudy = ({ baseSpecs, flightCond, n1, observer }) => {
                 testN1 = val;
             }
 
-            const res = calculatePerformance(testSpecs, testFlight, testN1, observer);
+            const res = calculatePerformance(testSpecs, testFlight, testN1, observer, componentDesign);
             
             // Extract Y value
             let yVal = 0;
@@ -646,6 +862,8 @@ const TradeStudy = ({ baseSpecs, flightCond, n1, observer }) => {
                 yVal = res.metrics[paramY];
             } else if (paramY === 'spl_total') {
                 yVal = res.spl_total_a ?? res.spl_total;
+            } else if (paramY === 'F_net') {
+                yVal = res.F_net / 1000; // convert to kN for plotting
             } else {
                 yVal = res[paramY];
             }
@@ -653,7 +871,7 @@ const TradeStudy = ({ baseSpecs, flightCond, n1, observer }) => {
             points.push({ x: val, y: yVal });
         }
         return points;
-    }, [paramX, paramY, baseSpecs, flightCond, n1, observer]);
+    }, [paramX, paramY, baseSpecs, flightCond, n1, observer, componentDesign]);
 
     // Chart Scaling with proper margins
     const xVals = dataPoints.map(p => p.x);
@@ -900,13 +1118,13 @@ const TurbofanAnalysis = ({ onClose }) => {
   const [engineKey, setEngineKey] = useState('TFE731-2');
   const [designSpecs, setDesignSpecs] = useState(DEFAULT_ENGINES['TFE731-2']);
   const [isOptimizing, setIsOptimizing] = useState(false);
-  const [optimizationStatus, setOptimizationStatus] = useState('');
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [showBuilder, setShowBuilder] = useState(false);
   const [isNewEngineDesign, setIsNewEngineDesign] = useState(false); // Track if designing new engine
   const [unitSystem, setUnitSystem] = useState('SI'); // 'SI' or 'Imperial'
-  const [flightPhase, setFlightPhase] = useState('cruise'); // 'takeoff', 'landing', 'cruise', 'supersonic'
+  const [flightPhase, setFlightPhase] = useState('cruise'); // 'takeoff', 'landing', 'cruise', 'supercruise'
   const [snapshots, setSnapshots] = useState([]);
+  const [modeChoice, setModeChoice] = useState(null); // null => selector screen
 
   // Unit conversion helpers
   const convert = {
@@ -1004,13 +1222,29 @@ const TurbofanAnalysis = ({ onClose }) => {
   const [altitude, setAltitude] = useState(0); // ft
   const [mach, setMach] = useState(0.0);
   const [deltaIsa, setDeltaIsa] = useState(0); // C
+  const [componentDesign, setComponentDesign] = useState({
+    inletType: 'subsonic',
+    shockAngle: 12,
+    compressorStages: 8,
+    turbineStages: 2,
+    coolingBleed: 5
+  });
+  const [aircraftConfig, setAircraftConfig] = useState(getDefaultAircraft('TFE731-2'));
   
   // Acoustics State
   const [observerDist, setObserverDist] = useState(100); // m
   const [observerAngle, setObserverAngle] = useState(135); // deg
 
+  const currentEngineType = (engines[engineKey]?.type) || DEFAULT_ENGINES[engineKey]?.type || 'subsonic';
+  const designCruiseMach = engines[engineKey]?.designCruiseMach || 0.8;
+  const designSupercruiseMach = engines[engineKey]?.designSupercruiseMach || 1.5;
+  const allowedPhases = currentEngineType === 'supersonic'
+    ? ['takeoff', 'landing', 'cruise', 'supercruise']
+    : ['takeoff', 'landing', 'cruise'];
+
   // Flight phase presets
   const applyFlightPhase = (phase) => {
+    if (!allowedPhases.includes(phase)) return;
     setFlightPhase(phase);
     switch(phase) {
       case 'takeoff':
@@ -1027,13 +1261,13 @@ const TurbofanAnalysis = ({ onClose }) => {
         break;
       case 'cruise':
         setAltitude(35000);
-        setMach(0.80);
+        setMach(Math.min(designCruiseMach, 0.99));
         setN1(85);
         setDeltaIsa(0);
         break;
-      case 'supersonic':
-        setAltitude(45000);
-        setMach(1.5);
+      case 'supercruise':
+        setAltitude(50000);
+        setMach(designSupercruiseMach);
         setN1(95);
         setDeltaIsa(-10);
         break;
@@ -1043,16 +1277,36 @@ const TurbofanAnalysis = ({ onClose }) => {
   };
 
   // Determine if noise analysis is relevant
-  const isNoiseRelevant = flightPhase === 'takeoff' || flightPhase === 'landing' || flightPhase === 'supersonic';
+  const isNoiseRelevant = flightPhase === 'takeoff' || flightPhase === 'landing' || flightPhase === 'supercruise';
 
-    const handleSelectEngine = (key) => {
-        setEngineKey(key);
-        if (engines[key]) {
-            setDesignSpecs(engines[key]);
-            // Check if it's a custom engine (not in DEFAULT_ENGINES)
-            setIsNewEngineDesign(!DEFAULT_ENGINES[key]);
-        }
-    };
+  const handleSelectEngine = (key) => {
+      setEngineKey(key);
+      if (engines[key]) {
+          setDesignSpecs(engines[key]);
+          // Check if it's a custom engine (not in DEFAULT_ENGINES)
+          setIsNewEngineDesign(!DEFAULT_ENGINES[key]);
+      }
+      const nextType = engines[key]?.type || DEFAULT_ENGINES[key]?.type || 'subsonic';
+      const nextAllowed = nextType === 'supersonic' ? ['takeoff','landing','cruise','supercruise'] : ['takeoff','landing','cruise'];
+      if (!nextAllowed.includes(flightPhase)) {
+          applyFlightPhase('cruise');
+      }
+      setAircraftConfig(getDefaultAircraft(key));
+  };
+
+  const applyModeChoice = (mode) => {
+      setModeChoice(mode);
+      if (mode === 'performance') {
+          setActiveTab('dashboard');
+      } else if (mode === 'acoustics') {
+          if (!isNoiseRelevant) setFlightPhase('takeoff');
+          setActiveTab('noise');
+      } else if (mode === 'components') {
+          setActiveTab('thermo');
+      } else if (mode === 'builder') {
+          setShowBuilder(true);
+      }
+  };
 
   // --- Calculations ---
   const results = useMemo(() => {
@@ -1060,12 +1314,22 @@ const TurbofanAnalysis = ({ onClose }) => {
         designSpecs, 
         { altitude, mach, deltaIsa }, 
         n1, 
-        { dist: observerDist, angle: observerAngle }
+        { dist: observerDist, angle: observerAngle },
+        componentDesign
     );
-  }, [designSpecs, n1, altitude, mach, deltaIsa, observerDist, observerAngle]);
+  }, [designSpecs, n1, altitude, mach, deltaIsa, observerDist, observerAngle, componentDesign]);
   const noiseDb = results.spl_total_a ?? results.spl_total;
   const noiseJetDb = results.spl_jet_a ?? results.spl_jet;
   const noiseFanDb = results.spl_fan_a ?? results.spl_fan;
+  const engineCount = aircraftConfig?.engines ?? 1;
+  const thrustTotal = results.F_net * engineCount;
+  const grossTotal = results.F_gross * engineCount;
+  const ramTotal = results.Ram_Drag * engineCount;
+  const fuelTotal = results.fuel_flow * engineCount;
+  const massFlowTotal = results.m_dot_total * engineCount;
+  const noiseDbTotal = engineCount > 1 ? logSum(noiseDb, engineCount) : noiseDb;
+  const noiseJetDbTotal = engineCount > 1 ? logSum(noiseJetDb, engineCount) : noiseJetDb;
+  const noiseFanDbTotal = engineCount > 1 ? logSum(noiseFanDb, engineCount) : noiseFanDb;
 
   // --- Scenario Snapshots ---
   const saveSnapshot = () => {
@@ -1084,10 +1348,12 @@ const TurbofanAnalysis = ({ onClose }) => {
                 deltaIsa,
                 observerDist,
                 observerAngle,
-                unitSystem
+                unitSystem,
+                aircraftConfig,
+                componentDesign: { ...componentDesign }
             },
             results: {
-                thrust_lbf: results.F_net,
+                thrust_N: results.F_net,
                 tsfc: results.tsfc_curr,
                 noise_dba: results.spl_total_a ?? results.spl_total
             }
@@ -1103,6 +1369,12 @@ const TurbofanAnalysis = ({ onClose }) => {
     }
     setEngineKey(inputs.engineKey || 'snapshot');
     setDesignSpecs(inputs.designSpecs);
+    if (inputs.componentDesign) {
+        setComponentDesign(inputs.componentDesign);
+    }
+    if (inputs.aircraftConfig) {
+        setAircraftConfig(inputs.aircraftConfig);
+    }
     setIsNewEngineDesign(!DEFAULT_ENGINES[inputs.engineKey]);
     setN1(inputs.n1);
     setAltitude(inputs.altitude);
@@ -1120,7 +1392,6 @@ const TurbofanAnalysis = ({ onClose }) => {
   // 1. Cycle Design Optimizer (Modifies Hardware)
   const runDesignOptimizer = (objective) => {
     setIsOptimizing(true);
-    setOptimizationStatus(`Designing Engine for ${objective}...`);
 
     setTimeout(() => {
         let bestSpecs = { ...designSpecs };
@@ -1154,7 +1425,8 @@ const TurbofanAnalysis = ({ onClose }) => {
                         testSpecs, 
                         missionCond, 
                         missionN1, 
-                        { dist: 100, angle: 135 }
+                        { dist: 100, angle: 135 },
+                        componentDesign
                     );
 
                     let score = -Infinity;
@@ -1162,10 +1434,10 @@ const TurbofanAnalysis = ({ onClose }) => {
                     if (objective === 'Quiet Takeoff') {
                         // Maximize Thrust / Noise Penalty
                         const noiseScore = res.spl_total_a ?? res.spl_total;
-                        if (res.F_net > 1000) score = res.F_net / Math.pow(noiseScore, 3);
+                        if (res.F_net > 4450) score = res.F_net / Math.pow(noiseScore, 3);
                     } else if (objective === 'Eco Cruise') {
                         // Minimize TSFC
-                        if (res.F_net > 500) score = -res.tsfc_curr;
+                        if (res.F_net > 2250) score = -res.tsfc_curr;
                     } else if (objective === 'Supersonic') {
                         // Maximize Specific Thrust (Thrust / MassFlow)
                         score = res.F_net / res.m_dot_total;
@@ -1184,84 +1456,74 @@ const TurbofanAnalysis = ({ onClose }) => {
         setAltitude(missionCond.altitude);
         setMach(missionCond.mach);
         setN1(missionN1);
-        
-        setOptimizationStatus('Design Complete');
         setTimeout(() => setIsOptimizing(false), 1000);
     }, 100);
   };
 
-  // 2. Flight Profile Optimizer (Modifies Operations only)
-  const runFlightOptimizer = (objective) => {
-      setIsOptimizing(true);
-      setOptimizationStatus(`Finding Best Flight Profile for ${objective}...`);
-
-      setTimeout(() => {
-          let bestFlight = { altitude, mach, n1 };
-          let bestScore = -Infinity;
-
-          // Search Space (Operations)
-          // Altitude: 0 to 50k
-          // Mach: 0.3 to 0.95
-          // N1: Fixed or Optimized? Let's optimize N1 for Cruise, fix for Max Power.
-
-          const altRange = [0, 10000, 20000, 30000, 35000, 40000, 45000];
-          const machRange = [0.3, 0.5, 0.7, 0.75, 0.8, 0.85, 0.9];
-          
-          for (let alt of altRange) {
-              for (let m of machRange) {
-                  let testN1 = n1;
-                  if (objective === 'Best Range') testN1 = 90; // Cruise power
-                  if (objective === 'Max Thrust') testN1 = 100; // Max power
-
-                  const res = calculatePerformance(
-                      designSpecs, // KEEP ENGINE FIXED
-                      { altitude: alt, mach: m, deltaIsa },
-                      testN1,
-                      { dist: 100, angle: 135 }
-                  );
-
-                  let score = -Infinity;
-
-                  if (objective === 'Best Range') {
-                      // Maximize Specific Range ~ Velocity / FuelFlow
-                      // (Miles per Gallon equivalent)
-                      if (res.F_net > 500) { // Min thrust to maintain flight
-                          score = res.v_flight / res.fuel_flow;
-                      }
-                  } else if (objective === 'Max Thrust') {
-                      // Maximize Net Thrust (e.g. for climb/intercept)
-                      score = res.F_net;
-                  } else if (objective === 'Loiter') {
-                      // Maximize Endurance ~ 1 / FuelFlow
-                      if (res.F_net > 500) {
-                          score = -res.fuel_flow;
-                      }
-                  }
-
-                  if (score > bestScore) {
-                      bestScore = score;
-                      bestFlight = { altitude: alt, mach: m, n1: testN1 };
-                  }
-              }
-          }
-
-          setAltitude(bestFlight.altitude);
-          setMach(bestFlight.mach);
-          setN1(bestFlight.n1);
-
-          setOptimizationStatus('Flight Profile Found');
-          setTimeout(() => setIsOptimizing(false), 1000);
-      }, 100);
-  };
-
   return (
     <div className="fixed inset-0 bg-gray-100 z-50 overflow-hidden flex flex-col">
+      {modeChoice === null && (
+        <div className="absolute inset-0 bg-white z-30 flex items-center justify-center">
+          <div className="max-w-4xl w-full px-6 py-8">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <p className="text-xs uppercase tracking-[0.2em] text-gray-500 font-semibold mb-1">Select Mode</p>
+                <h2 className="text-2xl font-bold text-gray-900">Turbofan Analysis</h2>
+                <p className="text-sm text-gray-500">Choose what you want to do before entering the workspace.</p>
+              </div>
+              <button
+                onClick={onClose}
+                className="p-2 text-gray-500 hover:text-gray-900 rounded-full hover:bg-gray-100 transition"
+                title="Back to resume"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {[
+                { id: 'performance', title: 'Quick Performance', desc: 'Thrust, TSFC, mission sliders.', icon: <Gauge size={18} className="text-blue-600" /> },
+                { id: 'acoustics', title: 'Acoustics Run', desc: 'Noise maps and observers.', icon: <Volume2 size={18} className="text-orange-600" /> },
+                { id: 'components', title: 'Component Design', desc: 'Inlets, compressors, turbines.', icon: <Cpu size={18} className="text-purple-600" /> },
+                { id: 'builder', title: 'Create Engine', desc: 'Spin up a custom engine.', icon: <Plus size={18} className="text-green-600" /> },
+              ].map(card => (
+                <button
+                  key={card.id}
+                  onClick={() => applyModeChoice(card.id)}
+                  className="text-left bg-white border border-gray-200 rounded-xl p-4 hover:border-blue-300 hover:shadow-md transition flex gap-3"
+                >
+                  <div className="w-10 h-10 rounded-lg bg-gray-50 flex items-center justify-center">
+                    {card.icon}
+                  </div>
+                  <div>
+                    <div className="font-semibold text-gray-900">{card.title}</div>
+                    <div className="text-sm text-gray-600">{card.desc}</div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
       {/* Header */}
       <div className="bg-white border-b border-gray-200 px-4 lg:px-6 py-3 lg:py-4 flex items-center justify-between shadow-sm z-20">
         <div className="flex items-center gap-3 lg:gap-4">
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition">
-            <ArrowLeft size={20} className="text-gray-600" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={() => setModeChoice(null)}
+              disabled={modeChoice === null}
+              className={`p-2 rounded-full transition ${modeChoice === null ? 'text-gray-300 cursor-not-allowed' : 'hover:bg-gray-100 text-gray-600'}`}
+              title="Back to mode select"
+            >
+              <ArrowLeft size={20} />
+            </button>
+            <button 
+              onClick={onClose}
+              className="p-2 hover:bg-gray-100 rounded-full transition text-gray-600"
+              title="Back to resume"
+            >
+              <ChevronsLeft size={20} />
+            </button>
+          </div>
           <div>
             <h1 className="text-lg lg:text-xl font-bold text-gray-900 flex items-center gap-2">
               <Activity className="text-blue-600 hidden sm:block" />
@@ -1280,6 +1542,33 @@ const TurbofanAnalysis = ({ onClose }) => {
               <Settings size={14} />
               <span>{unitSystem === 'SI' ? 'SI' : 'Imperial'}</span>
             </button>
+            <div className="hidden md:flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg p-1">
+              {[
+                { id: 'performance', label: 'Quick Performance' },
+                { id: 'acoustics', label: 'Acoustics Run' },
+                { id: 'components', label: 'Component Design' },
+                { id: 'builder', label: 'Create Engine' }
+              ].map(mode => (
+                <button
+                  key={mode.id}
+                  onClick={() => applyModeChoice(mode.id)}
+                  className={`px-2.5 py-1 text-[11px] font-medium rounded-md transition ${
+                    modeChoice === mode.id ? 'bg-white shadow-sm text-blue-700' : 'text-gray-700 hover:bg-white'
+                  }`}
+                >
+                  {mode.label}
+                </button>
+              ))}
+            </div>
+            {modeChoice !== null && (
+              <button
+                onClick={() => setModeChoice(null)}
+                className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-200 text-xs font-medium rounded-lg hover:bg-gray-50 transition"
+              >
+                <ArrowLeft size={14} className="text-gray-600" />
+                Mode Select
+              </button>
+            )}
             
             <div className="flex items-center gap-2">
               <select 
@@ -1322,6 +1611,7 @@ const TurbofanAnalysis = ({ onClose }) => {
       <div className="flex-1 overflow-hidden flex flex-col lg:flex-row relative">
         
         {/* LEFT PANEL: Inputs */}
+        {modeChoice !== null && (
         <div className={`
             absolute inset-0 z-30 bg-white lg:static lg:w-80 lg:block border-r border-gray-200 overflow-y-auto p-6 space-y-8 transition-transform duration-300 ease-in-out
             ${showMobileMenu ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
@@ -1364,39 +1654,6 @@ const TurbofanAnalysis = ({ onClose }) => {
                 </div>
             </section>
             )}
-
-            {/* 2. Flight Profile Optimizer */}
-            <section className="bg-purple-50 p-4 rounded-xl border border-purple-100">
-                <h3 className="text-xs font-semibold text-purple-800 uppercase tracking-wider mb-2 flex items-center gap-2">
-                    <Activity size={14} /> Flight Profile Optimizer
-                </h3>
-                <p className="text-[10px] text-purple-600 mb-3 leading-tight">
-                    Finds best Altitude & Mach for the current engine configuration.
-                </p>
-                <div className="space-y-2">
-                    <button 
-                        onClick={() => runFlightOptimizer('Best Range')}
-                        disabled={isOptimizing}
-                        className="w-full py-2 px-3 bg-white border border-purple-200 text-purple-700 text-sm font-medium rounded-lg hover:bg-purple-100 transition flex items-center justify-between"
-                    >
-                        <span>Best Range (Cruise)</span>
-                        <Gauge size={14} />
-                    </button>
-                    <button 
-                        onClick={() => runFlightOptimizer('Loiter')}
-                        disabled={isOptimizing}
-                        className="w-full py-2 px-3 bg-white border border-purple-200 text-purple-700 text-sm font-medium rounded-lg hover:bg-purple-100 transition flex items-center justify-between"
-                    >
-                        <span>Max Endurance (Loiter)</span>
-                        <Activity size={14} />
-                    </button>
-                </div>
-                {isOptimizing && (
-                    <div className="mt-2 text-xs text-blue-600 animate-pulse text-center font-medium">
-                        {optimizationStatus}
-                    </div>
-                )}
-            </section>
 
             {/* Design Parameters (Editable for New Engines, Read-Only for Existing) */}
             <section>
@@ -1487,16 +1744,18 @@ const TurbofanAnalysis = ({ onClose }) => {
                     >
                         ✈️ Cruise
                     </button>
-                    <button
-                        onClick={() => applyFlightPhase('supersonic')}
-                        className={`px-3 py-2 text-xs font-medium rounded-lg transition ${
-                            flightPhase === 'supersonic'
-                                ? 'bg-blue-600 text-white shadow-md'
-                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                        }`}
-                    >
-                        🚀 Supersonic
-                    </button>
+                    {currentEngineType === 'supersonic' && (
+                      <button
+                          onClick={() => applyFlightPhase('supercruise')}
+                          className={`px-3 py-2 text-xs font-medium rounded-lg transition ${
+                              flightPhase === 'supercruise'
+                                  ? 'bg-blue-600 text-white shadow-md'
+                                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          }`}
+                      >
+                          🚀 Supercruise
+                      </button>
+                    )}
                 </div>
             </section>
 
@@ -1518,7 +1777,15 @@ const TurbofanAnalysis = ({ onClose }) => {
                             <span>Mach Number</span>
                             <span className="text-blue-600">M {mach.toFixed(2)}</span>
                         </label>
-                        <input type="range" min="0" max="0.95" step="0.01" value={mach} onChange={(e) => setMach(Number(e.target.value))} className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600" />
+                        <input 
+                          type="range" 
+                          min="0" 
+                          max={currentEngineType === 'supersonic' ? 2 : 0.95} 
+                          step="0.01" 
+                          value={mach} 
+                          onChange={(e) => setMach(Number(e.target.value))} 
+                          className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600" 
+                        />
                     </div>
                     <div>
                         <label className="flex justify-between text-sm font-medium text-gray-700 mb-1">
@@ -1542,6 +1809,88 @@ const TurbofanAnalysis = ({ onClose }) => {
                     </label>
                     <input type="range" min="0" max="105" step="1" value={n1} onChange={(e) => setN1(Number(e.target.value))} className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600" />
                 </div>
+            </section>
+
+            {/* Aircraft Setup */}
+            <section>
+                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+                    <Settings size={14} /> Aircraft Setup
+                </h3>
+                {AIRCRAFT_PROFILES[engineKey] ? (
+                    <div className="space-y-2">
+                        <select
+                            value={aircraftConfig?.id}
+                            onChange={(e) => {
+                                const opts = AIRCRAFT_PROFILES[engineKey] || [];
+                                const sel = opts.find(o => o.id === e.target.value);
+                                setAircraftConfig(sel || getDefaultAircraft(engineKey));
+                            }}
+                            className="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 bg-white hover:border-blue-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition"
+                        >
+                            {(AIRCRAFT_PROFILES[engineKey] || []).map(opt => (
+                                <option key={opt.id} value={opt.id}>{opt.name}</option>
+                            ))}
+                        </select>
+                        <div className="text-xs text-gray-500">Engines: {aircraftConfig?.engines ?? 1}</div>
+                    </div>
+                ) : (
+                    <div className="text-xs text-gray-500">Engines: 1 (no aircraft profile)</div>
+                )}
+            </section>
+
+            {/* Component Design */}
+            <section>
+                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+                    <Cpu size={14} /> Component Design
+                </h3>
+                <div className="space-y-3 text-sm">
+                    <div className="flex gap-2">
+                        <button 
+                            onClick={() => setComponentDesign({ ...componentDesign, inletType: 'subsonic' })}
+                            className={`flex-1 px-3 py-2 rounded-lg border text-sm font-medium ${componentDesign.inletType === 'subsonic' ? 'border-blue-500 text-blue-700 bg-blue-50' : 'border-gray-200 text-gray-700 hover:border-blue-200'}`}
+                        >
+                            Subsonic Inlet
+                        </button>
+                        <button 
+                            onClick={() => setComponentDesign({ ...componentDesign, inletType: 'supersonic' })}
+                            className={`flex-1 px-3 py-2 rounded-lg border text-sm font-medium ${componentDesign.inletType === 'supersonic' ? 'border-blue-500 text-blue-700 bg-blue-50' : 'border-gray-200 text-gray-700 hover:border-blue-200'}`}
+                        >
+                            Supersonic
+                        </button>
+                    </div>
+                    {componentDesign.inletType === 'supersonic' && (
+                        <div>
+                            <label className="flex justify-between text-gray-700">Ramp Angle <span className="text-blue-600">{componentDesign.shockAngle.toFixed(0)}°</span></label>
+                            <input type="range" min="5" max="25" step="1" value={componentDesign.shockAngle} onChange={(e) => setComponentDesign({ ...componentDesign, shockAngle: Number(e.target.value) })} className="w-full accent-blue-600" />
+                        </div>
+                    )}
+                    <div>
+                        <label className="flex justify_between text-gray-700">Compressor Stages <span className="text-blue-600">{componentDesign.compressorStages}</span></label>
+                        <input type="range" min="4" max="20" step="1" value={componentDesign.compressorStages} onChange={(e) => setComponentDesign({ ...componentDesign, compressorStages: Number(e.target.value) })} className="w-full accent-blue-600" />
+                    </div>
+                    <div>
+                        <label className="flex justify-between text-gray-700">Turbine Stages <span className="text-blue-600">{componentDesign.turbineStages}</span></label>
+                        <input type="range" min="1" max="4" step="1" value={componentDesign.turbineStages} onChange={(e) => setComponentDesign({ ...componentDesign, turbineStages: Number(e.target.value) })} className="w-full accent-blue-600" />
+                    </div>
+                    <div>
+                        <label className="flex justify-between text-gray-700">Cooling Bleed <span className="text-blue-600">{componentDesign.coolingBleed.toFixed(0)}%</span></label>
+                        <input type="range" min="0" max="15" step="1" value={componentDesign.coolingBleed} onChange={(e) => setComponentDesign({ ...componentDesign, coolingBleed: Number(e.target.value) })} className="w-full accent-blue-600" />
+                    </div>
+                </div>
+            </section>
+
+            {/* Component Design Studies */}
+            <section className="bg-gray-50 p-4 rounded-xl border border-gray-200">
+                <h3 className="text-xs font-semibold text-gray-700 uppercase tracking-wider mb-3 flex items-center gap-2">
+                    <Cpu size={14} /> Component Design Studies
+                </h3>
+                <ul className="text-sm text-gray-700 space-y-2 list-disc pl-4">
+                    <li>Inlet analysis: diffuser recovery (subsonic) vs oblique/normal shock trains (supersonic).</li>
+                    <li>Multi-stage compression: map stage count to efficiency and surge margin.</li>
+                    <li>Start problem: capture stall-free ramp-up with bleed/open-IGV strategies.</li>
+                    <li>Turbine staging & cooling: stage count, bleed fraction, and T04 margin coupling.</li>
+                    <li>Acoustics tie-in: inlet/jet noise fed through log-sum for multi-engine aircraft.</li>
+                </ul>
             </section>
 
             {/* Acoustic Setup - Only show for relevant phases */}
@@ -1569,11 +1918,80 @@ const TurbofanAnalysis = ({ onClose }) => {
             </section>
             )}
         </div>
+        )}
 
         {/* CENTER PANEL: Visuals & Dashboard */}
         <div className="flex-1 bg-gray-50 p-4 lg:p-6 overflow-y-auto w-full">
             
-            {/* Tab Navigation */}
+            {modeChoice === 'components' ? (
+              <>
+                <div className="flex justify-between items-center mb-4">
+                  <div>
+                    <div className="text-sm uppercase tracking-[0.15em] text-gray-500 font-semibold">Component Design Workspace</div>
+                    <div className="text-xl font-bold text-gray-900">Inlets • Compressors • Turbines</div>
+                  </div>
+                  <div className="text-xs text-gray-500 bg-white border border-gray-200 rounded-lg px-3 py-1">
+                    Engine: {designSpecs.name} • {componentDesign.inletType === 'supersonic' ? 'Supersonic Inlet' : 'Subsonic Inlet'}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 mb-4">
+                  <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                    <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                      <Wind size={14} /> Inlet Analysis
+                    </h3>
+                    <div className="grid grid-cols-2 gap-3 text-sm text-gray-700">
+                      <div><div className="text-gray-500 text-xs uppercase">Type</div><div className="font-semibold capitalize">{results.inlet.type}</div></div>
+                      <div><div className="text-gray-500 text-xs uppercase">Recovery</div><div className="font-semibold">{(results.inlet.recovery*100).toFixed(1)}%</div></div>
+                      <div><div className="text-gray-500 text-xs uppercase">Exit Mach</div><div className="font-semibold">{results.inlet.machExit.toFixed(3)}</div></div>
+                      {results.inlet.betaDeg && <div><div className="text-gray-500 text-xs uppercase">Shock Angle</div><div className="font-semibold">{results.inlet.betaDeg.toFixed(1)}°</div></div>}
+                      <div><div className="text-gray-500 text-xs uppercase">P0 Free</div><div className="font-semibold">{formatValue(results.inlet.P0_free, 'pressure')}</div></div>
+                      <div><div className="text-gray-500 text-xs uppercase">P02</div><div className="font-semibold">{formatValue(results.inlet.P02, 'pressure')}</div></div>
+                    </div>
+                    <p className="mt-3 text-xs text-gray-500">Recovery feeds mass flow and nozzle performance; supersonic inlets use oblique + normal shock loss model.</p>
+                  </div>
+
+                  <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                    <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                      <Cpu size={14} /> Compressor Staging
+                    </h3>
+                    <div className="grid grid-cols-2 gap-3 text-sm text-gray-700">
+                      <div><div className="text-gray-500 text-xs uppercase">Stages</div><div className="font-semibold">{componentDesign.compressorStages}</div></div>
+                      <div><div className="text-gray-500 text-xs uppercase">Effective η</div><div className="font-semibold">{(results.metrics.etaC_eff*100).toFixed(1)}%</div></div>
+                      <div><div className="text-gray-500 text-xs uppercase">OPR</div><div className="font-semibold">{results.metrics.opr.toFixed(1)}</div></div>
+                      <div><div className="text-gray-500 text-xs uppercase">Stage Loading</div><div className="font-semibold">{(Math.pow(designSpecs.prC, 1/Math.max(1, componentDesign.compressorStages))).toFixed(2)} PR/stage</div></div>
+                    </div>
+                    <p className="mt-3 text-xs text-gray-500">Higher stage loading reduces η; adjust stages to balance weight vs efficiency and surge margin.</p>
+                  </div>
+
+                  <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                    <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                      <Thermometer size={14} /> Turbine & Cooling
+                    </h3>
+                    <div className="grid grid-cols-2 gap-3 text-sm text-gray-700">
+                      <div><div className="text-gray-500 text-xs uppercase">Stages</div><div className="font-semibold">{componentDesign.turbineStages}</div></div>
+                      <div><div className="text-gray-500 text-xs uppercase">Effective η</div><div className="font-semibold">{(results.metrics.etaT_eff*100).toFixed(1)}%</div></div>
+                      <div><div className="text-gray-500 text-xs uppercase">Cooling Bleed</div><div className="font-semibold">{componentDesign.coolingBleed.toFixed(0)}%</div></div>
+                      <div><div className="text-gray-500 text-xs uppercase">T04 → T05 Δ</div><div className="font-semibold">{(results.stations[3].T - results.stations[4].T).toFixed(0)} K drop</div></div>
+                    </div>
+                    <p className="mt-3 text-xs text-gray-500">Cooling bleed reduces core mass flow; stage count boosts η but adds weight and back-pressure.</p>
+                  </div>
+
+                  <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                    <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                      <Activity size={14} /> Start & Surge Considerations
+                    </h3>
+                    <ul className="list-disc pl-4 text-sm text-gray-700 space-y-1">
+                      <li>Start sequencing: low N1 with IGVs open and bleeds on to avoid stall.</li>
+                      <li>Ramp shock angle (supersonic) with schedule tied to Mach to hold recovery.</li>
+                      <li>Monitor surge margin: reduce stage loading or bleed during transients.</li>
+                      <li>Noise impact: inlet/jet SPL recomputed via velocity-area model; multi-engine totals use log-sum.</li>
+                    </ul>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
             <div className="flex gap-2 mb-6 bg-white p-1 rounded-lg border border-gray-200 w-full lg:w-fit shadow-sm overflow-x-auto">
                 <button 
                     onClick={() => setActiveTab('dashboard')}
@@ -1634,11 +2052,11 @@ const TurbofanAnalysis = ({ onClose }) => {
                         {snapshots.map((snap) => (
                             <div key={snap.id} className="p-3 rounded-lg border border-gray-200 bg-gray-50 flex flex-col gap-2">
                                 <div className="flex justify-between items-center">
-                                    <div className="font-semibold text-sm text-gray-800">{snap.name}</div>
-                                    <div className="flex gap-1">
-                                        <button 
-                                            onClick={() => applySnapshot(snap)}
-                                            className="px-3 py-1 text-xs bg-green-100 text-green-700 rounded hover:bg-green-200 transition"
+                                <div className="font-semibold text-sm text-gray-800">{snap.name}</div>
+                                <div className="flex gap-1">
+                                    <button 
+                                        onClick={() => applySnapshot(snap)}
+                                        className="px-3 py-1 text-xs bg-green-100 text-green-700 rounded hover:bg-green-200 transition"
                                         >
                                             Apply
                                         </button>
@@ -1651,7 +2069,7 @@ const TurbofanAnalysis = ({ onClose }) => {
                                     </div>
                                 </div>
                                 <div className="text-xs text-gray-600">
-                                    Thrust {snap.results?.thrust_lbf ? snap.results.thrust_lbf.toFixed(0) : '--'} lbf • TSFC {snap.results?.tsfc ? snap.results.tsfc.toFixed(4) : '--'} • Noise {(snap.results?.noise_dba ?? 0).toFixed(1)} dBA
+                                    Thrust {snap.results?.thrust_N !== undefined ? formatValue(snap.results.thrust_N, 'thrust') : '--'} • TSFC {snap.results?.tsfc ? snap.results.tsfc.toFixed(4) : '--'} • Noise {(snap.results?.noise_dba ?? 0).toFixed(1)} dBA
                                 </div>
                                 <div className="text-[11px] text-gray-500">
                                     Alt {snap.inputs.altitude.toLocaleString()} ft • Mach {snap.inputs.mach.toFixed(2)} • N1 {snap.inputs.n1}%
@@ -1685,7 +2103,18 @@ const TurbofanAnalysis = ({ onClose }) => {
             {activeTab === 'dashboard' && (
                 <>
                     <div className="mb-6">
-                        <EngineDiagram n1={n1} mach={mach} engineType={engineKey} />
+                        <FlightProfileCharts 
+                          designSpecs={designSpecs}
+                          componentDesign={componentDesign}
+                          altitude={altitude}
+                          mach={mach}
+                          deltaIsa={deltaIsa}
+                          n1={n1}
+                          flightPhase={flightPhase}
+                          observerDist={observerDist}
+                          observerAngle={observerAngle}
+                          engineCount={engineCount}
+                        />
                     </div>
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         {/* Performance Metrics */}
@@ -1694,25 +2123,28 @@ const TurbofanAnalysis = ({ onClose }) => {
                                 <h3 className="font-semibold text-gray-800 flex items-center gap-2">
                                     <Gauge size={16} /> Engine Performance
                                 </h3>
+                                {engineCount > 1 && (
+                                  <span className="text-[11px] text-gray-500">Total for {engineCount} engines</span>
+                                )}
                             </div>
                             <div className="p-4 space-y-4">
                                 <div className="flex justify-between items-end border-b border-gray-100 pb-2">
                                     <span className="text-sm text-gray-600">Net Thrust</span>
-                                    <span className="text-2xl font-bold text-gray-900">{formatValue(results.F_net, 'thrust')}</span>
+                                    <span className="text-2xl font-bold text-gray-900">{formatValue(thrustTotal, 'thrust')}</span>
                                 </div>
                                 <div className="grid grid-cols-2 gap-4 border-b border-gray-100 pb-2">
                                     <div>
                                         <span className="text-xs text-gray-500 block">Gross Thrust</span>
-                                        <span className="text-sm font-semibold text-gray-700">{formatValue(results.F_gross, 'thrust')}</span>
+                                        <span className="text-sm font-semibold text-gray-700">{formatValue(grossTotal, 'thrust')}</span>
                                     </div>
                                     <div>
                                         <span className="text-xs text-gray-500 block">Ram Drag</span>
-                                        <span className="text-sm font-semibold text-red-400">-{formatValue(results.Ram_Drag, 'thrust')}</span>
+                                        <span className="text-sm font-semibold text-red-400">-{formatValue(ramTotal, 'thrust')}</span>
                                     </div>
                                 </div>
                                 <div className="flex justify-between items-end border-b border-gray-100 pb-2">
                                     <span className="text-sm text-gray-600">Fuel Flow</span>
-                                    <span className="text-xl font-semibold text-gray-900">{formatValue(results.fuel_flow, 'massFlow')}</span>
+                                    <span className="text-xl font-semibold text-gray-900">{formatValue(fuelTotal, 'massFlow')}</span>
                                 </div>
                                 <div className="flex justify-between items-end border-b border-gray-100 pb-2">
                                     <span className="text-sm text-gray-600">TSFC</span>
@@ -1720,7 +2152,7 @@ const TurbofanAnalysis = ({ onClose }) => {
                                 </div>
                                 <div className="flex justify-between items-end">
                                     <span className="text-sm text-gray-600">Mass Flow</span>
-                                    <span className="text-lg font-mono text-gray-900">{formatValue(results.m_dot_total, 'massFlow')}</span>
+                                    <span className="text-lg font-mono text-gray-900">{formatValue(massFlowTotal, 'massFlow')}</span>
                                 </div>
                             </div>
                         </div>
@@ -1731,15 +2163,15 @@ const TurbofanAnalysis = ({ onClose }) => {
                                 <h3 className="font-semibold text-gray-800 flex items-center gap-2">
                                     <Volume2 size={16} /> Acoustic Analysis
                                 </h3>
-                                <span className={`text-xs px-2 py-1 rounded-full ${noiseDb > 100 ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
-                                    {noiseDb > 100 ? 'High Noise' : 'Nominal'}
+                                <span className={`text-xs px-2 py-1 rounded-full ${noiseDbTotal > 100 ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
+                                    {noiseDbTotal > 100 ? 'High Noise' : 'Nominal'}
                                 </span>
                             </div>
                             <div className="p-4">
                                 <div className="flex items-center justify-center mb-6">
                                     <div className="relative w-32 h-32 flex items-center justify-center rounded-full border-4 border-gray-100">
                                         <div className="text-center">
-                                            <div className="text-3xl font-bold text-gray-900">{noiseDb.toFixed(1)}</div>
+                                            <div className="text-3xl font-bold text-gray-900">{noiseDbTotal.toFixed(1)}</div>
                                             <div className="text-xs text-gray-500">dBA</div>
                                         </div>
                                         <svg className="absolute inset-0 w-full h-full -rotate-90">
@@ -1749,9 +2181,9 @@ const TurbofanAnalysis = ({ onClose }) => {
                                             />
                                             <circle 
                                                 cx="64" cy="64" r="60" 
-                                                fill="none" stroke={noiseDb > 110 ? '#EF4444' : '#3B82F6'} strokeWidth="8"
+                                                fill="none" stroke={noiseDbTotal > 110 ? '#EF4444' : '#3B82F6'} strokeWidth="8"
                                                 strokeDasharray="377"
-                                                strokeDashoffset={377 - (Math.min(noiseDb, 140) / 140) * 377}
+                                                strokeDashoffset={377 - (Math.min(noiseDbTotal, 140) / 140) * 377}
                                                 className="transition-all duration-500"
                                             />
                                         </svg>
@@ -1760,11 +2192,11 @@ const TurbofanAnalysis = ({ onClose }) => {
                                 <div className="grid grid-cols-2 gap-4 text-sm">
                                     <div className="bg-gray-50 p-2 rounded">
                                         <div className="text-gray-500">Jet Noise</div>
-                                        <div className="font-semibold">{noiseJetDb.toFixed(1)} dBA</div>
+                                        <div className="font-semibold">{noiseJetDbTotal.toFixed(1)} dBA</div>
                                     </div>
                                     <div className="bg-gray-50 p-2 rounded">
                                         <div className="text-gray-500">Fan Noise</div>
-                                        <div className="font-semibold">{noiseFanDb.toFixed(1)} dBA</div>
+                                        <div className="font-semibold">{noiseFanDbTotal.toFixed(1)} dBA</div>
                                     </div>
                                 </div>
                             </div>
@@ -1790,10 +2222,12 @@ const TurbofanAnalysis = ({ onClose }) => {
                         flightCond={{ altitude, mach, deltaIsa }} 
                         n1={n1} 
                         observer={{ dist: observerDist, angle: observerAngle }}
+                        componentDesign={componentDesign}
                     />
                 </div>
             )}
-
+              </>
+            )}
         </div>
       </div>
 
