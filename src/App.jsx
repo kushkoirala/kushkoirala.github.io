@@ -81,9 +81,10 @@ function App() {
             <span className="text-sm text-gray-500 italic">July 2018 – Present</span>
           </div>
           <ul className="list-disc pl-4 space-y-1 text-gray-800 text-sm">
-            <li><strong>Real-Time Traceability Infrastructure:</strong> A Linux-based 3DExperience + Cameo Systems Modeler stack with live OSLC federation was built. This infrastructure enabled bidirectional synchronization between CAD, PLM, and SysML.</li>
-            <li><strong>Custom Framework (UAF Extension):</strong> Reference Architectures for Multi Industry Enterprises using UAF and their Products as systems using MagicGrid/SysML.</li>
-            <li><strong>Technical Leadership:</strong> Led cross-functional proof-of-concepts for Aerospace/Defense clients. Direct technical advisor to C-suite on digital transformation roadmaps.</li>
+            <li><strong>Boeing MBD/MBSE Transformation:</strong> Spent 3 years embedded with Boeing Design Engineering, Manufacturing, and M&P teams to move product structure/EBOM and engineering processes to an MBD/MBSE framework.</li>
+            <li><strong>Real-Time Traceability Infrastructure:</strong> Built a Linux-based 3DExperience + Cameo Systems Modeler stack with live OSLC federation, enabling bidirectional sync between CAD, PLM, and SysML.</li>
+            <li><strong>MBSE Solutions Architect:</strong> Two-year focus on requirements management, architecture definition, and standards rollout to help large Systems Engineering teams adopt MBSE practices.</li>
+            <li><strong>Custom Framework (UAF Extension):</strong> Reference Architectures for multi-industry enterprises using UAF and their Products-as-Systems via MagicGrid/SysML.</li>
             <li><strong>Custom Framework (Technical Support):</strong> Provide technical consulting to elite engineering corporations on enhancing their engineering capabilities.</li>
           </ul>
         </div>
@@ -100,6 +101,7 @@ function App() {
             <li><strong>Parametric CAD Automation (KBE):</strong> Built CATIA V5 automation framework using VBA/CATScript—algorithmically generated structural components at scale. Reduced design cycle from weeks to days per aircraft program.</li>
             <li><strong>FEA Workflow & Certification:</strong> Established in-house Abaqus/Nastran pipeline for FAA Part 25 compliance. Automated mesh generation + post-processing using Python scripts.</li>
             <li><strong>Model-Based Definition (MBD):</strong> Led company-wide transition to 3D PMI + GD&T in CATIA V5, eliminating 2D drawings for most assemblies. Trained engineering team, now org-wide standard.</li>
+            <li><strong>Z300 Certification:</strong> Drove the Z300 aircraft seat through full certification—requirements, design, analysis/test coordination, and compliance documentation—until approved.</li>
           </ul>
         </div>
 

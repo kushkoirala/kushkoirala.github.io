@@ -57,7 +57,7 @@ const solveObliqueShockBeta = (M, thetaRad, gamma = GAMMA_AIR) => {
   return bestBeta;
 };
 
-const computeInletLosses = (mach, inletType, shockAngleDeg) => {
+const computeInletLosses = (mach, inletType, shockAngleDeg, supersonicDeflections) => {
   if (inletType !== 'supersonic' || mach <= 1.0) {
     const subRec = clamp(0.995 - 0.02 * mach, 0.96, 0.995);
     return { recovery: subRec, machExit: Math.max(0.2, mach), betaDeg: null, note: 'Subsonic diffuser' };
@@ -68,25 +68,58 @@ const computeInletLosses = (mach, inletType, shockAngleDeg) => {
     return { recovery: rec, machExit: 0.7, betaDeg: null, note: 'Transonic fallback' };
   }
 
-  const thetaRad = (shockAngleDeg * Math.PI) / 180;
-  const beta = solveObliqueShockBeta(mach, thetaRad, GAMMA_AIR);
-  const Mn1 = mach * Math.sin(beta);
-
-  if (Mn1 <= 1) {
-    return { recovery: 0.9, machExit: 0.9, betaDeg: (beta * 180) / Math.PI, note: 'Weak shock fallback' };
-  }
-
-  const { ratio: p0Loss, M2: Mn2 } = normalShockTotalPressureRatio(Mn1, GAMMA_AIR);
-  const M2 = Mn2 / Math.max(Math.sin(beta - thetaRad), 0.1);
-  const subRec = clamp(0.995 - 0.02 * Math.max(M2, 0.2), 0.94, 0.995);
-  const recovery = clamp(p0Loss * subRec, 0.8, 0.995);
-
+  const deflections = (supersonicDeflections && supersonicDeflections.length) ? supersonicDeflections : [shockAngleDeg || 6];
+  const inletPlan = designSupersonicInlet(mach, deflections);
+  const subRec = clamp(0.995 - 0.02 * Math.max(inletPlan.machExit, 0.2), 0.94, 0.995);
+  const recovery = clamp(inletPlan.totalP0Ratio * subRec, 0.6, 0.98);
   return {
     recovery,
-    machExit: Math.max(0.2, M2),
-    betaDeg: (beta * 180) / Math.PI,
-    note: 'Oblique + normal shock with subsonic diffuser'
+    machExit: Math.max(0.2, inletPlan.machExit),
+    betaDeg: inletPlan.shocks[0]?.betaDeg ?? null,
+    note: 'Multi-ramp supersonic inlet',
+    shocks: inletPlan.shocks,
+    totalP0Ratio: inletPlan.totalP0Ratio
   };
+};
+
+// Multi-ramp supersonic inlet estimator (simple 2D shocks)
+const designSupersonicInlet = (mach, deflectionsDeg = [6, 6], gamma = GAMMA_AIR) => {
+  let M = mach;
+  let totalP0Ratio = 1;
+  const shocks = [];
+  for (const thetaDeg of deflectionsDeg) {
+    const thetaRad = (thetaDeg * Math.PI) / 180;
+    const beta = solveObliqueShockBeta(M, thetaRad, gamma);
+    const Mn1 = M * Math.sin(beta);
+    const { ratio: p0ratio, M2: Mn2 } = normalShockTotalPressureRatio(Mn1, gamma);
+    const M2 = Mn2 / Math.max(Math.sin(beta - thetaRad), 0.1);
+    totalP0Ratio *= p0ratio;
+    shocks.push({
+      thetaDeg,
+      betaDeg: (beta * 180) / Math.PI,
+      Mn1,
+      Mn2,
+      M2,
+      p0ratio
+    });
+    M = M2;
+    if (M <= 1) break;
+  }
+  const hasNormal = M > 1;
+  if (hasNormal) {
+    const { ratio: normalP0, M2 } = normalShockTotalPressureRatio(M, gamma);
+    totalP0Ratio *= normalP0;
+    shocks.push({
+      thetaDeg: 0,
+      betaDeg: 90,
+      Mn1: M,
+      Mn2: M2,
+      M2,
+      normal: true
+    });
+    M = M2;
+  }
+  return { shocks, machExit: M, totalP0Ratio };
 };
 
 const logSum = (db, count) => {
@@ -224,6 +257,7 @@ const calculatePerformance = (engineSpecs, flightCond, n1, observer, componentDe
     const {
       inletType = 'subsonic',
       shockAngle = 12,
+      supersonicDeflections = [],
       compressorStages = 8,
       turbineStages = 2,
       coolingBleed = 0
@@ -234,7 +268,7 @@ const calculatePerformance = (engineSpecs, flightCond, n1, observer, componentDe
     const v_flight = mach * atm.a; // m/s
     const Ta = atm.T;
     const Pa = atm.P;
-    const inletDetails = computeInletLosses(mach, inletType, shockAngle);
+    const inletDetails = computeInletLosses(mach, inletType, shockAngle, supersonicDeflections);
     const inletRecoveryEffective = inletDetails.recovery * ETA_D;
 
     // 2. Thermodynamic Cycle Analysis (Parametric)
@@ -1225,6 +1259,7 @@ const TurbofanAnalysis = ({ onClose }) => {
   const [componentDesign, setComponentDesign] = useState({
     inletType: 'subsonic',
     shockAngle: 12,
+    supersonicDeflections: [6, 6],
     compressorStages: 8,
     turbineStages: 2,
     coolingBleed: 5
@@ -1234,13 +1269,19 @@ const TurbofanAnalysis = ({ onClose }) => {
   // Acoustics State
   const [observerDist, setObserverDist] = useState(100); // m
   const [observerAngle, setObserverAngle] = useState(135); // deg
-
   const currentEngineType = (engines[engineKey]?.type) || DEFAULT_ENGINES[engineKey]?.type || 'subsonic';
   const designCruiseMach = engines[engineKey]?.designCruiseMach || 0.8;
   const designSupercruiseMach = engines[engineKey]?.designSupercruiseMach || 1.5;
   const allowedPhases = currentEngineType === 'supersonic'
     ? ['takeoff', 'landing', 'cruise', 'supercruise']
     : ['takeoff', 'landing', 'cruise'];
+
+  const supersonicDesign = useMemo(() => {
+      if (currentEngineType !== 'supersonic') return null;
+      const deflections = [6, 6];
+      const list = (componentDesign.supersonicDeflections && componentDesign.supersonicDeflections.length) ? componentDesign.supersonicDeflections : deflections;
+      return designSupersonicInlet(Math.max(mach, 1.01), list);
+  }, [currentEngineType, mach, componentDesign.supersonicDeflections]);
 
   // Flight phase presets
   const applyFlightPhase = (phase) => {
@@ -1859,9 +1900,25 @@ const TurbofanAnalysis = ({ onClose }) => {
                         </button>
                     </div>
                     {componentDesign.inletType === 'supersonic' && (
-                        <div>
-                            <label className="flex justify-between text-gray-700">Ramp Angle <span className="text-blue-600">{componentDesign.shockAngle.toFixed(0)}°</span></label>
-                            <input type="range" min="5" max="25" step="1" value={componentDesign.shockAngle} onChange={(e) => setComponentDesign({ ...componentDesign, shockAngle: Number(e.target.value) })} className="w-full accent-blue-600" />
+                        <div className="space-y-3">
+                            <div>
+                                <label className="flex justify-between text-gray-700">Ramp Angle <span className="text-blue-600">{componentDesign.shockAngle.toFixed(0)}°</span></label>
+                                <input type="range" min="2" max="25" step="0.5" value={componentDesign.shockAngle} onChange={(e) => setComponentDesign({ ...componentDesign, shockAngle: Number(e.target.value) })} className="w-full accent-blue-600" />
+                            </div>
+                            <div>
+                                <label className="text-sm font-medium text-gray-700 mb-1 block">Ramp Schedule (deg, comma-separated)</label>
+                                <input 
+                                  type="text" 
+                                  value={(componentDesign.supersonicDeflections || []).join(', ')}
+                                  onChange={(e) => {
+                                      const parts = e.target.value.split(',').map(p => Number(p.trim())).filter(v => !Number.isNaN(v) && v > 0);
+                                      setComponentDesign({ ...componentDesign, supersonicDeflections: parts.length ? parts : [componentDesign.shockAngle] });
+                                  }}
+                                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:ring-blue-500 focus:border-blue-500"
+                                  placeholder="e.g., 6, 6, 4"
+                                />
+                                <p className="text-xs text-gray-500 mt-1">Multi-ramp shock train drives recovery; blank defaults to dual 6° ramps.</p>
+                            </div>
                         </div>
                     )}
                     <div>
@@ -1950,6 +2007,37 @@ const TurbofanAnalysis = ({ onClose }) => {
                     </div>
                     <p className="mt-3 text-xs text-gray-500">Recovery feeds mass flow and nozzle performance; supersonic inlets use oblique + normal shock loss model.</p>
                   </div>
+
+                  {supersonicDesign && (
+                  <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                    <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                      <Wind size={14} /> Supersonic Ramp Plan (Mach {Math.max(mach,1).toFixed(2)})
+                    </h3>
+                    <div className="text-sm text-gray-700 mb-3">
+                      <div className="flex justify-between"><span>Total P₀ Ratio</span><span className="font-semibold">{supersonicDesign.totalP0Ratio.toFixed(3)}</span></div>
+                      <div className="flex justify-between"><span>Exit Mach</span><span className="font-semibold">{supersonicDesign.machExit.toFixed(3)}</span></div>
+                    </div>
+                    <div className="space-y-2 text-sm text-gray-700">
+                      {supersonicDesign.shocks.map((s, idx) => (
+                        <div key={idx} className="flex justify-between bg-gray-50 px-3 py-2 rounded">
+                          <div>
+                            <div className="text-gray-500 text-xs uppercase">{s.normal ? 'Normal Shock' : `Ramp ${idx+1}`}</div>
+                            {!s.normal && <div className="font-semibold">{s.thetaDeg.toFixed(1)}° deflection</div>}
+                            {s.normal && <div className="font-semibold">Throat-normal</div>}
+                          </div>
+                          <div className="text-right text-xs text-gray-600">
+                            {!s.normal && <div>β {s.betaDeg.toFixed(1)}°</div>}
+                            <div>Mn1 {s.Mn1.toFixed(2)}</div>
+                            <div>Mn2 {s.Mn2.toFixed(2)}</div>
+                            <div>Mout {s.M2.toFixed(3)}</div>
+                            <div>P0↓ x{s.p0ratio ? s.p0ratio.toFixed(3) : '—'}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="mt-3 text-xs text-gray-500">Default plan uses two 6° ramps to keep shock strength mild before the normal shock. Adjust deflection schedule in inlet settings to explore pressure recovery.</p>
+                  </div>
+                  )}
 
                   <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
                     <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
