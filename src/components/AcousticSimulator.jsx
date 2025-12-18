@@ -96,32 +96,32 @@ const AcousticSimulator = ({ onClose }) => {
   }, [selectedEngine, n1, distance, angle]);
 
   return (
-    <div className="fixed inset-0 bg-gray-50 z-50 overflow-y-auto">
+    <div className="fixed inset-0 bg-slate-50 dark:bg-slate-900 z-50 overflow-y-auto">
       <div className="max-w-5xl mx-auto px-6 py-8">
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
             <button 
               onClick={onClose}
-              className="p-2 hover:bg-gray-200 rounded-full transition"
+              className="p-2 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full transition"
             >
               <ArrowLeft size={24} />
             </button>
-            <h1 className="text-3xl font-bold text-gray-900">Turbofan Acoustic Simulator</h1>
+            <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Turbofan Acoustic Simulator</h1>
           </div>
-          <div className="text-sm text-gray-500">
+          <div className="text-sm text-slate-500 dark:text-slate-400">
             Based on simplified Lighthill & Fan noise correlations
           </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Controls */}
-          <div className="lg:col-span-1 space-y-6 bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+          <div className="lg:col-span-1 space-y-6 bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Engine Model</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Engine Model</label>
               <select 
                 value={selectedEngine}
                 onChange={(e) => setSelectedEngine(e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none"
+                className="w-full p-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 rounded-md focus:ring-2 focus:ring-primary-500 outline-none"
               >
                 {Object.keys(ENGINES).map(key => (
                   <option key={key} value={key}>{ENGINES[key].name}</option>
@@ -130,7 +130,7 @@ const AcousticSimulator = ({ onClose }) => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                 Throttle (N1): {n1}%
               </label>
               <input 
@@ -139,12 +139,12 @@ const AcousticSimulator = ({ onClose }) => {
                 max="100" 
                 value={n1} 
                 onChange={(e) => setN1(Number(e.target.value))}
-                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-primary-600"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                 Observer Distance: {distance} m
               </label>
               <input 
@@ -154,15 +154,15 @@ const AcousticSimulator = ({ onClose }) => {
                 step="10"
                 value={distance} 
                 onChange={(e) => setDistance(Number(e.target.value))}
-                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-primary-600"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                 Observer Angle: {angle}°
               </label>
-              <div className="flex justify-between text-xs text-gray-400 mb-1">
+              <div className="flex justify-between text-xs text-slate-400 mb-1">
                 <span>Inlet (0°)</span>
                 <span>Exhaust (180°)</span>
               </div>
@@ -172,7 +172,7 @@ const AcousticSimulator = ({ onClose }) => {
                 max="180" 
                 value={angle} 
                 onChange={(e) => setAngle(Number(e.target.value))}
-                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-primary-600"
               />
             </div>
           </div>
@@ -180,11 +180,11 @@ const AcousticSimulator = ({ onClose }) => {
           {/* Visualization & Results */}
           <div className="lg:col-span-2 space-y-6">
             {/* Main Display */}
-            <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-200 flex flex-col items-center justify-center min-h-[300px] relative overflow-hidden">
+            <div className="bg-white dark:bg-slate-800 p-8 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col items-center justify-center min-h-[300px] relative overflow-hidden">
               {/* Simple Visual Representation */}
               <div className="relative w-64 h-64 flex items-center justify-center">
                 {/* Engine Icon */}
-                <div className="absolute z-10 text-gray-800">
+                <div className="absolute z-10 text-slate-800 dark:text-slate-200">
                     <Wind size={64} className="animate-pulse" style={{ animationDuration: `${3000/Math.max(n1, 1)}ms` }} />
                 </div>
                 
@@ -208,52 +208,52 @@ const AcousticSimulator = ({ onClose }) => {
               </div>
 
               <div className="mt-8 text-center">
-                <div className="text-5xl font-bold text-gray-900 mb-2">
-                  {results?.splTotal.toFixed(1)} <span className="text-2xl text-gray-500">dB</span>
+                <div className="text-5xl font-bold text-slate-900 dark:text-white mb-2">
+                  {results?.splTotal.toFixed(1)} <span className="text-2xl text-slate-500 dark:text-slate-400">dB</span>
                 </div>
-                <div className="text-gray-500">Estimated Sound Pressure Level</div>
+                <div className="text-slate-500 dark:text-slate-400">Estimated Sound Pressure Level</div>
               </div>
             </div>
 
             {/* Detailed Stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
-                <div className="flex items-center gap-2 text-blue-700 mb-1">
+              <div className="bg-blue-50 dark:bg-blue-900/50 p-4 rounded-lg border border-blue-100 dark:border-blue-900">
+                <div className="flex items-center gap-2 text-blue-700 dark:text-blue-300 mb-1">
                   <Gauge size={16} />
                   <span className="text-sm font-semibold">Thrust</span>
                 </div>
-                <div className="text-xl font-bold text-gray-900">
-                  {results?.thrust.toFixed(0)} <span className="text-sm font-normal text-gray-500">lbf</span>
+                <div className="text-xl font-bold text-slate-900 dark:text-white">
+                  {results?.thrust.toFixed(0)} <span className="text-sm font-normal text-slate-500 dark:text-slate-400">lbf</span>
                 </div>
               </div>
 
-              <div className="bg-green-50 p-4 rounded-lg border border-green-100">
-                <div className="flex items-center gap-2 text-green-700 mb-1">
+              <div className="bg-green-50 dark:bg-green-900/50 p-4 rounded-lg border border-green-100 dark:border-green-900">
+                <div className="flex items-center gap-2 text-green-700 dark:text-green-300 mb-1">
                   <Volume2 size={16} />
                   <span className="text-sm font-semibold">Jet Noise</span>
                 </div>
-                <div className="text-xl font-bold text-gray-900">
-                  {results?.splJet.toFixed(1)} <span className="text-sm font-normal text-gray-500">dB</span>
+                <div className="text-xl font-bold text-slate-900 dark:text-white">
+                  {results?.splJet.toFixed(1)} <span className="text-sm font-normal text-slate-500 dark:text-slate-400">dB</span>
                 </div>
               </div>
 
-              <div className="bg-purple-50 p-4 rounded-lg border border-purple-100">
-                <div className="flex items-center gap-2 text-purple-700 mb-1">
+              <div className="bg-purple-50 dark:bg-purple-900/50 p-4 rounded-lg border border-purple-100 dark:border-purple-900">
+                <div className="flex items-center gap-2 text-purple-700 dark:text-purple-300 mb-1">
                   <Volume2 size={16} />
                   <span className="text-sm font-semibold">Fan Noise</span>
                 </div>
-                <div className="text-xl font-bold text-gray-900">
-                  {results?.splFan.toFixed(1)} <span className="text-sm font-normal text-gray-500">dB</span>
+                <div className="text-xl font-bold text-slate-900 dark:text-white">
+                  {results?.splFan.toFixed(1)} <span className="text-sm font-normal text-slate-500 dark:text-slate-400">dB</span>
                 </div>
               </div>
 
-              <div className="bg-orange-50 p-4 rounded-lg border border-orange-100">
-                <div className="flex items-center gap-2 text-orange-700 mb-1">
+              <div className="bg-orange-50 dark:bg-orange-900/50 p-4 rounded-lg border border-orange-100 dark:border-orange-900">
+                <div className="flex items-center gap-2 text-orange-700 dark:text-orange-300 mb-1">
                   <Wind size={16} />
                   <span className="text-sm font-semibold">Jet Velocity</span>
                 </div>
-                <div className="text-xl font-bold text-gray-900">
-                  {results?.vJet.toFixed(0)} <span className="text-sm font-normal text-gray-500">m/s</span>
+                <div className="text-xl font-bold text-slate-900 dark:text-white">
+                  {results?.vJet.toFixed(0)} <span className="text-sm font-normal text-slate-500 dark:text-slate-400">m/s</span>
                 </div>
               </div>
             </div>

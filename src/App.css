@@ -39,41 +39,53 @@
 }
 
 @media print {
+  @page {
+    size: A4;
+    margin: 0.25in;
+  }
   body {
-    font-size: 12px;
-    line-height: 1.35;
+    font-size: 11px;
+    line-height: 1.25;
     color: #111;
+    margin: 0;
   }
   .resume-shell {
     max-width: 100% !important;
-    padding: 0.75rem 1.25rem !important;
+    padding: 0.3rem 0.5rem !important;
   }
   h1 {
-    font-size: 20px;
-    margin-bottom: 6px;
-  }
-  h2 {
-    font-size: 16px;
-    margin-bottom: 6px;
-  }
-  h3 {
-    font-size: 13px;
-    margin-bottom: 4px;
-  }
-  p, li {
-    font-size: 12px;
-    line-height: 1.35;
+    font-size: 18px;
     margin-bottom: 3px;
   }
+  h2 {
+    font-size: 14px;
+    margin-bottom: 3px;
+  }
+  h3 {
+    font-size: 12px;
+    margin-bottom: 2px;
+  }
+  p, li {
+    font-size: 11px;
+    line-height: 1.25;
+    margin-bottom: 1px;
+  }
   section {
-    margin-bottom: 12px !important;
+    margin-bottom: 6px !important;
   }
   header {
-    margin-bottom: 10px !important;
-    padding-bottom: 8px !important;
+    margin-bottom: 4px !important;
+    padding-bottom: 4px !important;
+  }
+  .resume-shell ul {
+    margin-top: 0;
+    margin-bottom: 2px;
+    padding-left: 1.1rem;
+  }
+  .resume-shell li {
+    margin-bottom: 1px;
   }
   .print\:hidden {
     display: none !important;
   }
 }
-

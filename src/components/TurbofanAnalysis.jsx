@@ -568,34 +568,34 @@ const FlightProfileCharts = ({ designSpecs, componentDesign, altitude, mach, del
         const toY = (v) => 80 - ((v - minY) / yRange) * 60;
         return (
             <svg viewBox="0 0 100 90" className="w-full h-full">
-                <rect x="8" y="10" width="84" height="68" fill="white" stroke="#e5e7eb" strokeWidth="0.5" rx="2" />
-                <polyline fill="none" stroke="#2563eb" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"
+                <rect x="8" y="10" width="84" height="68" fill="var(--chart-bg)" stroke="var(--chart-border)" strokeWidth="0.5" rx="2" />
+                <polyline fill="none" stroke="var(--primary-color)" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"
                     points={points.map(p => `${toX(p.x)},${toY(p.y)}`).join(' ')} />
                 {points.map((p, idx) => (
-                    <circle key={idx} cx={toX(p.x)} cy={toY(p.y)} r="1.2" fill="white" stroke="#2563eb" strokeWidth="0.6" />
+                    <circle key={idx} cx={toX(p.x)} cy={toY(p.y)} r="1.2" fill="var(--chart-bg)" stroke="var(--primary-color)" strokeWidth="0.6" />
                 ))}
-                <text x="50" y="86" textAnchor="middle" fontSize="4" fill="#374151" fontWeight="600">{xLabel}</text>
-                <text x="-45" y="14" textAnchor="middle" fontSize="4" fill="#374151" fontWeight="600" transform="rotate(-90)">{yLabel}</text>
+                <text x="50" y="86" textAnchor="middle" fontSize="4" fill="var(--text-color-secondary)" fontWeight="600">{xLabel}</text>
+                <text x="-45" y="14" textAnchor="middle" fontSize="4" fill="var(--text-color-secondary)" fontWeight="600" transform="rotate(-90)">{yLabel}</text>
             </svg>
         );
     };
 
     if (flightPhase === 'takeoff' || flightPhase === 'landing') {
         return (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4" style={{'--chart-bg': 'white', '--chart-border': '#e5e7eb', '--primary-color': '#2563eb', '--text-color-secondary': '#374151'}}>
+                <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
                     <div className="flex items-center justify-between mb-2">
-                        <h3 className="font-semibold text-gray-800 flex items-center gap-2"><Volume2 size={14} /> Noise vs Distance</h3>
-                        <span className="text-xs text-gray-500">Angle {observerAngle}°</span>
+                        <h3 className="font-semibold text-slate-800 dark:text-white flex items-center gap-2"><Volume2 size={14} /> Noise vs Distance</h3>
+                        <span className="text-xs text-slate-500 dark:text-slate-400">Angle {observerAngle}°</span>
                     </div>
                     <div className="h-48">
                         {renderLine(noiseDistPoints, { xLabel: 'Distance (m)', yLabel: 'SPL (dBA)' })}
                     </div>
                 </div>
-                <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
                     <div className="flex items-center justify-between mb-2">
-                        <h3 className="font-semibold text-gray-800 flex items-center gap-2"><Volume2 size={14} /> Noise vs Angle</h3>
-                        <span className="text-xs text-gray-500">Dist {observerDist} m</span>
+                        <h3 className="font-semibold text-slate-800 dark:text-white flex items-center gap-2"><Volume2 size={14} /> Noise vs Angle</h3>
+                        <span className="text-xs text-slate-500 dark:text-slate-400">Dist {observerDist} m</span>
                     </div>
                     <div className="h-48">
                         {renderLine(noiseAnglePoints, { xLabel: 'Angle (deg)', yLabel: 'SPL (dBA)' })}
@@ -607,20 +607,20 @@ const FlightProfileCharts = ({ designSpecs, componentDesign, altitude, mach, del
 
     if (flightPhase === 'supercruise') {
         return (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4" style={{'--chart-bg': 'white', '--chart-border': '#e5e7eb', '--primary-color': '#2563eb', '--text-color-secondary': '#374151'}}>
+                <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
                     <div className="flex items-center justify-between mb-2">
-                        <h3 className="font-semibold text-gray-800 flex items-center gap-2"><Activity size={14} /> TSFC vs Mach (Supercruise)</h3>
-                        <span className="text-xs text-gray-500">Alt {altitude.toLocaleString()} ft</span>
+                        <h3 className="font-semibold text-slate-800 dark:text-white flex items-center gap-2"><Activity size={14} /> TSFC vs Mach (Supercruise)</h3>
+                        <span className="text-xs text-slate-500 dark:text-slate-400">Alt {altitude.toLocaleString()} ft</span>
                     </div>
                     <div className="h-48">
                         {renderLine(tsfcMachSuper, { xLabel: 'Mach', yLabel: 'TSFC (kg/(kN·s))' })}
                     </div>
                 </div>
-                <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
                     <div className="flex items-center justify-between mb-2">
-                        <h3 className="font-semibold text-gray-800 flex items-center gap-2"><Gauge size={14} /> Thrust vs Mach (Supercruise)</h3>
-                        <span className="text-xs text-gray-500">Alt {altitude.toLocaleString()} ft</span>
+                        <h3 className="font-semibold text-slate-800 dark:text-white flex items-center gap-2"><Gauge size={14} /> Thrust vs Mach (Supercruise)</h3>
+                        <span className="text-xs text-slate-500 dark:text-slate-400">Alt {altitude.toLocaleString()} ft</span>
                     </div>
                     <div className="h-48">
                         {renderLine(thrustMachSuper, { xLabel: 'Mach', yLabel: 'Net Thrust (kN)' })}
@@ -632,20 +632,20 @@ const FlightProfileCharts = ({ designSpecs, componentDesign, altitude, mach, del
 
     // Cruise/default
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4" style={{'--chart-bg': 'white', '--chart-border': '#e5e7eb', '--primary-color': '#2563eb', '--text-color-secondary': '#374151'}}>
+            <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
                 <div className="flex items-center justify-between mb-2">
-                    <h3 className="font-semibold text-gray-800 flex items-center gap-2"><Activity size={14} /> TSFC vs Mach</h3>
-                    <span className="text-xs text-gray-500">Alt {altitude.toLocaleString()} ft</span>
+                    <h3 className="font-semibold text-slate-800 dark:text-white flex items-center gap-2"><Activity size={14} /> TSFC vs Mach</h3>
+                    <span className="text-xs text-slate-500 dark:text-slate-400">Alt {altitude.toLocaleString()} ft</span>
                 </div>
                 <div className="h-48">
                     {renderLine(tsfcMachCruise, { xLabel: 'Mach', yLabel: 'TSFC (kg/(kN·s))' })}
                 </div>
             </div>
-            <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+            <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
                 <div className="flex items-center justify-between mb-2">
-                    <h3 className="font-semibold text-gray-800 flex items-center gap-2"><Activity size={14} /> TSFC vs Altitude</h3>
-                    <span className="text-xs text-gray-500">Mach {mach.toFixed(2)}</span>
+                    <h3 className="font-semibold text-slate-800 dark:text-white flex items-center gap-2"><Activity size={14} /> TSFC vs Altitude</h3>
+                    <span className="text-xs text-slate-500 dark:text-slate-400">Mach {mach.toFixed(2)}</span>
                 </div>
                 <div className="h-48">
                     {renderLine(tsfcPoints, { xLabel: 'Altitude (ft)', yLabel: 'TSFC (kg/(kN·s))' })}
@@ -660,8 +660,8 @@ const StationAnalysis = ({ stations, formatValue, unitSystem }) => {
     const maxT = Math.max(...stations.map(s => s.T));
 
     return (
-        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-            <h3 className="font-semibold text-gray-800 mb-6 flex items-center gap-2">
+        <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+            <h3 className="font-semibold text-slate-800 dark:text-white mb-6 flex items-center gap-2">
                 <Thermometer size={16} /> Thermodynamic Cycle (Brayton)
             </h3>
             <div className="h-64 flex items-end justify-between gap-4 px-4">
@@ -681,10 +681,10 @@ const StationAnalysis = ({ stations, formatValue, unitSystem }) => {
                             >
                             </div>
                         </div>
-                        <div className="text-xs text-gray-500 font-medium text-center mt-2 h-8">{s.name}</div>
+                        <div className="text-xs text-slate-500 dark:text-slate-400 font-medium text-center mt-2 h-8">{s.name}</div>
                         
                         {/* Tooltip */}
-                        <div className="absolute bottom-20 hidden group-hover:block bg-gray-900 text-white text-xs p-2 rounded z-10 whitespace-nowrap shadow-xl">
+                        <div className="absolute bottom-20 hidden group-hover:block bg-slate-900 text-white text-xs p-2 rounded z-10 whitespace-nowrap shadow-xl">
                             <div className="font-bold mb-1">{s.name} (Stn {s.id})</div>
                             <div className="text-blue-200">P: {formatValue(s.P, 'pressure')}</div>
                             <div className="text-red-200">T: {formatValue(s.T, 'temp')}</div>
@@ -692,7 +692,7 @@ const StationAnalysis = ({ stations, formatValue, unitSystem }) => {
                     </div>
                 ))}
             </div>
-            <div className="flex justify-center gap-6 mt-6 text-xs font-medium border-t border-gray-100 pt-4">
+            <div className="flex justify-center gap-6 mt-6 text-xs font-medium border-t border-slate-100 dark:border-slate-700 pt-4 text-slate-600 dark:text-slate-300">
                 <div className="flex items-center gap-2">
                     <div className="w-3 h-3 bg-blue-500 rounded"></div> Total Pressure ({unitSystem === 'SI' ? 'kPa' : 'psi'})
                 </div>
@@ -715,7 +715,7 @@ const NoiseContourMap = ({ acoustics }) => {
         const height = canvas.height;
         
         // Clear
-        ctx.fillStyle = '#f9fafb';
+        ctx.fillStyle = 'rgba(0,0,0,0)';
         ctx.fillRect(0, 0, width, height);
 
         const cx = width / 2;
@@ -829,13 +829,13 @@ const NoiseContourMap = ({ acoustics }) => {
     }, [acoustics]);
 
     return (
-        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex flex-col h-full">
-            <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+        <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col h-full">
+            <h3 className="font-semibold text-slate-800 dark:text-white mb-4 flex items-center gap-2">
                 <Volume2 size={16} /> Acoustic Field Contour
             </h3>
-            <div className="flex-1 relative bg-gray-50 rounded-lg overflow-hidden border border-gray-100">
+            <div className="flex-1 relative bg-slate-50 dark:bg-slate-900 rounded-lg overflow-hidden border border-slate-100 dark:border-slate-700">
                 <canvas ref={canvasRef} width={400} height={300} className="w-full h-full object-contain" />
-                <div className="absolute bottom-2 right-2 bg-white/90 p-2 rounded text-xs shadow-sm border border-gray-200">
+                <div className="absolute bottom-2 right-2 bg-white/90 dark:bg-slate-800/90 p-2 rounded text-xs shadow-sm border border-slate-200 dark:border-slate-700">
                     <div className="flex items-center gap-2 mb-1"><div className="w-3 h-3 bg-green-500 rounded-full opacity-50"></div> &lt; 80 dB</div>
                     <div className="flex items-center gap-2 mb-1"><div className="w-3 h-3 bg-yellow-400 rounded-full opacity-50"></div> 80-100 dB</div>
                     <div className="flex items-center gap-2 mb-1"><div className="w-3 h-3 bg-orange-500 rounded-full opacity-50"></div> 100-120 dB</div>
@@ -933,17 +933,17 @@ const TradeStudy = ({ baseSpecs, flightCond, n1, observer, componentDesign }) =>
     const yTickValues = Array.from({ length: yTicks }, (_, i) => minY + (yRange * i) / (yTicks - 1));
 
     return (
-        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm h-full flex flex-col">
+        <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm h-full flex flex-col">
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
-                <h3 className="font-semibold text-gray-800 flex items-center gap-2">
-                    <Activity size={16} className="text-blue-600" /> Parametric Trade Study
+                <h3 className="font-semibold text-slate-800 dark:text-white flex items-center gap-2">
+                    <Activity size={16} className="text-primary-600 dark:text-primary-400" /> Parametric Trade Study
                 </h3>
                 <div className="flex gap-2 flex-wrap">
                     <select 
                         value={paramX} 
                         onChange={(e) => setParamX(e.target.value)}
-                        className="text-xs border border-gray-300 rounded-lg px-3 py-2 bg-white hover:border-blue-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
+                        className="text-xs border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 bg-white dark:bg-slate-700 hover:border-primary-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-200 transition-all"
                     >
                         {Object.keys(TRADE_PARAMS).map(k => 
                             <option key={k} value={k}>X: {TRADE_PARAMS[k].label}</option>
@@ -952,7 +952,7 @@ const TradeStudy = ({ baseSpecs, flightCond, n1, observer, componentDesign }) =>
                     <select 
                         value={paramY} 
                         onChange={(e) => setParamY(e.target.value)}
-                        className="text-xs border border-gray-300 rounded-lg px-3 py-2 bg-white hover:border-blue-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
+                        className="text-xs border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 bg-white dark:bg-slate-700 hover:border-primary-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-200 transition-all"
                     >
                         {Object.keys(TRADE_METRICS).map(k => 
                             <option key={k} value={k}>Y: {TRADE_METRICS[k].label}</option>
@@ -962,7 +962,7 @@ const TradeStudy = ({ baseSpecs, flightCond, n1, observer, componentDesign }) =>
             </div>
 
             {/* Chart Container */}
-            <div className="flex-1 relative bg-gradient-to-br from-gray-50 to-white rounded-lg p-8 min-h-0">
+            <div className="flex-1 relative bg-gradient-to-br from-slate-50 to-white dark:from-slate-900 dark:to-slate-800 rounded-lg p-8 min-h-0">
                 <svg 
                     className="w-full h-full" 
                     viewBox="0 0 120 80" 
@@ -978,7 +978,7 @@ const TradeStudy = ({ baseSpecs, flightCond, n1, observer, componentDesign }) =>
                     </defs>
 
                     {/* Chart area background */}
-                    <rect x="10" y="5" width={chartWidth} height={chartHeight} fill="white" stroke="#e5e7eb" strokeWidth="0.3" rx="1" />
+                    <rect x="10" y="5" width={chartWidth} height={chartHeight} fill="var(--chart-bg, white)" stroke="var(--chart-border, #e5e7eb)" strokeWidth="0.3" rx="1" />
 
                     {/* Grid Lines */}
                     {yTickValues.map((tick, i) => {
@@ -990,7 +990,7 @@ const TradeStudy = ({ baseSpecs, flightCond, n1, observer, componentDesign }) =>
                                     y1={y} 
                                     x2={10 + chartWidth} 
                                     y2={y} 
-                                    stroke="#f3f4f6" 
+                                    stroke="var(--grid-color, #f3f4f6)" 
                                     strokeWidth="0.3" 
                                     strokeDasharray="1,1"
                                 />
@@ -1007,7 +1007,7 @@ const TradeStudy = ({ baseSpecs, flightCond, n1, observer, componentDesign }) =>
                                     y1="5" 
                                     x2={x} 
                                     y2={5 + chartHeight} 
-                                    stroke="#f3f4f6" 
+                                    stroke="var(--grid-color, #f3f4f6)" 
                                     strokeWidth="0.3" 
                                     strokeDasharray="1,1"
                                 />
@@ -1039,7 +1039,7 @@ const TradeStudy = ({ baseSpecs, flightCond, n1, observer, componentDesign }) =>
                             cx={normalizeX(p.x) + 10} 
                             cy={normalizeY(p.y) + 5} 
                             r={hoveredPoint === i ? "1.2" : "0.8"} 
-                            fill="white" 
+                            fill="var(--chart-bg, white)" 
                             stroke={TRADE_METRICS[paramY].color} 
                             strokeWidth="0.4"
                             className="cursor-pointer transition-all hover:r-2"
@@ -1054,13 +1054,13 @@ const TradeStudy = ({ baseSpecs, flightCond, n1, observer, componentDesign }) =>
                         const x = normalizeX(tick) + 10;
                         return (
                             <g key={`x-tick-${i}`}>
-                                <line x1={x} y1={5 + chartHeight} x2={x} y2={5 + chartHeight + 1} stroke="#9ca3af" strokeWidth="0.3" />
+                                <line x1={x} y1={5 + chartHeight} x2={x} y2={5 + chartHeight + 1} stroke="var(--text-color-secondary)" strokeWidth="0.3" />
                                 <text 
                                     x={x} 
                                     y={5 + chartHeight + 4} 
                                     textAnchor="middle" 
                                     fontSize="2.5" 
-                                    fill="#6b7280"
+                                    fill="var(--text-color-secondary)"
                                     fontFamily="monospace"
                                 >
                                     {tick.toFixed(tick < 10 ? 1 : 0)}
@@ -1074,13 +1074,13 @@ const TradeStudy = ({ baseSpecs, flightCond, n1, observer, componentDesign }) =>
                         const y = normalizeY(tick) + 5;
                         return (
                             <g key={`y-tick-${i}`}>
-                                <line x1="10" y1={y} x2="9" y2={y} stroke="#9ca3af" strokeWidth="0.3" />
+                                <line x1="10" y1={y} x2="9" y2={y} stroke="var(--text-color-secondary)" strokeWidth="0.3" />
                                 <text 
                                     x="8" 
                                     y={y + 0.8} 
                                     textAnchor="end" 
                                     fontSize="2.5" 
-                                    fill="#6b7280"
+                                    fill="var(--text-color-secondary)"
                                     fontFamily="monospace"
                                 >
                                     {tick.toFixed(tick < 10 ? 2 : 0)}
@@ -1095,7 +1095,7 @@ const TradeStudy = ({ baseSpecs, flightCond, n1, observer, componentDesign }) =>
                         y="78" 
                         textAnchor="middle" 
                         fontSize="3" 
-                        fill="#374151"
+                        fill="var(--text-color-primary)"
                         fontWeight="600"
                     >
                         {TRADE_PARAMS[paramX].label}
@@ -1106,7 +1106,7 @@ const TradeStudy = ({ baseSpecs, flightCond, n1, observer, componentDesign }) =>
                         y="3" 
                         textAnchor="middle" 
                         fontSize="3" 
-                        fill="#374151"
+                        fill="var(--text-color-primary)"
                         fontWeight="600"
                         transform="rotate(-90)"
                     >
@@ -1117,7 +1117,7 @@ const TradeStudy = ({ baseSpecs, flightCond, n1, observer, componentDesign }) =>
                 {/* Hover Tooltip */}
                 {hoveredPoint !== null && (
                     <div 
-                        className="absolute bg-gray-900 text-white text-xs px-3 py-2 rounded-lg shadow-lg pointer-events-none"
+                        className="absolute bg-slate-900 text-white text-xs px-3 py-2 rounded-lg shadow-lg pointer-events-none"
                         style={{
                             left: '50%',
                             top: '10px',
@@ -1126,7 +1126,7 @@ const TradeStudy = ({ baseSpecs, flightCond, n1, observer, componentDesign }) =>
                         }}
                     >
                         <div className="font-semibold">{TRADE_PARAMS[paramX].label}: {dataPoints[hoveredPoint].x.toFixed(2)}</div>
-                        <div className="text-gray-300">{TRADE_METRICS[paramY].label}: {dataPoints[hoveredPoint].y.toFixed(4)}</div>
+                        <div className="text-slate-300">{TRADE_METRICS[paramY].label}: {dataPoints[hoveredPoint].y.toFixed(4)}</div>
                     </div>
                 )}
             </div>
@@ -1502,19 +1502,19 @@ const TurbofanAnalysis = ({ onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-gray-100 z-50 overflow-hidden flex flex-col">
+    <div className="fixed inset-0 bg-slate-100 dark:bg-slate-900 z-50 overflow-hidden flex flex-col">
       {modeChoice === null && (
-        <div className="absolute inset-0 bg-white z-30 flex items-center justify-center">
+        <div className="absolute inset-0 bg-white dark:bg-slate-900 z-30 flex items-center justify-center">
           <div className="max-w-4xl w-full px-6 py-8">
             <div className="flex items-center justify-between mb-6">
               <div>
-                <p className="text-xs uppercase tracking-[0.2em] text-gray-500 font-semibold mb-1">Select Mode</p>
-                <h2 className="text-2xl font-bold text-gray-900">Turbofan Analysis</h2>
-                <p className="text-sm text-gray-500">Choose what you want to do before entering the workspace.</p>
+                <p className="text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400 font-semibold mb-1">Select Mode</p>
+                <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Turbofan Analysis</h2>
+                <p className="text-sm text-slate-500 dark:text-slate-400">Choose what you want to do before entering the workspace.</p>
               </div>
               <button
                 onClick={onClose}
-                className="p-2 text-gray-500 hover:text-gray-900 rounded-full hover:bg-gray-100 transition"
+                className="p-2 text-slate-500 hover:text-slate-900 dark:hover:text-white rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition"
                 title="Back to resume"
               >
                 <X size={18} />
@@ -1522,22 +1522,22 @@ const TurbofanAnalysis = ({ onClose }) => {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {[
-                { id: 'performance', title: 'Quick Performance', desc: 'Thrust, TSFC, mission sliders.', icon: <Gauge size={18} className="text-blue-600" /> },
-                { id: 'acoustics', title: 'Acoustics Run', desc: 'Noise maps and observers.', icon: <Volume2 size={18} className="text-orange-600" /> },
-                { id: 'components', title: 'Component Design', desc: 'Inlets, compressors, turbines.', icon: <Cpu size={18} className="text-purple-600" /> },
-                { id: 'builder', title: 'Create Engine', desc: 'Spin up a custom engine.', icon: <Plus size={18} className="text-green-600" /> },
+                { id: 'performance', title: 'Quick Performance', desc: 'Thrust, TSFC, mission sliders.', icon: <Gauge size={18} className="text-primary-600 dark:text-primary-400" /> },
+                { id: 'acoustics', title: 'Acoustics Run', desc: 'Noise maps and observers.', icon: <Volume2 size={18} className="text-orange-600 dark:text-orange-400" /> },
+                { id: 'components', title: 'Component Design', desc: 'Inlets, compressors, turbines.', icon: <Cpu size={18} className="text-purple-600 dark:text-purple-400" /> },
+                { id: 'builder', title: 'Create Engine', desc: 'Spin up a custom engine.', icon: <Plus size={18} className="text-green-600 dark:text-green-400" /> },
               ].map(card => (
                 <button
                   key={card.id}
                   onClick={() => applyModeChoice(card.id)}
-                  className="text-left bg-white border border-gray-200 rounded-xl p-4 hover:border-blue-300 hover:shadow-md transition flex gap-3"
+                  className="text-left bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-4 hover:border-primary-300 dark:hover:border-primary-600 hover:shadow-md transition flex gap-3"
                 >
-                  <div className="w-10 h-10 rounded-lg bg-gray-50 flex items-center justify-center">
+                  <div className="w-10 h-10 rounded-lg bg-slate-50 dark:bg-slate-700/50 flex items-center justify-center">
                     {card.icon}
                   </div>
                   <div>
-                    <div className="font-semibold text-gray-900">{card.title}</div>
-                    <div className="text-sm text-gray-600">{card.desc}</div>
+                    <div className="font-semibold text-slate-900 dark:text-white">{card.title}</div>
+                    <div className="text-sm text-slate-600 dark:text-slate-400">{card.desc}</div>
                   </div>
                 </button>
               ))}
@@ -1546,44 +1546,44 @@ const TurbofanAnalysis = ({ onClose }) => {
         </div>
       )}
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-4 lg:px-6 py-3 lg:py-4 flex items-center justify-between shadow-sm z-20">
+      <div className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-4 lg:px-6 py-3 lg:py-4 flex items-center justify-between shadow-sm z-20">
         <div className="flex items-center gap-3 lg:gap-4">
           <div className="flex items-center gap-2">
             <button 
               onClick={() => setModeChoice(null)}
               disabled={modeChoice === null}
-              className={`p-2 rounded-full transition ${modeChoice === null ? 'text-gray-300 cursor-not-allowed' : 'hover:bg-gray-100 text-gray-600'}`}
+              className={`p-2 rounded-full transition ${modeChoice === null ? 'text-slate-300 dark:text-slate-600 cursor-not-allowed' : 'hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300'}`}
               title="Back to mode select"
             >
               <ArrowLeft size={20} />
             </button>
             <button 
               onClick={onClose}
-              className="p-2 hover:bg-gray-100 rounded-full transition text-gray-600"
+              className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition text-slate-600 dark:text-slate-300"
               title="Back to resume"
             >
               <ChevronsLeft size={20} />
             </button>
           </div>
           <div>
-            <h1 className="text-lg lg:text-xl font-bold text-gray-900 flex items-center gap-2">
-              <Activity className="text-blue-600 hidden sm:block" />
+            <h1 className="text-lg lg:text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <Activity className="text-primary-600 dark:text-primary-400 hidden sm:block" />
               Turbofan Analysis
             </h1>
-            <p className="text-[10px] lg:text-xs text-gray-500 hidden sm:block">Real-time cycle estimation • Standard Atmosphere • Lighthill Acoustics</p>
+            <p className="text-[10px] lg:text-xs text-slate-500 dark:text-slate-400 hidden sm:block">Real-time cycle estimation • Standard Atmosphere • Lighthill Acoustics</p>
           </div>
         </div>
         <div className="flex items-center gap-2 lg:gap-4">
             {/* Unit System Toggle */}
             <button
               onClick={() => setUnitSystem(unitSystem === 'SI' ? 'Imperial' : 'SI')}
-              className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-gray-100 text-gray-700 text-xs font-medium rounded-lg hover:bg-gray-200 transition"
+              className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-medium rounded-lg hover:bg-slate-200 dark:hover:bg-slate-600 transition"
               title="Toggle Unit System"
             >
               <Settings size={14} />
               <span>{unitSystem === 'SI' ? 'SI' : 'Imperial'}</span>
             </button>
-            <div className="hidden md:flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg p-1">
+            <div className="hidden md:flex items-center gap-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-1">
               {[
                 { id: 'performance', label: 'Quick Performance' },
                 { id: 'acoustics', label: 'Acoustics Run' },
@@ -1594,7 +1594,7 @@ const TurbofanAnalysis = ({ onClose }) => {
                   key={mode.id}
                   onClick={() => applyModeChoice(mode.id)}
                   className={`px-2.5 py-1 text-[11px] font-medium rounded-md transition ${
-                    modeChoice === mode.id ? 'bg-white shadow-sm text-blue-700' : 'text-gray-700 hover:bg-white'
+                    modeChoice === mode.id ? 'bg-white dark:bg-slate-700 shadow-sm text-primary-700 dark:text-primary-300' : 'text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800'
                   }`}
                 >
                   {mode.label}
@@ -1604,9 +1604,9 @@ const TurbofanAnalysis = ({ onClose }) => {
             {modeChoice !== null && (
               <button
                 onClick={() => setModeChoice(null)}
-                className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-200 text-xs font-medium rounded-lg hover:bg-gray-50 transition"
+                className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-xs font-medium rounded-lg hover:bg-slate-50 dark:hover:bg-slate-600 transition"
               >
-                <ArrowLeft size={14} className="text-gray-600" />
+                <ArrowLeft size={14} className="text-slate-600 dark:text-slate-300" />
                 Mode Select
               </button>
             )}
@@ -1615,7 +1615,7 @@ const TurbofanAnalysis = ({ onClose }) => {
               <select 
                   value={engineKey}
                   onChange={(e) => handleSelectEngine(e.target.value)}
-                  className="bg-gray-50 border border-gray-300 text-gray-900 text-xs lg:text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2 max-w-[150px] lg:max-w-xs"
+                  className="bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white text-xs lg:text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block p-2 max-w-[150px] lg:max-w-xs"
               >
                   {Object.keys(engines).map(k => (
                       <option key={k} value={k}>{engines[k].name}</option>
@@ -1623,7 +1623,7 @@ const TurbofanAnalysis = ({ onClose }) => {
               </select>
               <button 
                 onClick={() => setShowBuilder(true)}
-                className="p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition"
+                className="p-2 bg-primary-50 dark:bg-primary-900/50 text-primary-600 dark:text-primary-400 rounded-lg hover:bg-primary-100 dark:hover:bg-primary-800/50 transition"
                 title="Create Custom Engine"
               >
                 <Plus size={18} />
@@ -1631,7 +1631,7 @@ const TurbofanAnalysis = ({ onClose }) => {
               {!DEFAULT_ENGINES[engineKey] && (
                 <button 
                   onClick={() => handleDeleteEngine(engineKey)}
-                  className="p-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition"
+                  className="p-2 bg-red-50 dark:bg-red-900/50 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-800/50 transition"
                   title="Delete Custom Engine"
                 >
                   <X size={18} />
@@ -1640,7 +1640,7 @@ const TurbofanAnalysis = ({ onClose }) => {
             </div>
             {/* Mobile Menu Toggle */}
             <button 
-              className="lg:hidden p-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+              className="lg:hidden p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg"
               onClick={() => setShowMobileMenu(!showMobileMenu)}
             >
               {showMobileMenu ? <X size={24} /> : <Menu size={24} />}
@@ -1654,24 +1654,24 @@ const TurbofanAnalysis = ({ onClose }) => {
         {/* LEFT PANEL: Inputs */}
         {modeChoice !== null && (
         <div className={`
-            absolute inset-0 z-30 bg-white lg:static lg:w-80 lg:block border-r border-gray-200 overflow-y-auto p-6 space-y-8 transition-transform duration-300 ease-in-out
+            absolute inset-0 z-30 bg-white dark:bg-slate-800/50 backdrop-blur-lg lg:backdrop-blur-none lg:bg-transparent lg:dark:bg-transparent lg:static lg:w-80 lg:block border-r border-slate-200 dark:border-slate-700 overflow-y-auto p-6 space-y-8 transition-transform duration-300 ease-in-out
             ${showMobileMenu ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         `}>
             
             {/* 1. Cycle Design Solver - Only for New Engine Design */}
             {isNewEngineDesign && (
-            <section className="bg-blue-50 p-4 rounded-xl border border-blue-100">
-                <h3 className="text-xs font-semibold text-blue-800 uppercase tracking-wider mb-2 flex items-center gap-2">
+            <section className="bg-primary-50 dark:bg-primary-900/40 p-4 rounded-xl border border-primary-100 dark:border-primary-900">
+                <h3 className="text-xs font-semibold text-primary-800 dark:text-primary-200 uppercase tracking-wider mb-2 flex items-center gap-2">
                     <Cpu size={14} /> Cycle Design Solver
                 </h3>
-                <p className="text-[10px] text-blue-600 mb-3 leading-tight">
+                <p className="text-[10px] text-primary-600 dark:text-primary-300 mb-3 leading-tight">
                     Generates optimal hardware specs (BPR, PR) for a target design point.
                 </p>
                 <div className="space-y-2">
                     <button 
                         onClick={() => runDesignOptimizer('Quiet Takeoff')}
                         disabled={isOptimizing}
-                        className="w-full py-2 px-3 bg-white border border-blue-200 text-blue-700 text-sm font-medium rounded-lg hover:bg-blue-100 transition flex items-center justify-between"
+                        className="w-full py-2 px-3 bg-white dark:bg-slate-800 border border-primary-200 dark:border-slate-700 text-primary-700 dark:text-primary-300 text-sm font-medium rounded-lg hover:bg-primary-100 dark:hover:bg-slate-700 transition flex items-center justify-between"
                     >
                         <span>Design for Quiet Takeoff</span>
                         <Volume2 size={14} />
@@ -1679,7 +1679,7 @@ const TurbofanAnalysis = ({ onClose }) => {
                     <button 
                         onClick={() => runDesignOptimizer('Eco Cruise')}
                         disabled={isOptimizing}
-                        className="w-full py-2 px-3 bg-white border border-green-200 text-green-700 text-sm font-medium rounded-lg hover:bg-green-100 transition flex items-center justify-between"
+                        className="w-full py-2 px-3 bg-white dark:bg-slate-800 border border-green-200 dark:border-slate-700 text-green-700 dark:text-green-300 text-sm font-medium rounded-lg hover:bg-green-100 dark:hover:bg-slate-700 transition flex items-center justify-between"
                     >
                         <span>Design for Eco Cruise</span>
                         <Zap size={14} />
@@ -1687,7 +1687,7 @@ const TurbofanAnalysis = ({ onClose }) => {
                     <button 
                         onClick={() => runDesignOptimizer('Supersonic')}
                         disabled={isOptimizing}
-                        className="w-full py-2 px-3 bg-white border border-orange-200 text-orange-700 text-sm font-medium rounded-lg hover:bg-orange-100 transition flex items-center justify-between"
+                        className="w-full py-2 px-3 bg-white dark:bg-slate-800 border border-orange-200 dark:border-slate-700 text-orange-700 dark:text-orange-300 text-sm font-medium rounded-lg hover:bg-orange-100 dark:hover:bg-slate-700 transition flex items-center justify-between"
                     >
                         <span>Design for Supersonic</span>
                         <Wind size={14} />
@@ -1698,52 +1698,52 @@ const TurbofanAnalysis = ({ onClose }) => {
 
             {/* Design Parameters (Editable for New Engines, Read-Only for Existing) */}
             <section>
-                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+                <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
                     <Settings size={14} /> {isNewEngineDesign ? 'Cycle Design' : 'Engine Specs'}
                 </h3>
                 {!isNewEngineDesign && (
-                    <p className="text-[10px] text-gray-500 mb-3 italic">
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400 mb-3 italic">
                         Fixed specs for existing engine. Create new engine to modify.
                     </p>
                 )}
                 <div className="space-y-4">
                     <div>
-                        <label className="flex justify-between text-sm font-medium text-gray-700 mb-1">
+                        <label className="flex justify-between text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                             <span>Bypass Ratio</span>
-                            <span className={isNewEngineDesign ? "text-blue-600" : "text-gray-600"}>{designSpecs.bpr.toFixed(1)}</span>
+                            <span className={isNewEngineDesign ? "text-primary-600 dark:text-primary-400" : "text-slate-600 dark:text-slate-400"}>{designSpecs.bpr.toFixed(1)}</span>
                         </label>
                         <input 
                             type="range" min="0" max="15" step="0.1" 
                             value={designSpecs.bpr} 
                             onChange={(e) => setDesignSpecs({...designSpecs, bpr: Number(e.target.value)})} 
                             disabled={!isNewEngineDesign}
-                            className={`w-full h-2 bg-gray-200 rounded-lg appearance-none ${isNewEngineDesign ? 'cursor-pointer accent-blue-600' : 'cursor-not-allowed opacity-50'}`} 
+                            className={`w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none ${isNewEngineDesign ? 'cursor-pointer accent-primary-600' : 'cursor-not-allowed opacity-50'}`} 
                         />
                     </div>
                     <div>
-                        <label className="flex justify-between text-sm font-medium text-gray-700 mb-1">
+                        <label className="flex justify-between text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                             <span>Compressor PR</span>
-                            <span className={isNewEngineDesign ? "text-blue-600" : "text-gray-600"}>{designSpecs.prC.toFixed(1)}</span>
+                            <span className={isNewEngineDesign ? "text-primary-600 dark:text-primary-400" : "text-slate-600 dark:text-slate-400"}>{designSpecs.prC.toFixed(1)}</span>
                         </label>
                         <input 
                             type="range" min="5" max="60" step="1" 
                             value={designSpecs.prC} 
                             onChange={(e) => setDesignSpecs({...designSpecs, prC: Number(e.target.value)})} 
                             disabled={!isNewEngineDesign}
-                            className={`w-full h-2 bg-gray-200 rounded-lg appearance-none ${isNewEngineDesign ? 'cursor-pointer accent-blue-600' : 'cursor-not-allowed opacity-50'}`} 
+                            className={`w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none ${isNewEngineDesign ? 'cursor-pointer accent-primary-600' : 'cursor-not-allowed opacity-50'}`} 
                         />
                     </div>
                     <div>
-                        <label className="flex justify-between text-sm font-medium text-gray-700 mb-1">
+                        <label className="flex justify-between text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                             <span>Fan PR</span>
-                            <span className={isNewEngineDesign ? "text-blue-600" : "text-gray-600"}>{designSpecs.prF.toFixed(2)}</span>
+                            <span className={isNewEngineDesign ? "text-primary-600 dark:text-primary-400" : "text-slate-600 dark:text-slate-400"}>{designSpecs.prF.toFixed(2)}</span>
                         </label>
                         <input 
                             type="range" min="1.1" max="2.5" step="0.05" 
                             value={designSpecs.prF} 
                             onChange={(e) => setDesignSpecs({...designSpecs, prF: Number(e.target.value)})} 
                             disabled={!isNewEngineDesign}
-                            className={`w-full h-2 bg-gray-200 rounded-lg appearance-none ${isNewEngineDesign ? 'cursor-pointer accent-blue-600' : 'cursor-not-allowed opacity-50'}`} 
+                            className={`w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none ${isNewEngineDesign ? 'cursor-pointer accent-primary-600' : 'cursor-not-allowed opacity-50'}`} 
                         />
                     </div>
                 </div>
@@ -1751,7 +1751,7 @@ const TurbofanAnalysis = ({ onClose }) => {
 
             {/* Flight Phase Selector */}
             <section>
-                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+                <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
                     <Wind size={14} /> Flight Phase
                 </h3>
                 <div className="grid grid-cols-2 gap-2 mb-4">
@@ -1759,8 +1759,8 @@ const TurbofanAnalysis = ({ onClose }) => {
                         onClick={() => applyFlightPhase('takeoff')}
                         className={`px-3 py-2 text-xs font-medium rounded-lg transition ${
                             flightPhase === 'takeoff'
-                                ? 'bg-blue-600 text-white shadow-md'
-                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                ? 'bg-primary-600 text-white shadow-md'
+                                : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-600'
                         }`}
                     >
                         🛫 Takeoff
@@ -1769,8 +1769,8 @@ const TurbofanAnalysis = ({ onClose }) => {
                         onClick={() => applyFlightPhase('landing')}
                         className={`px-3 py-2 text-xs font-medium rounded-lg transition ${
                             flightPhase === 'landing'
-                                ? 'bg-blue-600 text-white shadow-md'
-                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                ? 'bg-primary-600 text-white shadow-md'
+                                : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-600'
                         }`}
                     >
                         🛬 Landing
@@ -1779,8 +1779,8 @@ const TurbofanAnalysis = ({ onClose }) => {
                         onClick={() => applyFlightPhase('cruise')}
                         className={`px-3 py-2 text-xs font-medium rounded-lg transition ${
                             flightPhase === 'cruise'
-                                ? 'bg-blue-600 text-white shadow-md'
-                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                ? 'bg-primary-600 text-white shadow-md'
+                                : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-600'
                         }`}
                     >
                         ✈️ Cruise
@@ -1790,8 +1790,8 @@ const TurbofanAnalysis = ({ onClose }) => {
                           onClick={() => applyFlightPhase('supercruise')}
                           className={`px-3 py-2 text-xs font-medium rounded-lg transition ${
                               flightPhase === 'supercruise'
-                                  ? 'bg-blue-600 text-white shadow-md'
-                                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                  ? 'bg-primary-600 text-white shadow-md'
+                                  : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-600'
                           }`}
                       >
                           🚀 Supercruise
@@ -1802,21 +1802,21 @@ const TurbofanAnalysis = ({ onClose }) => {
 
             {/* Flight Conditions */}
             <section>
-                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+                <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
                     <Wind size={14} /> Flight Conditions
                 </h3>
                 <div className="space-y-4">
                     <div>
-                        <label className="flex justify-between text-sm font-medium text-gray-700 mb-1">
+                        <label className="flex justify-between text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                             <span>Altitude</span>
-                            <span className="text-blue-600">{altitude.toLocaleString()} ft</span>
+                            <span className="text-primary-600 dark:text-primary-400">{altitude.toLocaleString()} ft</span>
                         </label>
-                        <input type="range" min="0" max="40000" step="100" value={altitude} onChange={(e) => setAltitude(Number(e.target.value))} className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600" />
+                        <input type="range" min="0" max="40000" step="100" value={altitude} onChange={(e) => setAltitude(Number(e.target.value))} className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-primary-600" />
                     </div>
                     <div>
-                        <label className="flex justify-between text-sm font-medium text-gray-700 mb-1">
+                        <label className="flex justify-between text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                             <span>Mach Number</span>
-                            <span className="text-blue-600">M {mach.toFixed(2)}</span>
+                            <span className="text-primary-600 dark:text-primary-400">M {mach.toFixed(2)}</span>
                         </label>
                         <input 
                           type="range" 
@@ -1825,36 +1825,36 @@ const TurbofanAnalysis = ({ onClose }) => {
                           step="0.01" 
                           value={mach} 
                           onChange={(e) => setMach(Number(e.target.value))} 
-                          className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600" 
+                          className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-primary-600" 
                         />
                     </div>
                     <div>
-                        <label className="flex justify-between text-sm font-medium text-gray-700 mb-1">
+                        <label className="flex justify-between text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                             <span>ISA Deviation</span>
-                            <span className="text-blue-600">{deltaIsa > 0 ? '+' : ''}{deltaIsa}°C</span>
+                            <span className="text-primary-600 dark:text-primary-400">{deltaIsa > 0 ? '+' : ''}{deltaIsa}°C</span>
                         </label>
-                        <input type="range" min="-30" max="30" step="1" value={deltaIsa} onChange={(e) => setDeltaIsa(Number(e.target.value))} className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600" />
+                        <input type="range" min="-30" max="30" step="1" value={deltaIsa} onChange={(e) => setDeltaIsa(Number(e.target.value))} className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-primary-600" />
                     </div>
                 </div>
             </section>
 
             {/* Engine Control */}
             <section>
-                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+                <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
                     <Settings size={14} /> Engine Control
                 </h3>
                 <div>
-                    <label className="flex justify-between text-sm font-medium text-gray-700 mb-1">
+                    <label className="flex justify-between text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                         <span>Throttle (N1)</span>
-                        <span className="text-blue-600">{n1}%</span>
+                        <span className="text-primary-600 dark:text-primary-400">{n1}%</span>
                     </label>
-                    <input type="range" min="0" max="105" step="1" value={n1} onChange={(e) => setN1(Number(e.target.value))} className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600" />
+                    <input type="range" min="0" max="105" step="1" value={n1} onChange={(e) => setN1(Number(e.target.value))} className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-primary-600" />
                 </div>
             </section>
 
             {/* Aircraft Setup */}
             <section>
-                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+                <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
                     <Settings size={14} /> Aircraft Setup
                 </h3>
                 {AIRCRAFT_PROFILES[engineKey] ? (
@@ -1866,35 +1866,35 @@ const TurbofanAnalysis = ({ onClose }) => {
                                 const sel = opts.find(o => o.id === e.target.value);
                                 setAircraftConfig(sel || getDefaultAircraft(engineKey));
                             }}
-                            className="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 bg-white hover:border-blue-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition"
+                            className="w-full text-sm border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 bg-white dark:bg-slate-700 hover:border-primary-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-200 transition"
                         >
                             {(AIRCRAFT_PROFILES[engineKey] || []).map(opt => (
                                 <option key={opt.id} value={opt.id}>{opt.name}</option>
                             ))}
                         </select>
-                        <div className="text-xs text-gray-500">Engines: {aircraftConfig?.engines ?? 1}</div>
+                        <div className="text-xs text-slate-500 dark:text-slate-400">Engines: {aircraftConfig?.engines ?? 1}</div>
                     </div>
                 ) : (
-                    <div className="text-xs text-gray-500">Engines: 1 (no aircraft profile)</div>
+                    <div className="text-xs text-slate-500 dark:text-slate-400">Engines: 1 (no aircraft profile)</div>
                 )}
             </section>
 
             {/* Component Design */}
             <section>
-                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+                <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
                     <Cpu size={14} /> Component Design
                 </h3>
                 <div className="space-y-3 text-sm">
                     <div className="flex gap-2">
                         <button 
                             onClick={() => setComponentDesign({ ...componentDesign, inletType: 'subsonic' })}
-                            className={`flex-1 px-3 py-2 rounded-lg border text-sm font-medium ${componentDesign.inletType === 'subsonic' ? 'border-blue-500 text-blue-700 bg-blue-50' : 'border-gray-200 text-gray-700 hover:border-blue-200'}`}
+                            className={`flex-1 px-3 py-2 rounded-lg border text-sm font-medium ${componentDesign.inletType === 'subsonic' ? 'border-primary-500 text-primary-700 dark:text-primary-300 bg-primary-50 dark:bg-primary-900/50' : 'border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-primary-200 dark:hover:border-primary-800'}`}
                         >
                             Subsonic Inlet
                         </button>
                         <button 
                             onClick={() => setComponentDesign({ ...componentDesign, inletType: 'supersonic' })}
-                            className={`flex-1 px-3 py-2 rounded-lg border text-sm font-medium ${componentDesign.inletType === 'supersonic' ? 'border-blue-500 text-blue-700 bg-blue-50' : 'border-gray-200 text-gray-700 hover:border-blue-200'}`}
+                            className={`flex-1 px-3 py-2 rounded-lg border text-sm font-medium ${componentDesign.inletType === 'supersonic' ? 'border-primary-500 text-primary-700 dark:text-primary-300 bg-primary-50 dark:bg-primary-900/50' : 'border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-primary-200 dark:hover:border-primary-800'}`}
                         >
                             Supersonic
                         </button>
@@ -1902,11 +1902,11 @@ const TurbofanAnalysis = ({ onClose }) => {
                     {componentDesign.inletType === 'supersonic' && (
                         <div className="space-y-3">
                             <div>
-                                <label className="flex justify-between text-gray-700">Ramp Angle <span className="text-blue-600">{componentDesign.shockAngle.toFixed(0)}°</span></label>
-                                <input type="range" min="2" max="25" step="0.5" value={componentDesign.shockAngle} onChange={(e) => setComponentDesign({ ...componentDesign, shockAngle: Number(e.target.value) })} className="w-full accent-blue-600" />
+                                <label className="flex justify-between text-slate-700 dark:text-slate-300">Ramp Angle <span className="text-primary-600 dark:text-primary-400">{componentDesign.shockAngle.toFixed(0)}°</span></label>
+                                <input type="range" min="2" max="25" step="0.5" value={componentDesign.shockAngle} onChange={(e) => setComponentDesign({ ...componentDesign, shockAngle: Number(e.target.value) })} className="w-full accent-primary-600" />
                             </div>
                             <div>
-                                <label className="text-sm font-medium text-gray-700 mb-1 block">Ramp Schedule (deg, comma-separated)</label>
+                                <label className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1 block">Ramp Schedule (deg, comma-separated)</label>
                                 <input 
                                   type="text" 
                                   value={(componentDesign.supersonicDeflections || []).join(', ')}
@@ -1914,34 +1914,34 @@ const TurbofanAnalysis = ({ onClose }) => {
                                       const parts = e.target.value.split(',').map(p => Number(p.trim())).filter(v => !Number.isNaN(v) && v > 0);
                                       setComponentDesign({ ...componentDesign, supersonicDeflections: parts.length ? parts : [componentDesign.shockAngle] });
                                   }}
-                                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:ring-blue-500 focus:border-blue-500"
+                                  className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-sm focus:ring-primary-500 focus:border-primary-500"
                                   placeholder="e.g., 6, 6, 4"
                                 />
-                                <p className="text-xs text-gray-500 mt-1">Multi-ramp shock train drives recovery; blank defaults to dual 6° ramps.</p>
+                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Multi-ramp shock train drives recovery; blank defaults to dual 6° ramps.</p>
                             </div>
                         </div>
                     )}
                     <div>
-                        <label className="flex justify_between text-gray-700">Compressor Stages <span className="text-blue-600">{componentDesign.compressorStages}</span></label>
-                        <input type="range" min="4" max="20" step="1" value={componentDesign.compressorStages} onChange={(e) => setComponentDesign({ ...componentDesign, compressorStages: Number(e.target.value) })} className="w-full accent-blue-600" />
+                        <label className="flex justify-between text-slate-700 dark:text-slate-300">Compressor Stages <span className="text-primary-600 dark:text-primary-400">{componentDesign.compressorStages}</span></label>
+                        <input type="range" min="4" max="20" step="1" value={componentDesign.compressorStages} onChange={(e) => setComponentDesign({ ...componentDesign, compressorStages: Number(e.target.value) })} className="w-full accent-primary-600" />
                     </div>
                     <div>
-                        <label className="flex justify-between text-gray-700">Turbine Stages <span className="text-blue-600">{componentDesign.turbineStages}</span></label>
-                        <input type="range" min="1" max="4" step="1" value={componentDesign.turbineStages} onChange={(e) => setComponentDesign({ ...componentDesign, turbineStages: Number(e.target.value) })} className="w-full accent-blue-600" />
+                        <label className="flex justify-between text-slate-700 dark:text-slate-300">Turbine Stages <span className="text-primary-600 dark:text-primary-400">{componentDesign.turbineStages}</span></label>
+                        <input type="range" min="1" max="4" step="1" value={componentDesign.turbineStages} onChange={(e) => setComponentDesign({ ...componentDesign, turbineStages: Number(e.target.value) })} className="w-full accent-primary-600" />
                     </div>
                     <div>
-                        <label className="flex justify-between text-gray-700">Cooling Bleed <span className="text-blue-600">{componentDesign.coolingBleed.toFixed(0)}%</span></label>
-                        <input type="range" min="0" max="15" step="1" value={componentDesign.coolingBleed} onChange={(e) => setComponentDesign({ ...componentDesign, coolingBleed: Number(e.target.value) })} className="w-full accent-blue-600" />
+                        <label className="flex justify-between text-slate-700 dark:text-slate-300">Cooling Bleed <span className="text-primary-600 dark:text-primary-400">{componentDesign.coolingBleed.toFixed(0)}%</span></label>
+                        <input type="range" min="0" max="15" step="1" value={componentDesign.coolingBleed} onChange={(e) => setComponentDesign({ ...componentDesign, coolingBleed: Number(e.target.value) })} className="w-full accent-primary-600" />
                     </div>
                 </div>
             </section>
 
             {/* Component Design Studies */}
-            <section className="bg-gray-50 p-4 rounded-xl border border-gray-200">
-                <h3 className="text-xs font-semibold text-gray-700 uppercase tracking-wider mb-3 flex items-center gap-2">
+            <section className="bg-slate-50 dark:bg-slate-800/60 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
+                <h3 className="text-xs font-semibold text-slate-700 dark:text-slate-200 uppercase tracking-wider mb-3 flex items-center gap-2">
                     <Cpu size={14} /> Component Design Studies
                 </h3>
-                <ul className="text-sm text-gray-700 space-y-2 list-disc pl-4">
+                <ul className="text-sm text-slate-700 dark:text-slate-300 space-y-2 list-disc pl-4">
                     <li>Inlet analysis: diffuser recovery (subsonic) vs oblique/normal shock trains (supersonic).</li>
                     <li>Multi-stage compression: map stage count to efficiency and surge margin.</li>
                     <li>Start problem: capture stall-free ramp-up with bleed/open-IGV strategies.</li>
@@ -1953,23 +1953,23 @@ const TurbofanAnalysis = ({ onClose }) => {
             {/* Acoustic Setup - Only show for relevant phases */}
             {isNoiseRelevant && (
             <section>
-                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+                <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
                     <Volume2 size={14} /> Acoustic Setup
                 </h3>
                 <div className="space-y-4">
                     <div>
-                        <label className="flex justify-between text-sm font-medium text-gray-700 mb-1">
+                        <label className="flex justify-between text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                             <span>Distance</span>
-                            <span className="text-blue-600">{observerDist} m</span>
+                            <span className="text-primary-600 dark:text-primary-400">{observerDist} m</span>
                         </label>
-                        <input type="range" min="10" max="1000" step="10" value={observerDist} onChange={(e) => setObserverDist(Number(e.target.value))} className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600" />
+                        <input type="range" min="10" max="1000" step="10" value={observerDist} onChange={(e) => setObserverDist(Number(e.target.value))} className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-primary-600" />
                     </div>
                     <div>
-                        <label className="flex justify-between text-sm font-medium text-gray-700 mb-1">
+                        <label className="flex justify-between text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                             <span>Angle (0=Inlet)</span>
-                            <span className="text-blue-600">{observerAngle}°</span>
+                            <span className="text-primary-600 dark:text-primary-400">{observerAngle}°</span>
                         </label>
-                        <input type="range" min="0" max="180" step="5" value={observerAngle} onChange={(e) => setObserverAngle(Number(e.target.value))} className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600" />
+                        <input type="range" min="0" max="180" step="5" value={observerAngle} onChange={(e) => setObserverAngle(Number(e.target.value))} className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-primary-600" />
                     </div>
                 </div>
             </section>
@@ -1978,26 +1978,26 @@ const TurbofanAnalysis = ({ onClose }) => {
         )}
 
         {/* CENTER PANEL: Visuals & Dashboard */}
-        <div className="flex-1 bg-gray-50 p-4 lg:p-6 overflow-y-auto w-full">
+        <div className="flex-1 bg-slate-50 dark:bg-slate-900/70 p-4 lg:p-6 overflow-y-auto w-full">
             
             {modeChoice === 'components' ? (
               <>
                 <div className="flex justify-between items-center mb-4">
                   <div>
-                    <div className="text-sm uppercase tracking-[0.15em] text-gray-500 font-semibold">Component Design Workspace</div>
-                    <div className="text-xl font-bold text-gray-900">Inlets • Compressors • Turbines</div>
+                    <div className="text-sm uppercase tracking-[0.15em] text-slate-500 font-semibold">Component Design Workspace</div>
+                    <div className="text-xl font-bold text-slate-900 dark:text-white">Inlets • Compressors • Turbines</div>
                   </div>
-                  <div className="text-xs text-gray-500 bg-white border border-gray-200 rounded-lg px-3 py-1">
+                  <div className="text-xs text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1">
                     Engine: {designSpecs.name} • {componentDesign.inletType === 'supersonic' ? 'Supersonic Inlet' : 'Subsonic Inlet'}
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 mb-4">
-                  <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
-                    <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                  <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                    <h3 className="font-semibold text-slate-800 dark:text-white mb-3 flex items-center gap-2">
                       <Wind size={14} /> Inlet Analysis
                     </h3>
-                    <div className="grid grid-cols-2 gap-3 text-sm text-gray-700">
+                    <div className="grid grid-cols-2 gap-3 text-sm text-slate-700 dark:text-slate-300">
                       <div><div className="text-gray-500 text-xs uppercase">Type</div><div className="font-semibold capitalize">{results.inlet.type}</div></div>
                       <div><div className="text-gray-500 text-xs uppercase">Recovery</div><div className="font-semibold">{(results.inlet.recovery*100).toFixed(1)}%</div></div>
                       <div><div className="text-gray-500 text-xs uppercase">Exit Mach</div><div className="font-semibold">{results.inlet.machExit.toFixed(3)}</div></div>
