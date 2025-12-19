@@ -1,6 +1,11 @@
-# Udaan Digital Twin - Interactive Flight Simulator
+# Interactive Resume & Engineering Portfolio
 
-Complete digital twin simulation of the Udaan aircraft with real-time CFD aerodynamic calculations, 3D visualization, and flight dynamics modeling.
+This repo powers my interactive resume site:
+- **Experience & tools**: Dassault/Safran/Boeing engagements using C++, VBScript, EKL, shell across Cameo, CATIA/3DEXPERIENCE, SIMULIA.
+- **Interactive demos**: Requirements/MBSE viewer, digital twin, turbofan acoustics/performance, RL flight control research.
+- **Education**: Wichita State (M.S. turbofan takeoff acoustics; flight control + propulsion + acoustics) and UT Arlington (M.Eng. composites + GNC).
+
+Below is detail for the Digital Twin simulator (one of the portfolio demos).
 
 ## Features
 

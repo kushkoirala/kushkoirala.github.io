@@ -33,7 +33,7 @@ function App() {
 
   return (
     <div className="min-h-screen bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-300">
-      <div className="max-w-4xl mx-auto px-8 py-6 font-sans resume-shell text-base">
+      <div className="max-w-4xl mx-auto px-8 py-6 font-sans resume-shell text-base print:max-w-5xl print:px-8 print:pt-8">
 
       {/* HEADER */}
       <header className="mb-6 border-b border-slate-200 dark:border-slate-700 pb-4">
@@ -62,22 +62,22 @@ function App() {
               </a>
               <a
                 href="mailto:kush.koirala@gmail.com"
-                className="p-2 bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-200 dark:hover:bg-red-800/50 transition"
+                className="px-3 py-2 bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-300 rounded-lg hover:bg-red-200 dark:hover:bg-red-800/50 transition text-sm font-medium"
                 title="Email"
               >
-                <Mail size={16} />
+                kush.koirala@gmail.com
               </a>
             </div>
           </div>
-          <div className="text-left md:text-right mt-4 md:mt-0 text-slate-500 dark:text-slate-400 text-sm">
-             <button onClick={toggleTheme} className="p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition mr-4 print:hidden">
+          <div className="flex items-center gap-3 text-left md:text-right mt-4 md:mt-0 text-slate-500 dark:text-slate-400 text-sm">
+             <button onClick={toggleTheme} className="p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition print:hidden">
               {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
             </button>
              <span>📍 Wichita, KS</span>
           </div>
         </div>
         <p className="text-base leading-relaxed text-slate-700 dark:text-slate-400 max-w-2xl">
-          <strong>Aerospace Engineer × Solutions Architect.</strong> Building production-grade digital twins and simulation engines. Physics-based modeling, CAD and cloud infrastructure. Building enterprise systems from concept to deployment.
+          <strong>Aerospace Engineer × Solutions Architect.</strong> Building production-grade digital twins and simulation engines. Physics-based modeling, CAD and enterprise systems from concept to deployment.
         </p>
         <button onClick={() => window.print()} className="mt-4 px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded hover:bg-primary-700 transition print:hidden">
           Print Resume
@@ -99,9 +99,9 @@ function App() {
           <ul className="list-disc pl-4 space-y-1 text-slate-800 dark:text-slate-300 text-sm">
             <li><strong>Boeing MBD/MBSE Transformation:</strong> Spent 3 years embedded with Boeing Design Engineering, Manufacturing, and M&P teams to move product structure/EBOM and engineering processes to an MBD/MBSE framework.</li>
             <li><strong>Real-Time Traceability Infrastructure:</strong> Built a Linux-based 3DExperience + Cameo Systems Modeler stack with live OSLC federation, enabling bidirectional sync between CAD, PLM, and SysML.</li>
-            <li><strong>MBSE Solutions Architect:</strong> Two-year focus on requirements management, architecture definition, and standards rollout to help large Systems Engineering teams adopt MBSE practices.</li>
-            <li><strong>Custom Framework (UAF Extension):</strong> Reference Architectures for multi-industry enterprises using UAF and their Products-as-Systems via MagicGrid/SysML.</li>
+            <li><strong>MBSE + UAF Architecture:</strong> Two-year focus on requirements management, architecture definition, standards rollout, and UAF-based reference architectures (MagicGrid/SysML) for multi-industry products-as-systems.</li>
             <li><strong>Custom Framework (Technical Support):</strong> Provide technical consulting to elite engineering corporations on enhancing their engineering capabilities.</li>
+            <li><strong>Daily Toolchain:</strong> C++, VBScript, EKL, and shell scripting across Cameo, CATIA/3DEXPERIENCE, and SIMULIA to automate and harden engineering workflows.</li>
           </ul>
         </div>
 
@@ -146,37 +146,41 @@ function App() {
             </div>
             <span className="text-sm text-slate-500 dark:text-slate-400">2021 – Present</span>
           </div>
-          <p className="text-slate-600 dark:text-slate-400 italic text-sm">Wichita State University</p>
+          <p className="text-slate-600 dark:text-slate-400 italic text-sm">Wichita State University — Wichita, KS</p>
           <ul className="list-disc pl-4 mt-1 text-sm text-slate-800 dark:text-slate-300 space-y-1">
-            <li><strong>Research Focus:</strong> Optimal Control, Neural Network-based Flight Control, Reinforcement Learning for autonomous systems. <a href="#" onClick={(e) => openPdf(e, 'AIDA - Proposal _ v1.pdf', 'AIDA')} className="text-primary-600 dark:text-primary-400 hover:underline">AIDA Proposal</a> | <a href="#" onClick={(e) => openPdf(e, 'Flight Control Design.pdf', 'Flight Control')} className="text-primary-600 dark:text-primary-400 hover:underline">Control Design</a></li>
+            <li><strong>Research Focus:</strong> Optimal Control, Neural Network-based Flight Control, Reinforcement Learning for autonomous systems. <a href="#" onClick={(e) => openPdf(e, 'AIDA - Proposal _ v1.pdf', 'AIDA')} className="text-primary-600 dark:text-primary-400 hover:underline">AIDA Proposal</a> | <a href="#" onClick={(e) => openPdf(e, 'Flight Control Design.pdf', 'Flight Control')} className="text-primary-600 dark:text-primary-400 hover:underline">Control Design</a> | <a href="#" onClick={(e) => openPdf(e, 'Mars Lander.pdf', 'Starship Mars Landing')} className="text-primary-600 dark:text-primary-400 hover:underline">Starship Mars Landing</a></li>
           </ul>
         </div>
 
         <div className="mb-3">
            <div className="flex justify-between items-baseline mb-1">
             <div>
-              <h3 className="font-bold text-lg">M.S. Aerospace Engineering <span className="font-normal text-slate-600 dark:text-slate-400 ml-2 text-sm">— WSU (Flight Dynamics & Control)</span></h3>
+              <h3 className="font-bold text-lg">M.S. Aerospace Engineering <span className="font-normal text-slate-600 dark:text-slate-400 ml-2 text-sm">— Wichita State University, Wichita KS</span></h3>
             </div>
             <span className="text-sm text-slate-500 dark:text-slate-400">May 2024</span>
           </div>
           <ul className="list-disc pl-4 mt-1 text-sm text-slate-800 dark:text-slate-300 space-y-1">
-             <li><strong>Thesis:</strong> <a href="#" onClick={(e) => openPdf(e, 'AcousticsAnalysisTFE731.pdf', 'Acoustic Analysis')} className="text-primary-600 dark:text-primary-400 hover:underline">Turbofan Acoustic Modeling & Active Vibration Suppression</a> (Python/MATLAB)</li>
+             <li><strong>Project:</strong> <a href="#" onClick={(e) => openPdf(e, 'AcousticsAnalysisTFE731.pdf', 'Acoustic Analysis')} className="text-primary-600 dark:text-primary-400 hover:underline">Turbofan Takeoff Acoustics Modeling</a> (Python/MATLAB) aligning jet/fan noise predictions to lab data.</li>
+             <li><strong>Focus:</strong> Flight control with propulsion integration; mission-level design and acoustic trade studies.</li>
           </ul>
         </div>
 
         <div className="mb-3">
            <div className="flex justify-between items-baseline mb-1">
             <div>
-              <h3 className="font-bold text-lg">M.Eng. Aerospace Engineering <span className="font-normal text-slate-600 dark:text-slate-400 ml-2 text-sm">— UTA</span></h3>
+              <h3 className="font-bold text-lg">M.Eng. Aerospace Engineering <span className="font-normal text-slate-600 dark:text-slate-400 ml-2 text-sm">— University of Texas at Arlington, Arlington TX</span></h3>
             </div>
             <span className="text-sm text-slate-500 dark:text-slate-400">2016 – 2019</span>
           </div>
+          <ul className="list-disc pl-4 mt-1 text-sm text-slate-800 dark:text-slate-300 space-y-1">
+            <li><strong>Emphasis:</strong> Advanced composites with supporting GNC coursework.</li>
+          </ul>
         </div>
 
          <div className="mb-3">
            <div className="flex justify-between items-baseline mb-1">
             <div>
-              <h3 className="font-bold text-lg">B.S. Aerospace Engineering <span className="font-normal text-slate-600 dark:text-slate-400 ml-2 text-sm">— WSU</span></h3>
+              <h3 className="font-bold text-lg">B.S. Aerospace Engineering <span className="font-normal text-slate-600 dark:text-slate-400 ml-2 text-sm">— Wichita State University, Wichita KS</span></h3>
             </div>
             <span className="text-sm text-slate-500 dark:text-slate-400">May 2012</span>
           </div>
@@ -206,6 +210,7 @@ function App() {
              <p className="text-base text-slate-600 dark:text-slate-400 mb-4 flex-1">
                View the Udaan aircraft requirements in native ReqIF format. Demonstrates traceability and model-based systems engineering (MBSE) data structures.
              </p>
+             <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">Stack: ReqIF/Cameo, OSLC, React/Vite.</p>
              <div className="flex items-center text-primary-600 dark:text-primary-400 text-base font-medium group-hover:translate-x-1 transition-transform">
                 View Requirements <ArrowRight size={16} className="ml-1" />
              </div>
@@ -223,6 +228,7 @@ function App() {
              <p className="text-base text-slate-600 dark:text-slate-400 mb-4 flex-1">
                Interactive 3D visualization of the Udaan aircraft. Showcases digital continuity from engineering CAD data (STEP) to web-based experiences.
              </p>
+             <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">Stack: React, Three.js, WebAssembly (OCCT), STEP/CAD.</p>
              <div className="flex items-center text-purple-600 dark:text-purple-400 text-base font-medium group-hover:translate-x-1 transition-transform">
                 Launch Viewer <ArrowRight size={16} className="ml-1" />
              </div>
@@ -240,6 +246,7 @@ function App() {
              <p className="text-base text-slate-600 dark:text-slate-400 mb-4 flex-1">
                Real-time physics simulation of turbofan engine performance and acoustics. Includes standard atmosphere modeling and Lighthill noise estimation.
              </p>
+             <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">Stack: React, JS cycle solver, Lighthill acoustics, Tailwind UI.</p>
              <div className="flex items-center text-orange-600 dark:text-orange-400 text-base font-medium group-hover:translate-x-1 transition-transform">
                 Run Simulation <ArrowRight size={16} className="ml-1" />
              </div>
@@ -259,11 +266,23 @@ function App() {
              <p className="text-base text-slate-600 dark:text-slate-400 mb-4 flex-1">
                Reinforcement-learning based adaptive flight control research. Explore the source, proposal, and control design artifacts.
              </p>
+             <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">Stack: MATLAB/Simulink, Python RL, C control prototypes.</p>
              <div className="flex items-center text-teal-600 dark:text-teal-400 text-base font-medium group-hover:translate-x-1 transition-transform">
                 View Repository <ArrowRight size={16} className="ml-1" />
              </div>
           </a>
         </div>
+      </section>
+
+      {/* PRINTABLE PORTFOLIO SNAPSHOT */}
+      <section className="mb-8 hidden print:block">
+        <h2 className="text-2xl font-bold text-primary-600 border-b border-slate-200 pb-2 mb-4">Interactive Engineering Portfolio</h2>
+        <img 
+          src={`${window.location.origin}/logos/portfolio-preview.png`} 
+          alt="Interactive Engineering Portfolio snapshot" 
+          className="w-full rounded-lg border border-slate-200"
+          onError={(e) => { e.currentTarget.style.display = 'none'; }}
+        />
       </section>
 
       {/* MODAL */}
