@@ -38,7 +38,9 @@ const StepViewer = ({ url }) => {
   const controlsRef = useRef({ pitch: 0, roll: 0, yaw: 0, throttle: 0.6 });
   
   // Quaternion storage for proper rotation accumulation
+  const alignmentQuatRef = useRef(new THREE.Quaternion());
   const baseQuaternionRef = useRef(new THREE.Quaternion());
+  const baseInverseQuaternionRef = useRef(new THREE.Quaternion());
   const flightQuaternionRef = useRef(new THREE.Quaternion());
   const accumulatedYawRef = useRef(0);
   const telemetryRef = useRef({ heading: 0, pitch: 0, roll: 0 });
@@ -191,9 +193,11 @@ const StepViewer = ({ url }) => {
               controlsRef.current = { pitch: -5 * (Math.PI/180), roll: 0, yaw: 0, throttle: 0.4 };
               break;
           case 'turnLeft':
+              // Left turn: left wing down = negative roll
               controlsRef.current = { pitch: 0, roll: -20 * (Math.PI/180), yaw: 0, throttle: 0.6 };
               break;
           case 'turnRight':
+              // Right turn: right wing down = positive roll
               controlsRef.current = { pitch: 0, roll: 20 * (Math.PI/180), yaw: 0, throttle: 0.6 };
               break;
       }
@@ -482,6 +486,7 @@ const StepViewer = ({ url }) => {
         alignmentQuat.multiplyQuaternions(flipQuat, alignmentQuat);
         
         modelAlignmentGroup.setRotationFromQuaternion(alignmentQuat);
+        alignmentQuatRef.current.copy(alignmentQuat);
 
         aircraftGroup.add(modelAlignmentGroup);
         scene.add(aircraftGroup);
@@ -496,6 +501,7 @@ const StepViewer = ({ url }) => {
         
         // Store the base orientation (after Roskam alignment)
         baseQuaternionRef.current.copy(aircraftGroup.quaternion);
+        baseInverseQuaternionRef.current.copy(aircraftGroup.quaternion).invert();
         flightQuaternionRef.current.copy(aircraftGroup.quaternion);
         accumulatedYawRef.current = 0;
         
@@ -583,19 +589,31 @@ const StepViewer = ({ url }) => {
             accumulatedYawRef.current += (yaw * 0.01) + (roll * 0.005);
             
             // Create incremental rotations in body-fixed frame (Roskam axes)
-            // X-axis (forward) = pitch control
-            // Y-axis (right wing) = roll control  
-            // Z-axis (down) = yaw control
-            const bodyPitchAxis = new THREE.Vector3(1, 0, 0); // Pitch about Y (right wing axis)
-            const bodyRollAxis = new THREE.Vector3(0, 0, 1);  // Roll about X (forward axis)
-            const bodyYawAxis = new THREE.Vector3(0, 1, 0);   // Yaw about Z (down axis)
+            // Roskam convention: X=forward (nose), Y=right wing, Z=down
+            // Standard aircraft controls:
+            // - Pitch: nose up/down = rotate about Y axis (right wing)
+            // - Roll: wing up/down = rotate about X axis (forward)
+            // - Yaw: nose left/right = rotate about Z axis (down)
+            //
+            // User feedback: 
+            // - Pitch up → yaws left (pitch input currently causes Z axis rotation)
+            // - Positive roll → pitches up (roll input currently causes Y axis rotation)
+            // Solution: Swap the control inputs - use roll value for pitch axis, pitch value for roll axis
+            // Make sure axes are aligned with the CAD orientation before applying controls
+            const alignQuat = alignmentQuatRef.current;
+            const bodyPitchAxis = new THREE.Vector3(0, 1, 0).applyQuaternion(alignQuat).normalize();   // Y axis for pitch rotation (nose up/down)
+            const bodyRollAxis = new THREE.Vector3(1, 0, 0).applyQuaternion(alignQuat).normalize();    // X axis for roll rotation (wing up/down)
+            const bodyYawAxis = new THREE.Vector3(0, 0, 1).applyQuaternion(alignQuat).normalize();      // Z axis for yaw rotation (nose left/right)
             
-            // Create incremental rotation quaternions for this frame
-            const pitchQuat = new THREE.Quaternion().setFromAxisAngle(bodyPitchAxis, pitch);
-            const rollQuat = new THREE.Quaternion().setFromAxisAngle(bodyRollAxis, roll);
-            const yawQuat = new THREE.Quaternion().setFromAxisAngle(bodyYawAxis, accumulatedYawRef.current);
+            // FIX control mapping: pitch input should control pitch, roll input should control roll
+            // User reports: pitch input causes yaw (Z axis), roll input causes pitch (Y axis)
+            // We want: pitch input -> Y axis (pitch), roll input -> X axis (roll)
+            // Use correct values: pitch value for pitch axis, roll value for roll axis
+            const pitchQuat = new THREE.Quaternion().setFromAxisAngle(bodyPitchAxis, -pitch);  // invert sign so positive pitch raises nose
+            const rollQuat = new THREE.Quaternion().setFromAxisAngle(bodyRollAxis, roll);     // roll input -> X axis (roll rotation)
+            const yawQuat = new THREE.Quaternion().setFromAxisAngle(bodyYawAxis, accumulatedYawRef.current); // yaw input -> Z axis (yaw rotation)
             
-            // Combine control rotations: yaw * roll * pitch (order matters for body-fixed rotations)
+            // Combine control rotations: yaw * roll * pitch (original order to match Euler extraction)
             const controlQuat = new THREE.Quaternion();
             controlQuat.multiplyQuaternions(yawQuat, rollQuat);
             controlQuat.multiplyQuaternions(controlQuat, pitchQuat);
@@ -606,10 +624,21 @@ const StepViewer = ({ url }) => {
             aircraftRef.current.quaternion.copy(flightQuaternionRef.current);
             
             // Calculate telemetry: extract attitude from final quaternion
-            const euler = new THREE.Euler().setFromQuaternion(aircraftRef.current.quaternion, 'YXZ');
-            telemetryRef.current.roll = euler.x * (180 / Math.PI);
-            telemetryRef.current.pitch = euler.y * (180 / Math.PI);
-            telemetryRef.current.heading = ((euler.z * (180 / Math.PI)) % 360 + 360) % 360;
+            // Keep telemetry accurate to actual flight conditions - use the working Euler extraction
+            // Euler order 'ZXY': Z first (yaw), X second (roll), Y third (pitch)
+            // Remove the fixed alignment so telemetry starts at 0/0/0 with the base pose
+            const attitudeQuat = new THREE.Quaternion().multiplyQuaternions(
+              baseInverseQuaternionRef.current,
+              aircraftRef.current.quaternion
+            );
+            const euler = new THREE.Euler().setFromQuaternion(attitudeQuat, 'ZXY');
+            // Map telemetry to show actual aircraft attitude (what's actually happening):
+            // - Pitch telemetry = actual pitch (nose up/down) = Y rotation = euler.y
+            // - Roll telemetry = actual roll (wing up/down) = X rotation = euler.x  
+            // - Heading telemetry = actual heading (nose left/right) = Z rotation = euler.z
+            telemetryRef.current.pitch = euler.y * (180 / Math.PI);    // Y rotation = actual pitch attitude
+            telemetryRef.current.roll = euler.x * (180 / Math.PI);       // X rotation = actual roll attitude
+            telemetryRef.current.heading = ((euler.z * (180 / Math.PI)) % 360 + 360) % 360; // Z rotation = actual heading
             
             // Calculate aerodynamic telemetry
             const throttle = controlsRef.current.throttle || 0.6;
@@ -1265,4 +1294,3 @@ const StepViewer = ({ url }) => {
 };
 
 export default StepViewer;
-
