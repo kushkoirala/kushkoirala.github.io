@@ -266,15 +266,36 @@ export class PressureVisualizer {
       }
     }
 
+    // Per-vertex gradient based on surface normal (upper vs lower) to avoid flat coloring.
+    // Roskam axes: Z down. Downward-facing normals (positive Z) get higher pressure,
+    // upward-facing normals (negative Z) get more suction.
+    const normalAttr = mesh.geometry.getAttribute('normal');
+    if (normalAttr) {
+      const vertexCount = normalAttr.count;
+      const colors = new Float32Array(vertexCount * 3);
+      for (let i = 0; i < vertexCount; i++) {
+        const nz = normalAttr.getZ(i);
+        // Bias toward higher pressure on lower surface, more suction on upper.
+        const modifier = 0.5 + 0.5 * nz; // nz=+1 -> 1.0 (pressure), nz=-1 -> 0.0 (suction)
+        const localCp = Cp * (0.6 + 0.8 * (modifier - 0.5)); // keep range moderate
+        const vColor = this.cpToColor(localCp);
+        colors[i * 3] = vColor.r;
+        colors[i * 3 + 1] = vColor.g;
+        colors[i * 3 + 2] = vColor.b;
+      }
+      mesh.geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+    }
+
     // Create pressure visualization material - make it bright and visible
     const pressureMaterial = new THREE.MeshStandardMaterial({
       color: color,
+      vertexColors: !!mesh.geometry.getAttribute('color'),
       emissive: color,
       emissiveIntensity: Math.max(0.5, opacity * 1.0),  // Increased for visibility
       metalness: 0.2,
       roughness: 0.5,
       transparent: true,
-      opacity: 1.0,  // Full opacity so colors are visible
+      opacity: 0.95,  // Slight transparency to see underlying model
       side: THREE.DoubleSide,
       wireframe: false
     });
