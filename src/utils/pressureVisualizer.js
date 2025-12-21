@@ -56,7 +56,7 @@ export class PressureVisualizer {
       if (!mesh || !mesh.geometry) return;
 
       // Identify surface type
-      const surfaceType = this.identifySurface(mesh.name);
+      const surfaceType = this.identifySurfaceFromMesh(mesh);
 
       // Calculate pressure coefficient (Cp) for this surface
       const Cp = this.calculateCp(surfaceType, CL, CD);
@@ -219,6 +219,38 @@ export class PressureVisualizer {
     if (name.includes('fusel')) return 'fuselage';
 
     return 'fuselage';  // Default
+  }
+
+  /**
+   * Identify surface type using name first, then bounding-box heuristics
+   * so unlabeled STEP meshes don't all collapse to "fuselage".
+   */
+  identifySurfaceFromMesh(mesh) {
+    const nameType = this.identifySurface(mesh.name || '');
+    if (nameType !== 'fuselage') return nameType;
+
+    // Heuristic based on oriented bounding box dimensions
+    const bbox = new THREE.Box3().setFromObject(mesh);
+    const size = bbox.getSize(new THREE.Vector3());
+    const span = size.y;
+    const chord = size.x;
+    const thickness = size.z;
+
+    const spanDominant = span > chord * 1.4 && span > thickness * 1.6;          // likely wing/tailplane
+    const verticalDominant = thickness > chord * 1.3 && thickness > span * 1.3; // likely vertical tail/gear strut
+    const fuselageDominant = chord > span * 1.2 && chord > thickness * 1.1;     // long in X = fuselage/boom
+
+    if (spanDominant) {
+      return 'wing';
+    }
+    if (verticalDominant) {
+      return 'rudder';
+    }
+    if (!fuselageDominant && thickness > span * 0.8 && thickness > chord * 0.8) {
+      return 'landing_gear';
+    }
+
+    return 'fuselage';
   }
 
   /**
