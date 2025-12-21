@@ -636,8 +636,8 @@ const StepViewer = ({ url }) => {
             // - Pitch telemetry = actual pitch (nose up/down) = Y rotation = euler.y
             // - Roll telemetry = actual roll (wing up/down) = X rotation = euler.x  
             // - Heading telemetry = actual heading (nose left/right) = Z rotation = euler.z
-            telemetryRef.current.pitch = euler.y * (180 / Math.PI);    // Y rotation = actual pitch attitude
-            telemetryRef.current.roll = euler.x * (180 / Math.PI);       // X rotation = actual roll attitude
+            telemetryRef.current.pitch = euler.x * (180 / Math.PI);    // X rotation = actual pitch attitude (ensures telemetry labels match visuals)
+            telemetryRef.current.roll = euler.y * (180 / Math.PI);       // Y rotation = actual roll attitude
             telemetryRef.current.heading = ((euler.z * (180 / Math.PI)) % 360 + 360) % 360; // Z rotation = actual heading
             
             // Calculate aerodynamic telemetry
