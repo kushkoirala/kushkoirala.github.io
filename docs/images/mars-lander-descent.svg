@@ -1,0 +1,37 @@
+<svg width="900" height="420" viewBox="0 0 900 420" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="900" height="420" rx="16" fill="#0B141F"/>
+  <rect x="20" y="20" width="860" height="380" rx="14" fill="#0F1E2F" stroke="#1F3A55" stroke-width="2"/>
+  <g opacity="0.2">
+    <circle cx="160" cy="110" r="90" fill="#2B5677"/>
+    <circle cx="720" cy="300" r="140" fill="#26405E"/>
+  </g>
+  <path d="M120 90 Q200 130 260 200 T400 260 T560 230 T760 140" stroke="#82E0AA" stroke-width="8" fill="none" stroke-linecap="round"/>
+  <path d="M760 140 L810 145" stroke="#FFC37D" stroke-width="4" stroke-dasharray="7 8" stroke-linecap="round"/>
+  <circle cx="760" cy="140" r="12" fill="#FFC37D" stroke="#FFE9C7" stroke-width="2"/>
+  <circle cx="120" cy="90" r="10" fill="#8EE5C2" stroke="#E5FFF2" stroke-width="2"/>
+  <path d="M360 40 C380 90 370 160 330 200" stroke="#9CD1FF" stroke-width="3" stroke-dasharray="6 6"/>
+  <path d="M480 120 C520 170 520 220 480 260" stroke="#9CD1FF" stroke-width="3" stroke-dasharray="6 6"/>
+  <path d="M640 150 C670 200 660 240 620 270" stroke="#9CD1FF" stroke-width="3" stroke-dasharray="6 6"/>
+  <g fill="#AFC4DF" font-family="'Helvetica Neue', Arial, sans-serif">
+    <text x="60" y="70" font-size="20" fill="#BBD7FF">Mars Lander Guidance</text>
+    <text x="65" y="95" font-size="13" fill="#8FB8FF">convexified thrust + glide-slope</text>
+    <text x="350" y="80" font-size="16">Glide slope & tilt limits</text>
+    <text x="350" y="102" font-size="12" fill="#7BB5FF">SOCP constraints</text>
+    <text x="500" y="100" font-size="16">Fuel-optimal burn</text>
+    <text x="500" y="122" font-size="12" fill="#7BB5FF">golden-section tf search</text>
+    <text x="660" y="125" font-size="16">Terminal box</text>
+    <text x="660" y="147" font-size="12" fill="#7BB5FF">hover/land target</text>
+  </g>
+  <g>
+    <rect x="120" y="270" width="240" height="110" rx="12" fill="#142842" stroke="#1E3C5E" stroke-width="2"/>
+    <text x="140" y="300" font-size="14" fill="#A9B9D9" font-family="'Helvetica Neue', Arial, sans-serif">What the script produces:</text>
+    <text x="150" y="320" font-size="12" fill="#8EE5C2" font-family="'Helvetica Neue', Arial, sans-serif">• 3D descent plots</text>
+    <text x="150" y="338" font-size="12" fill="#8EE5C2" font-family="'Helvetica Neue', Arial, sans-serif">• Altitude / velocity charts</text>
+    <text x="150" y="356" font-size="12" fill="#8EE5C2" font-family="'Helvetica Neue', Arial, sans-serif">• Animated landing path</text>
+  </g>
+  <g>
+    <line x1="250" y1="190" x2="200" y2="260" stroke="#8EE5C2" stroke-width="2"/>
+    <line x1="460" y1="240" x2="360" y2="320" stroke="#8EE5C2" stroke-width="2"/>
+    <line x1="640" y1="210" x2="510" y2="320" stroke="#8EE5C2" stroke-width="2"/>
+  </g>
+</svg>

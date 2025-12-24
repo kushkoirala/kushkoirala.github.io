@@ -2,12 +2,26 @@
 
 This repo powers my interactive resume site:
 - **Experience & tools**: Dassault/Safran/Boeing engagements using C++, VBScript, EKL, shell across Cameo, CATIA/3DEXPERIENCE, SIMULIA.
-- **Interactive demos**: Requirements/MBSE viewer, digital twin, turbofan acoustics/performance, RL flight control research.
+- **Interactive demos**: Requirements/MBSE viewer, digital twin, turbofan acoustics/performance, RL flight control research, and a new Mars lander guidance sandbox.
 - **Education**: Wichita State (M.S. turbofan takeoff acoustics; flight control + propulsion + acoustics) and UT Arlington (M.Eng. composites + GNC).
 
-Below is detail for the Digital Twin simulator (one of the portfolio demos).
+Featured builds in the portfolio:
+- **Digital Twin Flight Simulator**: Real-time CFD-backed aircraft sandbox in the browser.
+- **Mars Lander Optimal Guidance**: Fuel-minimizing powered-descent solver with animated 3D trajectories.
 
-## Features
+Below are highlights, visuals, and usage notes for the featured simulations.
+
+## Visual Gallery
+
+![Flight simulator overview](docs/images/flight-sim-overview.svg)
+![Mars lander powered descent sketch](docs/images/mars-lander-descent.svg)
+![Mars lander profiles](docs/images/mars-lander-profiles.png)
+![Mars lander 3D trajectory](docs/images/mars-lander-trajectory.png)
+
+Add your own captures (STEP renders, CFD overlays, lander plots) by dropping PNG/SVGs into `docs/images/` and extending the gallery above.
+Run `python src/MarsLander.py` to regenerate the lander figures; they export into `docs/images/` automatically.
+
+## Digital Twin Flight Simulator
 
 ### 🛩️ Flight Simulation
 - **Interactive Flight Simulator**: Real-time 3D flight dynamics with full 6-DOF control
@@ -18,9 +32,7 @@ Below is detail for the Digital Twin simulator (one of the portfolio demos).
 ### 🌊 CFD & Aerodynamics
 - **Real-time CFD**: Aerodynamic coefficient calculation at 60 FPS
 - **Pressure Visualization**: Color-coded pressure field display (blue = suction, red = pressure)
-- **16-Metric Telemetry**: 
-  - Basic: Airspeed, CL, CD, lift, drag, stall speed, climb rate, g-load
-  - Advanced: Power, efficiency, L/D ratio, turn rate, wing loading, stall margin, flight phase
+- **Flight HUD**: Live aerodynamic state overlays (stall margin, turn performance, trim) without the heavy data tables
 - **Stall Warning System**: Real-time stall detection with visual alerts
 - **Performance Envelope**: Calculated based on aircraft mass, wing area, and aerodynamic properties
 
@@ -36,6 +48,7 @@ Below is detail for the Digital Twin simulator (one of the portfolio demos).
 kush-resume/
 ├── README.md                          # This file - main documentation
 ├── src/
+│   ├── MarsLander.py                  # Fuel-optimal powered-descent solver (Python)
 │   ├── components/
 │   │   ├── StepViewer.jsx            # Main flight simulator component
 │   │   └── UniversalModal.jsx
@@ -45,6 +58,7 @@ kush-resume/
 │   │   └── componentManager.js       # STEP component organization
 │   └── assets/
 ├── docs/                             # Comprehensive documentation
+│   ├── images/                       # Visual gallery (SVG/PNG for README)
 │   ├── CATIA_WORKFLOW.md            # CATIA to STEP workflow guide
 │   ├── COMPONENT_ANIMATIONS.md      # Animation implementation
 │   ├── COMPONENT_SYSTEM.md          # Component recognition system
@@ -60,6 +74,9 @@ kush-resume/
 │   └── component_extractor.js      # Component extraction tool
 ├── tests/                          # Test suites
 │   └── test-aerodynamics.js        # Aerodynamics tests (10/10 passing ✅)
+├── scripts/
+│   └── archive/
+│       └── MarsLander_improved.py  # Archived variant of the lander solver
 └── public/
     ├── Udaan.stp                   # Aircraft 3D model
     └── occt-import-js.js          # WebAssembly kernel
@@ -97,7 +114,7 @@ Output in `dist/` folder for deployment
    - **Pitch**: -0.5 to +0.5 rad (nose up/down)
    - **Roll**: -0.8 to +0.8 rad (wing banking)
    - **Yaw**: Yaw rate control
-4. **View telemetry**: Live aerodynamic metrics display
+4. **View HUD overlays**: Stall cues, trim state, and control blending
 5. **Toggle pressure**: "Pressure ON/OFF" to see CFD visualization
 
 ### Preset Flight Modes
@@ -105,19 +122,6 @@ Output in `dist/` folder for deployment
 - **Climb**: Maximum climb rate configuration
 - **Descent**: Controlled descent
 - **Turn Left/Right**: Banking maneuvers with proper coordination
-
-## Aircraft Performance (Udaan - 4 kg UAV)
-
-| Metric | Value |
-|--------|-------|
-| Stall Speed | 3.6 m/s |
-| Cruise Speed | 14.2 m/s |
-| Max Speed | 25+ m/s |
-| Max Climb | 2065 m/min |
-| Wing Loading | 11.2 N/m² |
-| Aspect Ratio | 7.7 |
-| Turn Rate (30°) | 21.6°/s |
-| Motor Rating | 1500 W |
 
 ## Aerodynamic Calculations
 
@@ -127,14 +131,25 @@ Implemented in `src/utils/aerodynamics.js`:
 - **Drag Coefficient (CD)**: Parasitic + induced drag
 - **Aerodynamic Forces**: Lift and drag magnitude and direction
 - **Pitch Moment (Cm)**: Longitudinal stability analysis
-- **Performance Metrics**: 
-  - Power required at given speed
-  - Stall speed
-  - Cruise speed (optimal)
-  - Maximum climb rate
-  - G-load
-  - Turn rate and radius
-  - Wing loading
+- **Performance Envelope Modeling**: Estimates stall/cruise/climb/turn behavior in real time for HUD cues
+
+## Mars Lander Guidance & Controls
+
+Python powered-descent sandbox focused on fuel-optimal, constraint-aware landing trajectories.
+
+### Key capabilities
+- **Successive convexification SOCP**: Fixed-time solver with thrust magnitude relaxation and glide-slope enforcement.
+- **Golden-section time-of-flight search**: Optimizes burn duration, with optional parallel tf screening to avoid solver traps.
+- **Safety envelopes**: Thrust tilt cone, altitude buffers, velocity caps, and glide-slope constraints keep the trajectory flyable.
+- **Visualization outputs**: Altitude/velocity/thrust profile plots, 3D path with velocity quivers, and a Matplotlib animation for presentations.
+- **Trajectory smoothing**: Small velocity-change penalty yields more uniform, presentation-friendly descents.
+
+### Run the demo
+```bash
+python src/MarsLander.py
+```
+The script will search for a feasible time of flight, solve the convex program, and open the plots/animation so you can grab images for the gallery.
+Generated media is saved to `docs/images/mars-lander-profiles.png`, `docs/images/mars-lander-trajectory.png`, and (if ImageMagick is available) `docs/images/mars-lander-descent.gif`.
 
 ## Testing
 
@@ -171,7 +186,7 @@ Main flight simulator component with:
 - Three.js scene setup and rendering
 - Flight dynamics and quaternion-based attitude tracking
 - Real-time aerodynamic calculations
-- Telemetry UI with 16 metrics
+- Telemetry HUD with live aero and control cues
 - Pressure visualization toggle
 - Component selection and highlighting
 
@@ -179,7 +194,7 @@ Main flight simulator component with:
 Production-ready CFD calculator with:
 - 12 calculation methods
 - Empirical aerodynamic coefficients
-- Real-time performance metrics
+- Real-time aerodynamic performance calculations
 - Tested and validated
 
 ### pressureVisualizer.js (250 lines)

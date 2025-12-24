@@ -9,6 +9,8 @@ import StructuralAnalyzer from '../utils/structuralAnalyzer';
 import StructuralVisualizer from '../utils/structuralVisualizer';
 import { weightModel } from '../utils/weightModel';
 
+const SPINNING_COMPONENTS = ['propeller', 'motor'];
+
 const StepViewer = ({ url }) => {
   const containerRef = useRef(null);
   const [status, setStatus] = useState('Initializing CAD Kernel...');
@@ -23,6 +25,8 @@ const StepViewer = ({ url }) => {
   const isPausedRef = useRef(false);
   const aircraftRef = useRef(null);
   const componentsRef = useRef({}); // Reference to individual components for animation
+  const spinAxesRef = useRef({}); // Cached spin axes for propellers/motors
+  const spinPivotsRef = useRef({}); // Pivot groups for spinning components
   
   // Component selection state
   const [selectedComponent, setSelectedComponent] = useState(null);
@@ -86,6 +90,10 @@ const StepViewer = ({ url }) => {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [showPressure, setShowPressure] = useState(false);
   const showPressureRef = useRef(false);
+  const logSocketRef = useRef(null);
+  const lastLogTimeRef = useRef(0);
+  const telemetryDataRef = useRef(telemetry);
+  const digitalTwinRef = useRef(digitalTwin);
 
   // Handle pressure visualization toggle
   useEffect(() => {
@@ -204,11 +212,42 @@ const StepViewer = ({ url }) => {
       setResetKey(prev => prev + 1);
   };
 
+  // Spin propellers/motors with throttle-scaled RPM (idle spin when not in flight mode)
+  const spinRotatingComponents = (delta) => {
+    if (!componentsRef.current) return;
+
+    const idleThrottle = 0.2;
+    const throttle = flightModeRef.current ? Math.max(0, controlsRef.current.throttle || 0) : idleThrottle;
+
+    SPINNING_COMPONENTS.forEach((key) => {
+      const component = componentsRef.current[key];
+      const axis = spinAxesRef.current[key];
+      if (!component || (!component.meshes && !spinPivotsRef.current[key]) || !axis) return;
+
+      const maxRPM = component.definition?.maxRPM || 8000;
+      const rpm = maxRPM * throttle;
+      const radiansPerSecond = (rpm * Math.PI * 2) / 60;
+      const rotationStep = radiansPerSecond * delta;
+
+      if (rotationStep === 0) return;
+
+      const pivot = spinPivotsRef.current[key];
+      if (pivot) {
+        pivot.rotateOnAxis(axis, rotationStep);
+      } else if (component.meshes) {
+        component.meshes.forEach((mesh) => {
+          mesh.rotateOnAxis(axis, rotationStep);
+        });
+      }
+    });
+  };
+
   useEffect(() => {
     const containerEl = containerRef.current;
     if (!url || !containerEl) return;
 
     let scene, camera, renderer, controls, requestID, gridHelper;
+    const clock = new THREE.Clock();
 
     const initViewer = async () => {
       try {
@@ -432,6 +471,19 @@ const StepViewer = ({ url }) => {
         // Store component references for animation control
         componentsRef.current = componentOrganization.components;
         
+        // Cache spin axes for spinning components
+        spinAxesRef.current = {};
+        Object.entries(componentOrganization.components).forEach(([key, data]) => {
+          if (data.definition?.axis) {
+            spinAxesRef.current[key] = new THREE.Vector3(
+              data.definition.axis === 'x' ? 1 : 0,
+              data.definition.axis === 'y' ? 1 : 0,
+              data.definition.axis === 'z' ? 1 : 0
+            ).normalize();
+          }
+        });
+        spinPivotsRef.current = {};
+        
         // Update components state for tree view
         const componentsList = Object.entries(componentOrganization.components).map(([key, data]) => ({
           id: key,
@@ -446,6 +498,27 @@ const StepViewer = ({ url }) => {
         const box = new THREE.Box3().setFromObject(group);
         const center = box.getCenter(new THREE.Vector3());
         group.position.sub(center); // Center at 0,0,0
+
+        // Create pivots for spinning components so they rotate about their own centerlines
+        SPINNING_COMPONENTS.forEach((key) => {
+          const comp = componentsRef.current[key];
+          if (!comp || !comp.meshes || comp.meshes.length === 0) return;
+
+          const compBox = new THREE.Box3();
+          comp.meshes.forEach((mesh) => compBox.expandByObject(mesh));
+          const compCenter = compBox.getCenter(new THREE.Vector3());
+
+          const pivot = new THREE.Group();
+          pivot.position.copy(compCenter);
+
+          comp.meshes.forEach((mesh) => {
+            mesh.position.sub(compCenter); // move mesh so pivot becomes its center
+            pivot.add(mesh);
+          });
+
+          group.add(pivot);
+          spinPivotsRef.current[key] = pivot;
+        });
         
         // Create a container for the aircraft to handle physics/flight dynamics
         const aircraftGroup = new THREE.Group();
@@ -487,6 +560,14 @@ const StepViewer = ({ url }) => {
         
         modelAlignmentGroup.setRotationFromQuaternion(alignmentQuat);
         alignmentQuatRef.current.copy(alignmentQuat);
+
+        // Update spin axes so they match the Roskam forward axis after alignment
+        const alignmentInverse = alignmentQuat.clone().invert();
+        Object.keys(spinAxesRef.current).forEach((key) => {
+          if (spinAxesRef.current[key]) {
+            spinAxesRef.current[key].applyQuaternion(alignmentInverse).normalize();
+          }
+        });
 
         aircraftGroup.add(modelAlignmentGroup);
         scene.add(aircraftGroup);
@@ -565,7 +646,12 @@ const StepViewer = ({ url }) => {
         // Animation Loop
         const animate = () => {
           requestID = requestAnimationFrame(animate);
+          const delta = Math.min(clock.getDelta(), 0.05);
           const now = Date.now(); // Declare once per frame
+          
+          if (flightModeRef.current && !isPausedRef.current) {
+            spinRotatingComponents(delta);
+          }
           
           if (flightModeRef.current && aircraftRef.current && !isPausedRef.current) {
             // Show Grid
@@ -605,12 +691,12 @@ const StepViewer = ({ url }) => {
             const bodyRollAxis = new THREE.Vector3(1, 0, 0).applyQuaternion(alignQuat).normalize();    // X axis for roll rotation (wing up/down)
             const bodyYawAxis = new THREE.Vector3(0, 0, 1).applyQuaternion(alignQuat).normalize();      // Z axis for yaw rotation (nose left/right)
             
-            // FIX control mapping: pitch input should control pitch, roll input should control roll
-            // User reports: pitch input causes yaw (Z axis), roll input causes pitch (Y axis)
-            // We want: pitch input -> Y axis (pitch), roll input -> X axis (roll)
-            // Use correct values: pitch value for pitch axis, roll value for roll axis
-            const pitchQuat = new THREE.Quaternion().setFromAxisAngle(bodyPitchAxis, -pitch);  // invert sign so positive pitch raises nose
-            const rollQuat = new THREE.Quaternion().setFromAxisAngle(bodyRollAxis, roll);     // roll input -> X axis (roll rotation)
+            // Control mapping (Roskam axes):
+            // - Pitch input -> Y axis (nose up/down)
+            // - Roll input  -> X axis (wing down/up)
+            // Signs chosen so positive pitch raises nose, positive roll drops right wing
+            const pitchQuat = new THREE.Quaternion().setFromAxisAngle(bodyPitchAxis, -pitch);  // positive pitch raises nose
+            const rollQuat = new THREE.Quaternion().setFromAxisAngle(bodyRollAxis, -roll);     // invert so positive roll -> right wing down
             const yawQuat = new THREE.Quaternion().setFromAxisAngle(bodyYawAxis, accumulatedYawRef.current); // yaw input -> Z axis (yaw rotation)
             
             // Combine control rotations: yaw * roll * pitch (original order to match Euler extraction)
@@ -632,12 +718,13 @@ const StepViewer = ({ url }) => {
               aircraftRef.current.quaternion
             );
             const euler = new THREE.Euler().setFromQuaternion(attitudeQuat, 'ZXY');
-            // Map telemetry to show actual aircraft attitude (what's actually happening):
-            // - Pitch telemetry = actual pitch (nose up/down) = Y rotation = euler.y
-            // - Roll telemetry = actual roll (wing up/down) = X rotation = euler.x  
-            // - Heading telemetry = actual heading (nose left/right) = Z rotation = euler.z
-            telemetryRef.current.pitch = euler.x * (180 / Math.PI);    // X rotation = actual pitch attitude (ensures telemetry labels match visuals)
-            telemetryRef.current.roll = euler.y * (180 / Math.PI);       // Y rotation = actual roll attitude
+            // Map telemetry to show actual aircraft attitude:
+            // - Pitch telemetry = X rotation (nose up/down) in this Euler order
+            // - Roll telemetry = Y rotation (wing up/down) in this Euler order
+            // - Heading telemetry = Z rotation (nose left/right)
+            // Telemetry mapping locked—do not change without explicit request
+            telemetryRef.current.pitch = euler.x * (180 / Math.PI);
+            telemetryRef.current.roll = euler.y * (180 / Math.PI);
             telemetryRef.current.heading = ((euler.z * (180 / Math.PI)) % 360 + 360) % 360; // Z rotation = actual heading
             
             // Calculate aerodynamic telemetry
@@ -677,6 +764,16 @@ const StepViewer = ({ url }) => {
                 climbRate: aeroSummary.climbRate,
                 gLoad: aeroSummary.gLoad
               });
+              telemetryDataRef.current = {
+                airspeed: aeroSummary.airspeed,
+                CL: aeroSummary.CL,
+                CD: aeroSummary.CD,
+                lift: aeroSummary.lift,
+                drag: aeroSummary.drag,
+                stallSpeed: aeroSummary.stallSpeed,
+                climbRate: aeroSummary.climbRate,
+                gLoad: aeroSummary.gLoad
+              };
               
               setDigitalTwin({
                 power: aeroSummary.powerRequired || 0,
@@ -690,6 +787,18 @@ const StepViewer = ({ url }) => {
                 isStalling: isStalling,
                 flightPhase: flightPhase
               });
+              digitalTwinRef.current = {
+                power: aeroSummary.powerRequired || 0,
+                powerRequired: aeroSummary.powerRequired || 0,
+                excessPower: Math.max(0, 1500 - (aeroSummary.powerRequired || 0)),
+                turnRate: turnRate,
+                wingLoading: (aeroRef.current.mass * 9.81) / aeroRef.current.wingArea,
+                liftToDrag: liftToDrag,
+                efficiency: Math.min(100, (liftToDrag / 15) * 100),
+                stallMargin: Math.max(-50, stallMargin),
+                isStalling: isStalling,
+                flightPhase: flightPhase
+              };
               
               // Update structural analysis (throttle to every 200ms)
               if (structuralAnalyzerRef.current && showStructural && (now - pressureUpdateTimeRef.current) > 200) {
@@ -762,6 +871,25 @@ const StepViewer = ({ url }) => {
              if (gridHelper && !flightModeRef.current) gridHelper.visible = false;
           }
 
+          // Optional outbound logging of controls/telemetry for BC datasets (throttled to ~20Hz)
+          const logSocket = logSocketRef.current;
+          if (logSocket && logSocket.readyState === WebSocket.OPEN && (now - lastLogTimeRef.current) > 50) {
+            lastLogTimeRef.current = now;
+            const payload = {
+              ts_ms: Date.now(),
+              controls: { ...controlsRef.current },
+              attitude_deg: { ...telemetryRef.current },
+              telemetry: { ...telemetryDataRef.current },
+              digitalTwin: { ...digitalTwinRef.current },
+              flightMode: flightModeRef.current,
+            };
+            try {
+              logSocket.send(JSON.stringify(payload));
+            } catch (e) {
+              console.warn('[twin-log] send failed', e);
+            }
+          }
+
           controls.update();
           renderer.render(scene, camera);
         };
@@ -789,6 +917,27 @@ const StepViewer = ({ url }) => {
       // but explicit disconnect is good practice if we had the observer instance here.
     };
   }, [url, showStructural, showWeight]);
+
+  // Connect outbound logging socket once (optional, for BC data export)
+  useEffect(() => {
+    const wsUrl = import.meta.env.VITE_TWIN_LOG_WS || 'ws://127.0.0.1:8787';
+    let socket;
+    try {
+      socket = new WebSocket(wsUrl);
+      socket.onopen = () => console.log('[twin-log] connected to', wsUrl);
+      socket.onclose = () => console.log('[twin-log] disconnected');
+      socket.onerror = (e) => console.warn('[twin-log] error', e);
+      logSocketRef.current = socket;
+    } catch (e) {
+      console.warn('[twin-log] failed to connect', e);
+    }
+    return () => {
+      if (socket && socket.readyState === WebSocket.OPEN) {
+        socket.close();
+      }
+      logSocketRef.current = null;
+    };
+  }, []);
 
   return (
     <div 
