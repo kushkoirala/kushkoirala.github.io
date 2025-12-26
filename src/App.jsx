@@ -97,6 +97,7 @@ function App() {
             <span className="text-sm text-slate-500 dark:text-slate-400 italic">July 2018 – Present</span>
           </div>
           <ul className="list-disc pl-4 space-y-1 text-slate-800 dark:text-slate-300 text-sm">
+            <li><strong>Global Architect Tesla Inc.:</strong>Unifying engineering(Design,Simulation & Manufacturing) across the Tesla Enterprise</li>
             <li><strong>Boeing MBD/MBSE Transformation:</strong> Spent 3 years embedded with Boeing Design Engineering, Manufacturing, and M&P teams to move product structure/EBOM and engineering processes to an MBD/MBSE framework.</li>
             <li><strong>Real-Time Traceability Infrastructure:</strong> Built a Linux-based 3DExperience + Cameo Systems Modeler stack with live OSLC federation, enabling bidirectional sync between CAD, PLM, and SysML.</li>
             <li><strong>MBSE + UAF Architecture:</strong> Two-year focus on requirements management, architecture definition, standards rollout, and UAF-based reference architectures (MagicGrid/SysML) for multi-industry products-as-systems.</li>
