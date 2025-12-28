@@ -267,7 +267,7 @@ function App() {
              <p className="text-base text-slate-600 dark:text-slate-400 mb-4 flex-1">
                Integration of reinforcement learning and neural networks for autonomous fixed-wing aircraft control powered by LLMs.
              </p>
-             <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">Stack: Python,PyTorch,Gymnasium,CUDA,CuPy,NumPy,SciPy,WSL.</p>
+             <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">Stack: Python, PyTorch, Gymnasium, CUDA, CuPy, NumPy, SciPy, WSL.</p>
              <div className="flex items-center text-teal-600 dark:text-teal-400 text-base font-medium group-hover:translate-x-1 transition-transform">
                 View Repository <ArrowRight size={16} className="ml-1" />
              </div>
