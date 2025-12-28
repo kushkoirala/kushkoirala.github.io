@@ -189,21 +189,6 @@ function parseMetadata(header) {
   };
 }
 
-// Helper to find element regardless of namespace prefix
-function findElement(obj, localName) {
-  if (!obj || typeof obj !== 'object') return undefined;
-  // Try direct match first
-  if (obj[localName] !== undefined) return obj[localName];
-  // Try with common namespace prefixes
-  for (const key of Object.keys(obj)) {
-    const parts = key.split(':');
-    if (parts.length === 2 && parts[1] === localName) {
-      return obj[key];
-    }
-  }
-  return undefined;
-}
-
 // Recursively strip namespace prefixes from all keys
 function stripNamespaces(obj) {
   if (obj === null || obj === undefined) return obj;

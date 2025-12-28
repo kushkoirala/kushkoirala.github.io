@@ -8,10 +8,6 @@ const __dirname = path.dirname(__filename);
 const projectRoot = path.resolve(__dirname, '..');
 const reqifFile = path.join(projectRoot, 'public', 'reqif', 'part25-certification.reqif');
 
-// V&V Parameter definitions for each requirement type
-const vvMethods = ['Analysis', 'Test', 'Inspection', 'Demonstration', 'Analysis/Test'];
-const complianceStatuses = ['Not Started', 'In Progress', 'Compliant', 'Non-Compliant', 'Not Applicable'];
-
 // Map requirement types to default verification methods
 const reqTypeToMethod = {
   'CERT-GEN': 'Analysis',          // General - typically analysis
