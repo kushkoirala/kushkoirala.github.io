@@ -819,7 +819,7 @@ const StationAnalysis = ({ stations, formatValue, unitSystem }) => {
 // Normal Shock Analysis Component - Hill & Peterson Ch. 3
 // Interactive calculator for supersonic inlet design
 // ============================================================
-const NormalShockAnalysis = ({ mach: flightMach, formatValue, unitSystem }) => {
+const NormalShockAnalysis = () => {
     const [inputMach, setInputMach] = React.useState(2.0);
     const [showTable, setShowTable] = React.useState(true);
 
@@ -1483,7 +1483,6 @@ const TurbofanAnalysis = ({ onClose }) => {
   const [isNewEngineDesign, setIsNewEngineDesign] = useState(false); // Track if designing new engine
   const [unitSystem, setUnitSystem] = useState('SI'); // 'SI' or 'Imperial'
   const [flightPhase, setFlightPhase] = useState('cruise'); // 'takeoff', 'landing', 'cruise', 'supercruise'
-  const [snapshots, setSnapshots] = useState([]);
   const [modeChoice, setModeChoice] = useState(null); // null => selector screen
 
   // Unit conversion helpers
@@ -1697,62 +1696,6 @@ const TurbofanAnalysis = ({ onClose }) => {
   const noiseDbTotal = engineCount > 1 ? logSum(noiseDb, engineCount) : noiseDb;
   const noiseJetDbTotal = engineCount > 1 ? logSum(noiseJetDb, engineCount) : noiseJetDb;
   const noiseFanDbTotal = engineCount > 1 ? logSum(noiseFanDb, engineCount) : noiseFanDb;
-
-  // --- Scenario Snapshots ---
-  const saveSnapshot = () => {
-    setSnapshots(prev => {
-        const id = `snap-${Date.now()}`;
-        const name = `Scenario ${prev.length + 1}`;
-        const snapshot = {
-            id,
-            name,
-            inputs: {
-                engineKey,
-                designSpecs: { ...designSpecs },
-                n1,
-                altitude,
-                mach,
-                deltaIsa,
-                observerDist,
-                observerAngle,
-                unitSystem,
-                aircraftConfig,
-                componentDesign: { ...componentDesign }
-            },
-            results: {
-                thrust_N: results.F_net,
-                tsfc: results.tsfc_curr,
-                noise_dba: results.spl_total_a ?? results.spl_total
-            }
-        };
-        return [...prev, snapshot];
-    });
-  };
-
-  const applySnapshot = (snapshot) => {
-    const { inputs } = snapshot;
-    if (inputs.engineKey && !engines[inputs.engineKey]) {
-        setEngines(prev => ({ ...prev, [inputs.engineKey]: inputs.designSpecs }));
-    }
-    setEngineKey(inputs.engineKey || 'snapshot');
-    setDesignSpecs(inputs.designSpecs);
-    if (inputs.componentDesign) {
-        setComponentDesign(inputs.componentDesign);
-    }
-    if (inputs.aircraftConfig) {
-        setAircraftConfig(inputs.aircraftConfig);
-    }
-    setIsNewEngineDesign(!DEFAULT_ENGINES[inputs.engineKey]);
-    setN1(inputs.n1);
-    setAltitude(inputs.altitude);
-    setMach(inputs.mach);
-    setDeltaIsa(inputs.deltaIsa);
-    setObserverDist(inputs.observerDist);
-    setObserverAngle(inputs.observerAngle);
-    if (inputs.unitSystem) setUnitSystem(inputs.unitSystem);
-  };
-
-  const deleteSnapshot = (id) => setSnapshots(prev => prev.filter(s => s.id !== id));
 
   // --- Optimization Logic ---
   
@@ -2319,7 +2262,7 @@ const TurbofanAnalysis = ({ onClose }) => {
 
                 {/* Normal Shock Analysis - Full Width */}
                 <div className="mb-4">
-                  <NormalShockAnalysis mach={mach} formatValue={formatValue} unitSystem={unitSystem} />
+                  <NormalShockAnalysis />
                 </div>
               </>
             ) : (
