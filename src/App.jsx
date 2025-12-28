@@ -316,7 +316,7 @@ function App() {
             </button>
           </div>
           <div className="flex-1 overflow-hidden bg-slate-100 dark:bg-slate-900 relative">
-            {fullScreen === 'reqif' ? <ReqIFViewer reqifFile="udaan.reqif" /> : <DigitalTwin />}
+            {fullScreen === 'reqif' ? <ReqIFViewer reqifFile="part25-certification.reqif" /> : <DigitalTwin />}
           </div>
         </div>
       )}
