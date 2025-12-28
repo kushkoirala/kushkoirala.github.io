@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Linkedin, Mail, X, FileText, Box, Activity, ArrowRight, Brain, Sun, Moon } from 'lucide-react';
+import { Linkedin, Mail, X, FileText, Box, Activity, ArrowRight, Brain, Sun, Moon, CheckCircle2, ClipboardCheck, Plane, Cpu } from 'lucide-react';
 import UniversalModal from './components/UniversalModal';
 import DigitalTwin from './components/DigitalTwin';
 import ReqIFViewer from './components/ReqIFViewer';
@@ -77,12 +77,28 @@ function App() {
           </div>
         </div>
         <p className="text-base leading-relaxed text-slate-700 dark:text-slate-400 max-w-2xl">
-          <strong>Aerospace Engineer × Solutions Architect.</strong> Building production-grade digital twins and simulation engines. Physics-based modeling, CAD and enterprise systems from concept to deployment.
+          <strong>Aerospace Engineer | Physics-Based ML & Simulation.</strong> Building digital twins, physics-informed models, and GPU-accelerated flight dynamics. 12+ years bridging aerospace domain expertise with modern compute — from neural network flight control to production simulation infrastructure.
         </p>
         <button onClick={() => window.print()} className="mt-4 px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded hover:bg-primary-700 transition print:hidden">
           Print Resume
         </button>
       </header>
+
+      {/* TECHNICAL SKILLS */}
+      <section className="mb-6">
+        <div className="flex flex-wrap gap-2 text-sm">
+          <span className="px-3 py-1 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded-full font-medium">PyTorch</span>
+          <span className="px-3 py-1 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded-full font-medium">CUDA / CuPy</span>
+          <span className="px-3 py-1 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded-full font-medium">Python</span>
+          <span className="px-3 py-1 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded-full font-medium">C++</span>
+          <span className="px-3 py-1 bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 rounded-full font-medium">6-DOF Dynamics</span>
+          <span className="px-3 py-1 bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 rounded-full font-medium">CFD / FEA</span>
+          <span className="px-3 py-1 bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 rounded-full font-medium">Flight Control</span>
+          <span className="px-3 py-1 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-full font-medium">Reinforcement Learning</span>
+          <span className="px-3 py-1 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-full font-medium">Digital Twins</span>
+          <span className="px-3 py-1 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-full font-medium">MBSE / SysML</span>
+        </div>
+      </section>
 
       {/* EXPERIENCE */}
       <section className="mb-8">
@@ -97,12 +113,11 @@ function App() {
             <span className="text-sm text-slate-500 dark:text-slate-400 italic">July 2018 – Present</span>
           </div>
           <ul className="list-disc pl-4 space-y-1 text-slate-800 dark:text-slate-300 text-sm">
-            <li><strong>Global Architect Tesla Inc.:</strong>Unifying engineering(Design,Simulation & Manufacturing) across the Tesla Enterprise</li>
-            <li><strong>Boeing MBD/MBSE Transformation:</strong> Spent 3 years embedded with Boeing Design Engineering, Manufacturing, and M&P teams to move product structure/EBOM and engineering processes to an MBD/MBSE framework.</li>
-            <li><strong>Real-Time Traceability Infrastructure:</strong> Built a Linux-based 3DExperience + Cameo Systems Modeler stack with live OSLC federation, enabling bidirectional sync between CAD, PLM, and SysML.</li>
-            <li><strong>MBSE + UAF Architecture:</strong> Two-year focus on requirements management, architecture definition, standards rollout, and UAF-based reference architectures (MagicGrid/SysML) for multi-industry products-as-systems.</li>
-            <li><strong>Custom Framework (Technical Support):</strong> Provide technical consulting to elite engineering corporations on enhancing their engineering capabilities.</li>
-            <li><strong>Daily Toolchain:</strong> C++, VBScript, EKL, and shell scripting across Cameo, CATIA/3DEXPERIENCE, and SIMULIA to automate and harden engineering workflows.</li>
+            <li><strong>Tesla — Simulation Infrastructure:</strong> Architecting unified simulation pipeline across design, manufacturing, and validation. Enabling physics-based digital twin workflows at enterprise scale.</li>
+            <li><strong>Boeing — Automated Analysis Pipelines:</strong> 3 years embedded with engineering teams building automated FEA/simulation workflows. Integrated CAD geometry with Abaqus/Nastran for structural certification.</li>
+            <li><strong>Real-Time Simulation Federation:</strong> Built Linux-based infrastructure connecting physics solvers (SIMULIA) with system models. Live bidirectional sync between CAD, simulation results, and requirements.</li>
+            <li><strong>Multi-Physics Workflow Automation:</strong> Python/C++ tooling for parametric geometry generation, mesh automation, and post-processing across CFD and structural analysis domains.</li>
+            <li><strong>Systems Modeling:</strong> Requirements decomposition, V&V traceability, and architecture definition using SysML/UAF for aerospace certification programs.</li>
           </ul>
         </div>
 
@@ -149,7 +164,9 @@ function App() {
           </div>
           <p className="text-slate-600 dark:text-slate-400 italic text-sm">Wichita State University — Wichita, KS</p>
           <ul className="list-disc pl-4 mt-1 text-sm text-slate-800 dark:text-slate-300 space-y-1">
-            <li><strong>Research Focus:</strong> Optimal Control, Neural Network-based Flight Control, Reinforcement Learning for autonomous systems. <a href="#" onClick={(e) => openPdf(e, 'AIDA - Proposal _ v1.pdf', 'AIDA')} className="text-primary-600 dark:text-primary-400 hover:underline">AIDA Proposal</a> | <a href="#" onClick={(e) => openPdf(e, 'Flight Control Design.pdf', 'Flight Control')} className="text-primary-600 dark:text-primary-400 hover:underline">Control Design</a> | <a href="#" onClick={(e) => openPdf(e, 'Mars Lander.pdf', 'Starship Mars Landing')} className="text-primary-600 dark:text-primary-400 hover:underline">Starship Mars Landing</a></li>
+            <li><strong>AIDA — Neural Flight Control:</strong> Reinforcement learning for 6-DOF aircraft control. PyTorch policy networks trained in GPU-accelerated physics simulation (CUDA/CuPy). <a href="#" onClick={(e) => openPdf(e, 'AIDA - Proposal _ v1.pdf', 'AIDA')} className="text-primary-600 dark:text-primary-400 hover:underline">Proposal</a></li>
+            <li><strong>Optimal Control:</strong> Convex optimization for powered descent guidance (Mars lander). Successive convexification with glide-slope and thrust constraints. <a href="#" onClick={(e) => openPdf(e, 'Mars Lander.pdf', 'Starship Mars Landing')} className="text-primary-600 dark:text-primary-400 hover:underline">Paper</a></li>
+            <li><strong>Coursework:</strong> Nonlinear dynamics, optimal control theory, estimation & filtering, neural network fundamentals.</li>
           </ul>
         </div>
 
@@ -189,101 +206,191 @@ function App() {
              <li><strong>Capstone:</strong> <a href="#" onClick={(e) => openPdf(e, 'Final Report-PropShox.pdf', 'Udaan Aircraft')} className="text-primary-600 dark:text-primary-400 hover:underline">Udaan Dive Bomber</a> — Full aircraft design, wind tunnel testing, propulsion integration.</li>
           </ul>
         </div>
+
+        <div className="mb-3">
+           <div className="flex justify-between items-baseline mb-1">
+            <div>
+              <h3 className="font-bold text-lg">High School (CBSE) <span className="font-normal text-slate-600 dark:text-slate-400 ml-2 text-sm">— La Chatelaine Jr. College, Chennai, India</span></h3>
+            </div>
+            <span className="text-sm text-slate-500 dark:text-slate-400">2003</span>
+          </div>
+          <ul className="list-disc pl-4 mt-1 text-sm text-slate-800 dark:text-slate-300 space-y-1">
+             <li><strong>Gold Medal</strong> for Academic Proficiency</li>
+          </ul>
+        </div>
       </section>
 
       {/* INTERACTIVE PORTFOLIO */}
       <section className="mb-12 print:hidden">
-        <h2 className="text-3xl font-bold text-primary-600 dark:text-primary-400 border-b border-slate-200 dark:border-slate-700 pb-2 mb-6">Interactive Engineering Portfolio</h2>
-        <p className="text-slate-600 dark:text-slate-400 text-base mb-8">
-          Explore interactive demonstrations of my engineering capabilities, from requirements management to physics-based simulations.
-        </p>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {/* Card 1: Requirements */}
-          <div 
-            className="group bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700 hover:shadow-lg hover:border-primary-300 dark:hover:border-primary-600 transition cursor-pointer flex flex-col" 
+        <div className="mb-8">
+          <h2 className="text-3xl font-bold text-primary-600 dark:text-primary-400 mb-3">Interactive Engineering Portfolio</h2>
+          <p className="text-slate-600 dark:text-slate-400 text-base max-w-2xl">
+            Live demonstrations of aerospace engineering capabilities — from FAA certification requirements to physics-based simulations.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          {/* Card 1: Requirements - Featured */}
+          <div
+            className="group relative bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-slate-800 dark:to-slate-800 rounded-2xl p-6 border border-blue-200 dark:border-slate-700 hover:shadow-xl hover:border-blue-400 dark:hover:border-blue-500 transition-all duration-300 cursor-pointer md:col-span-2"
             onClick={() => setFullScreen('reqif')}
           >
-             <div className="h-12 w-12 bg-primary-50 dark:bg-primary-900/50 rounded-lg flex items-center justify-center text-primary-600 dark:text-primary-400 mb-4 group-hover:bg-primary-100 dark:group-hover:bg-primary-900 transition">
-                <FileText size={24} />
-             </div>
-             <h3 className="font-bold text-xl text-slate-900 dark:text-white mb-2">Requirements (ReqIF)</h3>
-             <p className="text-base text-slate-600 dark:text-slate-400 mb-4 flex-1">
-               View the Udaan aircraft requirements in native ReqIF format. Demonstrates traceability and model-based systems engineering (MBSE) data structures.
-             </p>
-             <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">Stack: ReqIF/Cameo, OSLC, React/Vite.</p>
-             <div className="flex items-center text-primary-600 dark:text-primary-400 text-base font-medium group-hover:translate-x-1 transition-transform">
-                View Requirements <ArrowRight size={16} className="ml-1" />
-             </div>
+            <div className="flex flex-col md:flex-row md:items-start gap-6">
+              <div className="flex-shrink-0">
+                <div className="h-16 w-16 bg-blue-100 dark:bg-blue-900/50 rounded-xl flex items-center justify-center text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform duration-300">
+                  <ClipboardCheck size={32} />
+                </div>
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-3 mb-2">
+                  <h3 className="font-bold text-xl text-slate-900 dark:text-white">14 CFR Part 25 Requirements</h3>
+                  <span className="px-2 py-0.5 text-xs font-medium bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-full">Airworthiness Standards</span>
+                </div>
+                <p className="text-base text-slate-600 dark:text-slate-400 mb-4">
+                  Full FAA airworthiness standards with derived requirements across 8 subparts. Powerplant section (Subpart E) fully decomposed with official CFR regulatory text. Features V&V tracking with verification methods, compliance status, and traceability.
+                </p>
+                <div className="flex flex-wrap gap-2 mb-4">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white dark:bg-slate-700 rounded-lg text-xs text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-600">
+                    <CheckCircle2 size={12} className="text-green-500" /> V&V Tracking
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white dark:bg-slate-700 rounded-lg text-xs text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-600">
+                    <FileText size={12} className="text-blue-500" /> ReqIF Standard
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white dark:bg-slate-700 rounded-lg text-xs text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-600">
+                    <Plane size={12} className="text-indigo-500" /> Subparts A-H
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Stack: ReqIF/XML, React, Vite, Tailwind</p>
+                  <div className="flex items-center text-blue-600 dark:text-blue-400 text-base font-medium group-hover:translate-x-2 transition-transform duration-300">
+                    Explore Requirements <ArrowRight size={18} className="ml-2" />
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Card 2: Digital Twin */}
-          <div 
-            className="group bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700 hover:shadow-lg hover:border-purple-300 dark:hover:border-purple-600 transition cursor-pointer flex flex-col" 
+          <div
+            className="group bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 hover:shadow-xl hover:border-purple-400 dark:hover:border-purple-500 transition-all duration-300 cursor-pointer flex flex-col"
             onClick={() => setFullScreen('twin')}
           >
-             <div className="h-12 w-12 bg-purple-50 dark:bg-purple-900/50 rounded-lg flex items-center justify-center text-purple-600 dark:text-purple-400 mb-4 group-hover:bg-purple-100 dark:group-hover:bg-purple-900 transition">
-                <Box size={24} />
-             </div>
-             <h3 className="font-bold text-xl text-slate-900 dark:text-white mb-2">Digital Twin (STEP)</h3>
-             <p className="text-base text-slate-600 dark:text-slate-400 mb-4 flex-1">
-               Interactive 3D visualization of the Udaan aircraft. Showcases digital continuity from engineering CAD data (STEP) to web-based experiences.
-             </p>
-             <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">Stack: React, Three.js, WebAssembly (OCCT), STEP/CAD.</p>
-             <div className="flex items-center text-purple-600 dark:text-purple-400 text-base font-medium group-hover:translate-x-1 transition-transform">
-                Launch Viewer <ArrowRight size={16} className="ml-1" />
-             </div>
+            <div className="flex items-start gap-4 mb-4">
+              <div className="h-14 w-14 bg-purple-100 dark:bg-purple-900/50 rounded-xl flex items-center justify-center text-purple-600 dark:text-purple-400 group-hover:scale-110 transition-transform duration-300">
+                <Box size={28} />
+              </div>
+              <div>
+                <h3 className="font-bold text-xl text-slate-900 dark:text-white mb-1">Digital Twin</h3>
+                <span className="text-xs text-purple-600 dark:text-purple-400 font-medium">6-DOF Flight Simulation</span>
+              </div>
+            </div>
+            <p className="text-base text-slate-600 dark:text-slate-400 mb-4 flex-1">
+              Real-time 3D visualization with CFD pressure coefficients, quaternion-based flight dynamics, and STEP file import via WebAssembly.
+            </p>
+            <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-700">
+              <p className="text-xs text-slate-500 dark:text-slate-400">Three.js, OpenCASCADE, WebAssembly</p>
+              <div className="flex items-center text-purple-600 dark:text-purple-400 text-sm font-medium group-hover:translate-x-1 transition-transform">
+                Launch <ArrowRight size={16} className="ml-1" />
+              </div>
+            </div>
           </div>
 
           {/* Card 3: Turbofan Analysis */}
-          <div 
-            className="group bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700 hover:shadow-lg hover:border-orange-300 dark:hover:border-orange-600 transition cursor-pointer flex flex-col" 
+          <div
+            className="group bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 hover:shadow-xl hover:border-orange-400 dark:hover:border-orange-500 transition-all duration-300 cursor-pointer flex flex-col"
             onClick={() => setFullScreen('acoustic')}
           >
-             <div className="h-12 w-12 bg-orange-50 dark:bg-orange-900/50 rounded-lg flex items-center justify-center text-orange-600 dark:text-orange-400 mb-4 group-hover:bg-orange-100 dark:group-hover:bg-orange-900 transition">
-                <Activity size={24} />
-             </div>
-             <h3 className="font-bold text-xl text-slate-900 dark:text-white mb-2">Turbofan Analysis</h3>
-             <p className="text-base text-slate-600 dark:text-slate-400 mb-4 flex-1">
-               Real-time physics simulation of turbofan engine performance and acoustics. Includes standard atmosphere modeling and Lighthill noise estimation.
-             </p>
-             <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">Stack: React, JS cycle solver, Lighthill acoustics, Tailwind UI.</p>
-             <div className="flex items-center text-orange-600 dark:text-orange-400 text-base font-medium group-hover:translate-x-1 transition-transform">
-                Run Simulation <ArrowRight size={16} className="ml-1" />
-             </div>
+            <div className="flex items-start gap-4 mb-4">
+              <div className="h-14 w-14 bg-orange-100 dark:bg-orange-900/50 rounded-xl flex items-center justify-center text-orange-600 dark:text-orange-400 group-hover:scale-110 transition-transform duration-300">
+                <Cpu size={28} />
+              </div>
+              <div>
+                <h3 className="font-bold text-xl text-slate-900 dark:text-white mb-1">Turbofan Analysis</h3>
+                <span className="text-xs text-orange-600 dark:text-orange-400 font-medium">Cycle + Acoustics</span>
+              </div>
+            </div>
+            <p className="text-base text-slate-600 dark:text-slate-400 mb-4 flex-1">
+              Engine cycle analysis with real-time parameter updates. Includes takeoff noise prediction based on Lighthill acoustic analogy from thesis research.
+            </p>
+            <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-700">
+              <p className="text-xs text-slate-500 dark:text-slate-400">JS Cycle Solver, Lighthill Model</p>
+              <div className="flex items-center text-orange-600 dark:text-orange-400 text-sm font-medium group-hover:translate-x-1 transition-transform">
+                Simulate <ArrowRight size={16} className="ml-1" />
+              </div>
+            </div>
           </div>
 
           {/* Card 4: AIDA Research */}
-          <a 
-            className="group bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700 hover:shadow-lg hover:border-teal-300 dark:hover:border-teal-600 transition cursor-pointer flex flex-col" 
+          <a
+            className="group bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 hover:shadow-xl hover:border-teal-400 dark:hover:border-teal-500 transition-all duration-300 cursor-pointer flex flex-col md:col-span-2"
             href="https://github.com/kushkoirala/AIDA"
             target="_blank"
             rel="noreferrer"
           >
-             <div className="h-12 w-12 bg-teal-50 dark:bg-teal-900/50 rounded-lg flex items-center justify-center text-teal-600 dark:text-teal-400 mb-4 group-hover:bg-teal-100 dark:group-hover:bg-teal-900 transition">
-                <Brain size={24} />
-             </div>
-             <h3 className="font-bold text-xl text-slate-900 dark:text-white mb-2">AIDA Flight Control</h3>
-             <p className="text-base text-slate-600 dark:text-slate-400 mb-4 flex-1">
-               Integration of reinforcement learning and neural networks for autonomous fixed-wing aircraft control powered by LLMs.
-             </p>
-             <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">Stack: Python, PyTorch, Gymnasium, CUDA, CuPy, NumPy, SciPy, WSL.</p>
-             <div className="flex items-center text-teal-600 dark:text-teal-400 text-base font-medium group-hover:translate-x-1 transition-transform">
-                View Repository <ArrowRight size={16} className="ml-1" />
-             </div>
+            <div className="flex flex-col md:flex-row md:items-start gap-6">
+              <div className="flex-shrink-0">
+                <div className="h-14 w-14 bg-teal-100 dark:bg-teal-900/50 rounded-xl flex items-center justify-center text-teal-600 dark:text-teal-400 group-hover:scale-110 transition-transform duration-300">
+                  <Brain size={28} />
+                </div>
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-3 mb-2">
+                  <h3 className="font-bold text-xl text-slate-900 dark:text-white">AIDA — AI Flight Control</h3>
+                  <span className="px-2 py-0.5 text-xs font-medium bg-teal-100 dark:bg-teal-900 text-teal-700 dark:text-teal-300 rounded-full">Research</span>
+                </div>
+                <p className="text-base text-slate-600 dark:text-slate-400 mb-4">
+                  Autonomous fixed-wing aircraft control using reinforcement learning and neural networks. Integrates LLMs for adaptive flight behavior with GPU-accelerated physics simulation.
+                </p>
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Python, PyTorch, Gymnasium, CUDA, CuPy</p>
+                  <div className="flex items-center text-teal-600 dark:text-teal-400 text-sm font-medium group-hover:translate-x-2 transition-transform duration-300">
+                    View on GitHub <ArrowRight size={16} className="ml-2" />
+                  </div>
+                </div>
+              </div>
+            </div>
           </a>
         </div>
       </section>
 
-      {/* PRINTABLE PORTFOLIO SNAPSHOT */}
-      <section className="mb-8 hidden print:block">
+      {/* PRINTABLE PORTFOLIO - Page 3 */}
+      <section className="hidden print:block print-portfolio">
         <h2 className="text-2xl font-bold text-primary-600 border-b border-slate-200 pb-2 mb-4">Interactive Engineering Portfolio</h2>
-        <img 
-          src={`${window.location.origin}/logos/portfolio-preview.png`} 
-          alt="Interactive Engineering Portfolio snapshot" 
-          className="w-full rounded-lg border border-slate-200"
-          onError={(e) => { e.currentTarget.style.display = 'none'; }}
-        />
+        <p className="text-sm text-slate-600 mb-4">Live demonstrations available at <strong>kushkoirala.github.io</strong></p>
+
+        <div className="print-portfolio-grid">
+          {/* Requirements */}
+          <div className="print-portfolio-card featured">
+            <h3>14 CFR Part 25 Requirements <span className="badge">Airworthiness Standards</span></h3>
+            <p>Full FAA airworthiness standards with derived requirements across 8 subparts (A-H). Powerplant section (Subpart E) fully decomposed with official CFR regulatory text. Features V&V tracking with verification methods, compliance status, and traceability.</p>
+            <p className="tech">Stack: ReqIF/XML, React, Vite, Tailwind</p>
+          </div>
+
+          {/* Digital Twin */}
+          <div className="print-portfolio-card">
+            <h3>Digital Twin <span className="badge">6-DOF Simulation</span></h3>
+            <p>Real-time 3D visualization with CFD pressure coefficients, quaternion-based flight dynamics, and STEP file import via WebAssembly.</p>
+            <p className="tech">Three.js, OpenCASCADE, WebAssembly</p>
+          </div>
+
+          {/* Turbofan */}
+          <div className="print-portfolio-card">
+            <h3>Turbofan Analysis <span className="badge">Cycle + Acoustics</span></h3>
+            <p>Engine cycle analysis with real-time parameter updates. Takeoff noise prediction based on Lighthill acoustic analogy from thesis research.</p>
+            <p className="tech">JS Cycle Solver, Lighthill Model</p>
+          </div>
+
+          {/* AIDA */}
+          <div className="print-portfolio-card featured">
+            <h3>AIDA — AI Flight Control <span className="badge">Research</span></h3>
+            <p>Autonomous fixed-wing aircraft control using reinforcement learning and neural networks. Integrates LLMs for adaptive flight behavior with GPU-accelerated physics simulation. GitHub: github.com/kushkoirala/AIDA</p>
+            <p className="tech">Python, PyTorch, Gymnasium, CUDA, CuPy</p>
+          </div>
+        </div>
+
+        <div className="print-portfolio-url">
+          View interactive demos: <a href="https://kushkoirala.github.io">kushkoirala.github.io</a>
+        </div>
       </section>
 
       {/* MODAL */}

@@ -9,3 +9,268 @@
     @apply transition-colors duration-300;
   }
 }
+
+/* Print Styles - Compact 2-page resume + portfolio */
+@media print {
+  @page {
+    size: letter;
+    margin: 0.4in 0.5in;
+  }
+
+  /* Force light mode for printing */
+  html, body {
+    background: white !important;
+    color: #1e293b !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Override all dark mode styles */
+  .dark, [class*="dark:"] {
+    background: white !important;
+    color: #1e293b !important;
+  }
+
+  * {
+    color: inherit !important;
+    background-color: transparent !important;
+  }
+
+  body {
+    font-size: 11pt !important;
+    line-height: 1.4 !important;
+  }
+
+  .resume-shell {
+    max-width: 100% !important;
+    padding: 0 !important;
+  }
+
+  /* Header */
+  header {
+    margin-bottom: 0.5rem !important;
+    padding-bottom: 0.4rem !important;
+    border-color: #cbd5e1 !important;
+  }
+
+  header h1 {
+    font-size: 24pt !important;
+    margin-bottom: 0.3rem !important;
+    color: #1e40af !important;
+  }
+
+  header .flex.gap-3 {
+    gap: 0.5rem !important;
+  }
+
+  header .flex.gap-3 a {
+    padding: 0.2rem 0.5rem !important;
+    font-size: 9pt !important;
+    background: #f1f5f9 !important;
+    color: #334155 !important;
+    border-radius: 4px !important;
+  }
+
+  header p {
+    font-size: 10.5pt !important;
+    line-height: 1.4 !important;
+    margin-top: 0.4rem !important;
+    color: #334155 !important;
+  }
+
+  header p strong {
+    color: #1e293b !important;
+  }
+
+  /* Skills section */
+  section:has(.flex-wrap.gap-2) {
+    margin-bottom: 0.5rem !important;
+  }
+
+  .flex-wrap.gap-2 {
+    gap: 0.3rem !important;
+  }
+
+  .flex-wrap.gap-2 span {
+    padding: 0.15rem 0.6rem !important;
+    font-size: 9pt !important;
+    background: #e2e8f0 !important;
+    color: #334155 !important;
+    border-radius: 12px !important;
+  }
+
+  /* Section headers */
+  h2 {
+    font-size: 14pt !important;
+    margin-bottom: 0.4rem !important;
+    padding-bottom: 0.2rem !important;
+    color: #1e40af !important;
+    border-color: #cbd5e1 !important;
+  }
+
+  /* Experience section */
+  section.mb-8 {
+    margin-bottom: 0.6rem !important;
+  }
+
+  /* Job entries */
+  .mb-6.break-inside-avoid {
+    margin-bottom: 0.5rem !important;
+    page-break-inside: avoid !important;
+  }
+
+  .mb-6.break-inside-avoid h3 {
+    font-size: 12pt !important;
+    margin-bottom: 0.15rem !important;
+    color: #1e293b !important;
+  }
+
+  .mb-6.break-inside-avoid h3 span {
+    font-size: 11pt !important;
+    color: #475569 !important;
+  }
+
+  .mb-6.break-inside-avoid .text-sm.italic {
+    font-size: 9pt !important;
+    color: #64748b !important;
+  }
+
+  /* List items in experience/education */
+  ul.list-disc {
+    padding-left: 1.2rem !important;
+    margin-top: 0.15rem !important;
+  }
+
+  ul.list-disc li {
+    font-size: 10pt !important;
+    margin-bottom: 0.1rem !important;
+    line-height: 1.35 !important;
+    color: #334155 !important;
+  }
+
+  ul.list-disc li strong {
+    color: #1e293b !important;
+  }
+
+  ul.list-disc.space-y-1 > li + li {
+    margin-top: 0.1rem !important;
+  }
+
+  /* Education section */
+  section.mb-8.break-inside-avoid {
+    margin-bottom: 0.6rem !important;
+  }
+
+  .mb-4 {
+    margin-bottom: 0.35rem !important;
+  }
+
+  .mb-3 {
+    margin-bottom: 0.3rem !important;
+  }
+
+  .mb-4 h3, .mb-3 h3 {
+    font-size: 12pt !important;
+    color: #1e293b !important;
+  }
+
+  .mb-4 h3 span, .mb-3 h3 span {
+    font-size: 10pt !important;
+    color: #475569 !important;
+  }
+
+  p.italic.text-sm {
+    font-size: 9pt !important;
+    margin-bottom: 0.15rem !important;
+    color: #64748b !important;
+  }
+
+  /* Links */
+  a {
+    color: #2563eb !important;
+    text-decoration: none !important;
+  }
+
+  /* Portfolio section - compact horizontal layout for page 2 */
+  .print-portfolio {
+    margin-top: 0.6rem !important;
+    padding-top: 0.4rem !important;
+    border-top: 1px solid #cbd5e1 !important;
+  }
+
+  .print-portfolio h2 {
+    font-size: 14pt !important;
+    margin-bottom: 0.4rem !important;
+    color: #1e40af !important;
+    border-bottom: none !important;
+    padding-bottom: 0 !important;
+  }
+
+  .print-portfolio > p {
+    display: none !important;
+  }
+
+  .print-portfolio-grid {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 0.5rem !important;
+  }
+
+  .print-portfolio-card {
+    flex: 1 1 calc(50% - 0.25rem) !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 6px !important;
+    padding: 0.5rem 0.6rem !important;
+    background: #fafbfc !important;
+  }
+
+  .print-portfolio-card.featured {
+    flex: 1 1 calc(50% - 0.25rem) !important;
+  }
+
+  .print-portfolio-card h3 {
+    font-size: 11pt !important;
+    font-weight: 600 !important;
+    color: #1e293b !important;
+    margin-bottom: 0.2rem !important;
+    display: flex !important;
+    align-items: center !important;
+    flex-wrap: wrap !important;
+    gap: 0.3rem !important;
+  }
+
+  .print-portfolio-card .badge {
+    font-size: 7pt !important;
+    padding: 0.1rem 0.35rem !important;
+    background: #dbeafe !important;
+    color: #1d4ed8 !important;
+    border-radius: 3px !important;
+    margin-left: 0 !important;
+    font-weight: 500 !important;
+  }
+
+  .print-portfolio-card p {
+    font-size: 9pt !important;
+    line-height: 1.35 !important;
+    color: #475569 !important;
+    margin-bottom: 0.15rem !important;
+  }
+
+  .print-portfolio-card .tech {
+    font-size: 8pt !important;
+    color: #64748b !important;
+    font-style: italic !important;
+  }
+
+  .print-portfolio-url {
+    text-align: center !important;
+    margin-top: 0.5rem !important;
+    font-size: 10pt !important;
+    color: #475569 !important;
+  }
+
+  .print-portfolio-url a {
+    font-weight: 600 !important;
+    color: #2563eb !important;
+  }
+}
