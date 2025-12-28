@@ -22,19 +22,130 @@ const CP_N = (GAMMA_N * R_GAS) / (GAMMA_N - 1);
 
 const clamp = (val, min, max) => Math.min(max, Math.max(min, val));
 
+// ============================================================
+// Normal Shock Relations - Hill & Peterson Ch. 3
+// "Mechanics and Thermodynamics of Propulsion" 2nd Ed.
+// ============================================================
+
+// Downstream Mach number M2 from upstream M1 (H&P Eq. 3.13)
 const normalShockM2 = (M1, gamma = GAMMA_AIR) => {
+  if (M1 <= 1) return M1; // No shock for subsonic
   const numerator = 1 + 0.5 * (gamma - 1) * M1 * M1;
   const denominator = gamma * M1 * M1 - 0.5 * (gamma - 1);
   return Math.sqrt(Math.max(1e-6, numerator / denominator));
 };
 
+// Static pressure ratio P2/P1 (H&P Eq. 3.9)
+const normalShockPressureRatio = (M1, gamma = GAMMA_AIR) => {
+  if (M1 <= 1) return 1;
+  return 1 + (2 * gamma / (gamma + 1)) * (M1 * M1 - 1);
+};
+
+// Static temperature ratio T2/T1 (H&P Eq. 3.11)
+const normalShockTemperatureRatio = (M1, gamma = GAMMA_AIR) => {
+  if (M1 <= 1) return 1;
+  const P2P1 = normalShockPressureRatio(M1, gamma);
+  const rho2rho1 = normalShockDensityRatio(M1, gamma);
+  return P2P1 / rho2rho1;
+};
+
+// Density ratio ρ2/ρ1 (H&P Eq. 3.10)
+const normalShockDensityRatio = (M1, gamma = GAMMA_AIR) => {
+  if (M1 <= 1) return 1;
+  return ((gamma + 1) * M1 * M1) / (2 + (gamma - 1) * M1 * M1);
+};
+
+// Total pressure ratio P02/P01 (H&P Eq. 3.14 - entropy increase)
 const normalShockTotalPressureRatio = (M1, gamma = GAMMA_AIR) => {
-  const P2P1 = 1 + (2 * gamma / (gamma + 1)) * (M1 * M1 - 1);
+  if (M1 <= 1) return { ratio: 1, M2: M1 };
   const M2 = normalShockM2(M1, gamma);
-  const P0_1P1 = Math.pow(1 + 0.5 * (gamma - 1) * M1 * M1, gamma / (gamma - 1));
-  const P0_2P2 = Math.pow(1 + 0.5 * (gamma - 1) * M2 * M2, gamma / (gamma - 1));
-  const ratio = (P2P1 * P0_2P2) / P0_1P1;
+  const P2P1 = normalShockPressureRatio(M1, gamma);
+  // Using isentropic relations to get P02/P01
+  const P01P1 = Math.pow(1 + 0.5 * (gamma - 1) * M1 * M1, gamma / (gamma - 1));
+  const P02P2 = Math.pow(1 + 0.5 * (gamma - 1) * M2 * M2, gamma / (gamma - 1));
+  const ratio = (P2P1 * P02P2) / P01P1;
   return { ratio, M2 };
+};
+
+// Entropy change Δs/R (H&P derived from T-s relations)
+const normalShockEntropyRise = (M1, gamma = GAMMA_AIR) => {
+  if (M1 <= 1) return 0;
+  const { ratio: P02P01 } = normalShockTotalPressureRatio(M1, gamma);
+  // Δs/R = -ln(P02/P01) from Gibbs equation
+  return -Math.log(Math.max(1e-12, P02P01));
+};
+
+// Velocity ratio V2/V1 = ρ1/ρ2 (continuity)
+const normalShockVelocityRatio = (M1, gamma = GAMMA_AIR) => {
+  if (M1 <= 1) return 1;
+  return 1 / normalShockDensityRatio(M1, gamma);
+};
+
+// Complete normal shock analysis - returns all properties
+const computeNormalShock = (M1, gamma = GAMMA_AIR, T1 = 288.15, P1 = 101325) => {
+  if (M1 <= 1) {
+    return {
+      M1, M2: M1,
+      P2P1: 1, T2T1: 1, rho2rho1: 1, P02P01: 1, V2V1: 1,
+      dsR: 0,
+      T1, T2: T1, P1, P2: P1,
+      valid: false,
+      note: 'Subsonic - no normal shock'
+    };
+  }
+
+  const M2 = normalShockM2(M1, gamma);
+  const P2P1 = normalShockPressureRatio(M1, gamma);
+  const T2T1 = normalShockTemperatureRatio(M1, gamma);
+  const rho2rho1 = normalShockDensityRatio(M1, gamma);
+  const { ratio: P02P01 } = normalShockTotalPressureRatio(M1, gamma);
+  const V2V1 = normalShockVelocityRatio(M1, gamma);
+  const dsR = normalShockEntropyRise(M1, gamma);
+
+  // Dimensional values
+  const T2 = T1 * T2T1;
+  const P2 = P1 * P2P1;
+  const a1 = Math.sqrt(gamma * R_GAS * T1);
+  const a2 = Math.sqrt(gamma * R_GAS * T2);
+  const V1 = M1 * a1;
+  const V2 = M2 * a2;
+
+  return {
+    M1, M2,
+    P2P1, T2T1, rho2rho1, P02P01, V2V1,
+    dsR,
+    T1, T2, P1, P2,
+    a1, a2, V1, V2,
+    valid: true,
+    note: `Normal shock at M=${M1.toFixed(2)}`
+  };
+};
+
+// MIL-E-5008B Inlet Recovery Correlation (H&P Eq. 6.36)
+// η_r = 1 - 0.075(M-1)^1.35 for M > 1
+const milE5008BRecovery = (M) => {
+  if (M <= 1) return 1;
+  return Math.max(0.4, 1 - 0.075 * Math.pow(M - 1, 1.35));
+};
+
+// Kantrowitz limit - maximum contraction ratio for started inlet
+const kantrowitzLimit = (M1, gamma = GAMMA_AIR) => {
+  if (M1 <= 1) return 1;
+  const M2 = normalShockM2(M1, gamma);
+  // A*/A for M1 and M2
+  const aStarRatio = (M) => {
+    const term = (2 / (gamma + 1)) * (1 + 0.5 * (gamma - 1) * M * M);
+    return M / Math.pow(term, (gamma + 1) / (2 * (gamma - 1)));
+  };
+  // Maximum contraction = (A*/A)_M1 / (A*/A)_M2
+  return aStarRatio(M1) / aStarRatio(M2);
+};
+
+// Isentropic area ratio A/A* for given Mach
+const isentropicAreaRatio = (M, gamma = GAMMA_AIR) => {
+  if (M <= 0) return Infinity;
+  const term = (2 / (gamma + 1)) * (1 + 0.5 * (gamma - 1) * M * M);
+  return (1 / M) * Math.pow(term, (gamma + 1) / (2 * (gamma - 1)));
 };
 
 const solveObliqueShockBeta = (M, thetaRad, gamma = GAMMA_AIR) => {
@@ -700,6 +811,221 @@ const StationAnalysis = ({ stations, formatValue, unitSystem }) => {
                     <div className="w-3 h-3 bg-red-500 rounded"></div> Total Temperature ({unitSystem === 'SI' ? 'K' : '°F'})
                 </div>
             </div>
+        </div>
+    );
+};
+
+// ============================================================
+// Normal Shock Analysis Component - Hill & Peterson Ch. 3
+// Interactive calculator for supersonic inlet design
+// ============================================================
+const NormalShockAnalysis = ({ mach: flightMach, formatValue, unitSystem }) => {
+    const [inputMach, setInputMach] = React.useState(2.0);
+    const [showTable, setShowTable] = React.useState(true);
+
+    // Use flight Mach if supersonic, otherwise use input
+    const analysisMach = Math.max(1.01, inputMach);
+
+    // Compute normal shock properties
+    const shock = computeNormalShock(analysisMach);
+    const milRecovery = milE5008BRecovery(analysisMach);
+    const kantrowitz = kantrowitzLimit(analysisMach);
+
+    // Generate table data for Mach 1.0 to 4.0
+    const tableData = React.useMemo(() => {
+        const data = [];
+        for (let m = 1.0; m <= 4.0; m += 0.25) {
+            const s = computeNormalShock(m);
+            data.push({
+                M1: m,
+                M2: s.M2,
+                P2P1: s.P2P1,
+                T2T1: s.T2T1,
+                rho2rho1: s.rho2rho1,
+                P02P01: s.P02P01,
+                dsR: s.dsR
+            });
+        }
+        return data;
+    }, []);
+
+    // Critical Mach numbers for reference aircraft
+    const criticalMach = {
+        symphony: 1.7,    // Boom Symphony - supersonic airliner
+        concorde: 2.02,   // Aérospatiale/BAC Concorde
+        sr71: 3.2,        // Lockheed SR-71 Blackbird
+        f22: 2.25,        // Lockheed Martin F-22 Raptor
+        xb70: 3.0         // North American XB-70 Valkyrie
+    };
+
+    return (
+        <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+            <h3 className="font-semibold text-slate-800 dark:text-white mb-4 flex items-center gap-2">
+                <Zap size={14} /> Normal Shock Analysis (H&P Ch. 3)
+            </h3>
+
+            {/* Mach Input */}
+            <div className="mb-4">
+                <label className="block text-xs text-slate-500 dark:text-slate-400 uppercase mb-1">Upstream Mach M₁</label>
+                <div className="flex items-center gap-3">
+                    <input
+                        type="range"
+                        min="1.0"
+                        max="5.0"
+                        step="0.05"
+                        value={inputMach}
+                        onChange={(e) => setInputMach(parseFloat(e.target.value))}
+                        className="flex-1 h-2 bg-slate-200 dark:bg-slate-600 rounded-lg appearance-none cursor-pointer"
+                    />
+                    <input
+                        type="number"
+                        min="1.0"
+                        max="10.0"
+                        step="0.1"
+                        value={inputMach}
+                        onChange={(e) => setInputMach(Math.max(1.0, parseFloat(e.target.value) || 1.0))}
+                        className="w-20 px-2 py-1 text-sm bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded text-slate-800 dark:text-white"
+                    />
+                </div>
+            </div>
+
+            {/* Main Results Grid */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                <div className="bg-slate-50 dark:bg-slate-700/50 p-3 rounded-lg">
+                    <div className="text-xs text-slate-500 dark:text-slate-400 uppercase">M₂ (downstream)</div>
+                    <div className="text-lg font-bold text-blue-600 dark:text-blue-400">{shock.M2.toFixed(4)}</div>
+                    <div className="text-[10px] text-slate-400">H&P Eq. 3.13</div>
+                </div>
+                <div className="bg-slate-50 dark:bg-slate-700/50 p-3 rounded-lg">
+                    <div className="text-xs text-slate-500 dark:text-slate-400 uppercase">P₂/P₁</div>
+                    <div className="text-lg font-bold text-red-600 dark:text-red-400">{shock.P2P1.toFixed(3)}</div>
+                    <div className="text-[10px] text-slate-400">H&P Eq. 3.9</div>
+                </div>
+                <div className="bg-slate-50 dark:bg-slate-700/50 p-3 rounded-lg">
+                    <div className="text-xs text-slate-500 dark:text-slate-400 uppercase">T₂/T₁</div>
+                    <div className="text-lg font-bold text-orange-600 dark:text-orange-400">{shock.T2T1.toFixed(3)}</div>
+                    <div className="text-[10px] text-slate-400">H&P Eq. 3.11</div>
+                </div>
+                <div className="bg-slate-50 dark:bg-slate-700/50 p-3 rounded-lg">
+                    <div className="text-xs text-slate-500 dark:text-slate-400 uppercase">ρ₂/ρ₁</div>
+                    <div className="text-lg font-bold text-green-600 dark:text-green-400">{shock.rho2rho1.toFixed(3)}</div>
+                    <div className="text-[10px] text-slate-400">H&P Eq. 3.10</div>
+                </div>
+            </div>
+
+            {/* Total Pressure Loss & Entropy */}
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4">
+                <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/30 dark:to-purple-800/30 p-3 rounded-lg border border-purple-200 dark:border-purple-700">
+                    <div className="text-xs text-purple-600 dark:text-purple-300 uppercase font-medium">P₀₂/P₀₁ (Total)</div>
+                    <div className="text-xl font-bold text-purple-700 dark:text-purple-300">{shock.P02P01.toFixed(4)}</div>
+                    <div className="text-[10px] text-purple-500 dark:text-purple-400">
+                        Loss: {((1 - shock.P02P01) * 100).toFixed(2)}% • H&P Eq. 3.14
+                    </div>
+                </div>
+                <div className="bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-900/30 dark:to-amber-800/30 p-3 rounded-lg border border-amber-200 dark:border-amber-700">
+                    <div className="text-xs text-amber-600 dark:text-amber-300 uppercase font-medium">Δs/R (Entropy Rise)</div>
+                    <div className="text-xl font-bold text-amber-700 dark:text-amber-300">{shock.dsR.toFixed(4)}</div>
+                    <div className="text-[10px] text-amber-500 dark:text-amber-400">Irreversibility measure</div>
+                </div>
+                <div className="bg-gradient-to-br from-cyan-50 to-cyan-100 dark:from-cyan-900/30 dark:to-cyan-800/30 p-3 rounded-lg border border-cyan-200 dark:border-cyan-700">
+                    <div className="text-xs text-cyan-600 dark:text-cyan-300 uppercase font-medium">V₂/V₁</div>
+                    <div className="text-xl font-bold text-cyan-700 dark:text-cyan-300">{shock.V2V1.toFixed(4)}</div>
+                    <div className="text-[10px] text-cyan-500 dark:text-cyan-400">Velocity ratio (= ρ₁/ρ₂)</div>
+                </div>
+            </div>
+
+            {/* MIL-E-5008B & Kantrowitz */}
+            <div className="grid grid-cols-2 gap-3 mb-4">
+                <div className="bg-slate-100 dark:bg-slate-700 p-3 rounded-lg">
+                    <div className="text-xs text-slate-600 dark:text-slate-300 uppercase font-medium mb-1">MIL-E-5008B Recovery</div>
+                    <div className="text-lg font-bold text-slate-800 dark:text-white">{(milRecovery * 100).toFixed(1)}%</div>
+                    <div className="text-[10px] text-slate-500 dark:text-slate-400">η_r = 1 - 0.075(M-1)^1.35 • H&P Eq. 6.36</div>
+                    <div className="mt-2 h-2 bg-slate-200 dark:bg-slate-600 rounded-full overflow-hidden">
+                        <div
+                            className="h-full bg-blue-500 rounded-full transition-all"
+                            style={{ width: `${milRecovery * 100}%` }}
+                        />
+                    </div>
+                </div>
+                <div className="bg-slate-100 dark:bg-slate-700 p-3 rounded-lg">
+                    <div className="text-xs text-slate-600 dark:text-slate-300 uppercase font-medium mb-1">Kantrowitz Limit</div>
+                    <div className="text-lg font-bold text-slate-800 dark:text-white">{kantrowitz.toFixed(4)}</div>
+                    <div className="text-[10px] text-slate-500 dark:text-slate-400">Max A_throat/A_capture for started inlet</div>
+                    <div className="mt-2 text-[10px] text-slate-500 dark:text-slate-400">
+                        A/A* at M₁: {isentropicAreaRatio(analysisMach).toFixed(3)}
+                    </div>
+                </div>
+            </div>
+
+            {/* Reference Aircraft */}
+            <div className="mb-4 p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
+                <div className="text-xs text-slate-600 dark:text-slate-300 uppercase font-medium mb-2">Reference Aircraft</div>
+                <div className="flex flex-wrap gap-2">
+                    {Object.entries(criticalMach).map(([name, m]) => (
+                        <button
+                            key={name}
+                            onClick={() => setInputMach(m)}
+                            className={`px-2 py-1 text-xs rounded ${
+                                Math.abs(inputMach - m) < 0.1
+                                    ? 'bg-blue-500 text-white'
+                                    : 'bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-500'
+                            }`}
+                        >
+                            {name.toUpperCase()} (M{m})
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            {/* Toggle Table */}
+            <button
+                onClick={() => setShowTable(!showTable)}
+                className="w-full text-xs text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 py-2 border-t border-slate-200 dark:border-slate-600"
+            >
+                {showTable ? '▼ Hide' : '▶ Show'} Normal Shock Table (M = 1.0 to 4.0)
+            </button>
+
+            {/* Property Table */}
+            {showTable && (
+                <div className="mt-3 overflow-x-auto">
+                    <table className="w-full text-xs">
+                        <thead>
+                            <tr className="text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-600">
+                                <th className="py-2 px-2 text-left">M₁</th>
+                                <th className="py-2 px-2 text-right">M₂</th>
+                                <th className="py-2 px-2 text-right">P₂/P₁</th>
+                                <th className="py-2 px-2 text-right">T₂/T₁</th>
+                                <th className="py-2 px-2 text-right">ρ₂/ρ₁</th>
+                                <th className="py-2 px-2 text-right">P₀₂/P₀₁</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {tableData.map((row, idx) => (
+                                <tr
+                                    key={idx}
+                                    className={`border-b border-slate-100 dark:border-slate-700 ${
+                                        Math.abs(row.M1 - inputMach) < 0.13 ? 'bg-blue-50 dark:bg-blue-900/30 font-semibold' : ''
+                                    }`}
+                                >
+                                    <td className="py-1.5 px-2 text-slate-700 dark:text-slate-300">{row.M1.toFixed(2)}</td>
+                                    <td className="py-1.5 px-2 text-right text-blue-600 dark:text-blue-400">{row.M2.toFixed(4)}</td>
+                                    <td className="py-1.5 px-2 text-right text-red-600 dark:text-red-400">{row.P2P1.toFixed(3)}</td>
+                                    <td className="py-1.5 px-2 text-right text-orange-600 dark:text-orange-400">{row.T2T1.toFixed(3)}</td>
+                                    <td className="py-1.5 px-2 text-right text-green-600 dark:text-green-400">{row.rho2rho1.toFixed(3)}</td>
+                                    <td className="py-1.5 px-2 text-right text-purple-600 dark:text-purple-400">{row.P02P01.toFixed(4)}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            )}
+
+            {/* Theory Note */}
+            <p className="mt-3 text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                <strong>Normal shock relations</strong> from Hill & Peterson "Mechanics and Thermodynamics of Propulsion" Ch. 3.
+                Total pressure loss across the shock is the primary performance penalty for supersonic inlets.
+                The MIL-E-5008B correlation provides empirical inlet recovery for preliminary design.
+            </p>
         </div>
     );
 };
@@ -1583,33 +1909,6 @@ const TurbofanAnalysis = ({ onClose }) => {
               <Settings size={14} />
               <span>{unitSystem === 'SI' ? 'SI' : 'Imperial'}</span>
             </button>
-            <div className="hidden md:flex items-center gap-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-1">
-              {[
-                { id: 'performance', label: 'Quick Performance' },
-                { id: 'acoustics', label: 'Acoustics Run' },
-                { id: 'components', label: 'Component Design' },
-                { id: 'builder', label: 'Create Engine' }
-              ].map(mode => (
-                <button
-                  key={mode.id}
-                  onClick={() => applyModeChoice(mode.id)}
-                  className={`px-2.5 py-1 text-[11px] font-medium rounded-md transition ${
-                    modeChoice === mode.id ? 'bg-white dark:bg-slate-700 shadow-sm text-primary-700 dark:text-primary-300' : 'text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800'
-                  }`}
-                >
-                  {mode.label}
-                </button>
-              ))}
-            </div>
-            {modeChoice !== null && (
-              <button
-                onClick={() => setModeChoice(null)}
-                className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-xs font-medium rounded-lg hover:bg-slate-50 dark:hover:bg-slate-600 transition"
-              >
-                <ArrowLeft size={14} className="text-slate-600 dark:text-slate-300" />
-                Mode Select
-              </button>
-            )}
             
             <div className="flex items-center gap-2">
               <select 
@@ -1749,134 +2048,88 @@ const TurbofanAnalysis = ({ onClose }) => {
                 </div>
             </section>
 
-            {/* Flight Phase Selector */}
+            {/* Flight Envelope - Combined section */}
             <section>
-                <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-                    <Wind size={14} /> Flight Phase
+                <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                    <Wind size={14} /> Flight Envelope
                 </h3>
-                <div className="grid grid-cols-2 gap-2 mb-4">
-                    <button
-                        onClick={() => applyFlightPhase('takeoff')}
-                        className={`px-3 py-2 text-xs font-medium rounded-lg transition ${
-                            flightPhase === 'takeoff'
-                                ? 'bg-primary-600 text-white shadow-md'
-                                : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-600'
-                        }`}
-                    >
-                        🛫 Takeoff
-                    </button>
-                    <button
-                        onClick={() => applyFlightPhase('landing')}
-                        className={`px-3 py-2 text-xs font-medium rounded-lg transition ${
-                            flightPhase === 'landing'
-                                ? 'bg-primary-600 text-white shadow-md'
-                                : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-600'
-                        }`}
-                    >
-                        🛬 Landing
-                    </button>
-                    <button
-                        onClick={() => applyFlightPhase('cruise')}
-                        className={`px-3 py-2 text-xs font-medium rounded-lg transition ${
-                            flightPhase === 'cruise'
-                                ? 'bg-primary-600 text-white shadow-md'
-                                : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-600'
-                        }`}
-                    >
-                        ✈️ Cruise
-                    </button>
-                    {currentEngineType === 'supersonic' && (
-                      <button
-                          onClick={() => applyFlightPhase('supercruise')}
-                          className={`px-3 py-2 text-xs font-medium rounded-lg transition ${
-                              flightPhase === 'supercruise'
-                                  ? 'bg-primary-600 text-white shadow-md'
-                                  : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-600'
-                          }`}
-                      >
-                          🚀 Supercruise
-                      </button>
-                    )}
+                {/* Flight Phase buttons */}
+                <div className="grid grid-cols-4 gap-1.5 mb-4">
+                    {[
+                        { id: 'takeoff', label: 'TO' },
+                        { id: 'landing', label: 'LND' },
+                        { id: 'cruise', label: 'CRZ' },
+                        ...(currentEngineType === 'supersonic' ? [{ id: 'supercruise', label: 'SCR' }] : [])
+                    ].map(phase => (
+                        <button
+                            key={phase.id}
+                            onClick={() => applyFlightPhase(phase.id)}
+                            className={`px-2 py-1.5 text-[10px] font-semibold rounded transition ${
+                                flightPhase === phase.id
+                                    ? 'bg-primary-600 text-white'
+                                    : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
+                            }`}
+                        >
+                            {phase.label}
+                        </button>
+                    ))}
                 </div>
-            </section>
-
-            {/* Flight Conditions */}
-            <section>
-                <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-                    <Wind size={14} /> Flight Conditions
-                </h3>
-                <div className="space-y-4">
+                <div className="space-y-3">
                     <div>
                         <label className="flex justify-between text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                             <span>Altitude</span>
-                            <span className="text-primary-600 dark:text-primary-400">{altitude.toLocaleString()} ft</span>
+                            <span className="text-primary-600 dark:text-primary-400 text-xs">{altitude.toLocaleString()} ft</span>
                         </label>
                         <input type="range" min="0" max="40000" step="100" value={altitude} onChange={(e) => setAltitude(Number(e.target.value))} className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-primary-600" />
                     </div>
                     <div>
                         <label className="flex justify-between text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                            <span>Mach Number</span>
-                            <span className="text-primary-600 dark:text-primary-400">M {mach.toFixed(2)}</span>
+                            <span>Mach</span>
+                            <span className="text-primary-600 dark:text-primary-400 text-xs">M {mach.toFixed(2)}</span>
                         </label>
-                        <input 
-                          type="range" 
-                          min="0" 
-                          max={currentEngineType === 'supersonic' ? 2 : 0.95} 
-                          step="0.01" 
-                          value={mach} 
-                          onChange={(e) => setMach(Number(e.target.value))} 
-                          className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-primary-600" 
+                        <input
+                          type="range"
+                          min="0"
+                          max={currentEngineType === 'supersonic' ? 2 : 0.95}
+                          step="0.01"
+                          value={mach}
+                          onChange={(e) => setMach(Number(e.target.value))}
+                          className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-primary-600"
                         />
                     </div>
                     <div>
                         <label className="flex justify-between text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                            <span>ISA Deviation</span>
-                            <span className="text-primary-600 dark:text-primary-400">{deltaIsa > 0 ? '+' : ''}{deltaIsa}°C</span>
+                            <span>Throttle (N1)</span>
+                            <span className="text-primary-600 dark:text-primary-400 text-xs">{n1}%</span>
+                        </label>
+                        <input type="range" min="0" max="105" step="1" value={n1} onChange={(e) => setN1(Number(e.target.value))} className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-primary-600" />
+                    </div>
+                    <div>
+                        <label className="flex justify-between text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                            <span>ISA Dev</span>
+                            <span className="text-primary-600 dark:text-primary-400 text-xs">{deltaIsa > 0 ? '+' : ''}{deltaIsa}°C</span>
                         </label>
                         <input type="range" min="-30" max="30" step="1" value={deltaIsa} onChange={(e) => setDeltaIsa(Number(e.target.value))} className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-primary-600" />
                     </div>
+                    {AIRCRAFT_PROFILES[engineKey] && (
+                        <div>
+                            <label className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1 block">Aircraft</label>
+                            <select
+                                value={aircraftConfig?.id}
+                                onChange={(e) => {
+                                    const opts = AIRCRAFT_PROFILES[engineKey] || [];
+                                    const sel = opts.find(o => o.id === e.target.value);
+                                    setAircraftConfig(sel || getDefaultAircraft(engineKey));
+                                }}
+                                className="w-full text-xs border border-slate-300 dark:border-slate-600 rounded-lg px-2 py-1.5 bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+                            >
+                                {(AIRCRAFT_PROFILES[engineKey] || []).map(opt => (
+                                    <option key={opt.id} value={opt.id}>{opt.name} ({opt.engines} eng)</option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
                 </div>
-            </section>
-
-            {/* Engine Control */}
-            <section>
-                <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-                    <Settings size={14} /> Engine Control
-                </h3>
-                <div>
-                    <label className="flex justify-between text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                        <span>Throttle (N1)</span>
-                        <span className="text-primary-600 dark:text-primary-400">{n1}%</span>
-                    </label>
-                    <input type="range" min="0" max="105" step="1" value={n1} onChange={(e) => setN1(Number(e.target.value))} className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-primary-600" />
-                </div>
-            </section>
-
-            {/* Aircraft Setup */}
-            <section>
-                <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-                    <Settings size={14} /> Aircraft Setup
-                </h3>
-                {AIRCRAFT_PROFILES[engineKey] ? (
-                    <div className="space-y-2">
-                        <select
-                            value={aircraftConfig?.id}
-                            onChange={(e) => {
-                                const opts = AIRCRAFT_PROFILES[engineKey] || [];
-                                const sel = opts.find(o => o.id === e.target.value);
-                                setAircraftConfig(sel || getDefaultAircraft(engineKey));
-                            }}
-                            className="w-full text-sm border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 bg-white dark:bg-slate-700 hover:border-primary-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-200 transition"
-                        >
-                            {(AIRCRAFT_PROFILES[engineKey] || []).map(opt => (
-                                <option key={opt.id} value={opt.id}>{opt.name}</option>
-                            ))}
-                        </select>
-                        <div className="text-xs text-slate-500 dark:text-slate-400">Engines: {aircraftConfig?.engines ?? 1}</div>
-                    </div>
-                ) : (
-                    <div className="text-xs text-slate-500 dark:text-slate-400">Engines: 1 (no aircraft profile)</div>
-                )}
             </section>
 
             {/* Component Design */}
@@ -1936,20 +2189,6 @@ const TurbofanAnalysis = ({ onClose }) => {
                 </div>
             </section>
 
-            {/* Component Design Studies */}
-            <section className="bg-slate-50 dark:bg-slate-800/60 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
-                <h3 className="text-xs font-semibold text-slate-700 dark:text-slate-200 uppercase tracking-wider mb-3 flex items-center gap-2">
-                    <Cpu size={14} /> Component Design Studies
-                </h3>
-                <ul className="text-sm text-slate-700 dark:text-slate-300 space-y-2 list-disc pl-4">
-                    <li>Inlet analysis: diffuser recovery (subsonic) vs oblique/normal shock trains (supersonic).</li>
-                    <li>Multi-stage compression: map stage count to efficiency and surge margin.</li>
-                    <li>Start problem: capture stall-free ramp-up with bleed/open-IGV strategies.</li>
-                    <li>Turbine staging & cooling: stage count, bleed fraction, and T04 margin coupling.</li>
-                    <li>Acoustics tie-in: inlet/jet noise fed through log-sum for multi-engine aircraft.</li>
-                </ul>
-            </section>
-
             {/* Acoustic Setup - Only show for relevant phases */}
             {isNoiseRelevant && (
             <section>
@@ -1998,34 +2237,34 @@ const TurbofanAnalysis = ({ onClose }) => {
                       <Wind size={14} /> Inlet Analysis
                     </h3>
                     <div className="grid grid-cols-2 gap-3 text-sm text-slate-700 dark:text-slate-300">
-                      <div><div className="text-gray-500 text-xs uppercase">Type</div><div className="font-semibold capitalize">{results.inlet.type}</div></div>
-                      <div><div className="text-gray-500 text-xs uppercase">Recovery</div><div className="font-semibold">{(results.inlet.recovery*100).toFixed(1)}%</div></div>
-                      <div><div className="text-gray-500 text-xs uppercase">Exit Mach</div><div className="font-semibold">{results.inlet.machExit.toFixed(3)}</div></div>
-                      {results.inlet.betaDeg && <div><div className="text-gray-500 text-xs uppercase">Shock Angle</div><div className="font-semibold">{results.inlet.betaDeg.toFixed(1)}°</div></div>}
-                      <div><div className="text-gray-500 text-xs uppercase">P0 Free</div><div className="font-semibold">{formatValue(results.inlet.P0_free, 'pressure')}</div></div>
-                      <div><div className="text-gray-500 text-xs uppercase">P02</div><div className="font-semibold">{formatValue(results.inlet.P02, 'pressure')}</div></div>
+                      <div><div className="text-slate-500 dark:text-slate-400 text-xs uppercase">Type</div><div className="font-semibold capitalize">{results.inlet.type}</div></div>
+                      <div><div className="text-slate-500 dark:text-slate-400 text-xs uppercase">Recovery</div><div className="font-semibold">{(results.inlet.recovery*100).toFixed(1)}%</div></div>
+                      <div><div className="text-slate-500 dark:text-slate-400 text-xs uppercase">Exit Mach</div><div className="font-semibold">{results.inlet.machExit.toFixed(3)}</div></div>
+                      {results.inlet.betaDeg && <div><div className="text-slate-500 dark:text-slate-400 text-xs uppercase">Shock Angle</div><div className="font-semibold">{results.inlet.betaDeg.toFixed(1)}°</div></div>}
+                      <div><div className="text-slate-500 dark:text-slate-400 text-xs uppercase">P0 Free</div><div className="font-semibold">{formatValue(results.inlet.P0_free, 'pressure')}</div></div>
+                      <div><div className="text-slate-500 dark:text-slate-400 text-xs uppercase">P02</div><div className="font-semibold">{formatValue(results.inlet.P02, 'pressure')}</div></div>
                     </div>
-                    <p className="mt-3 text-xs text-gray-500">Recovery feeds mass flow and nozzle performance; supersonic inlets use oblique + normal shock loss model.</p>
+                    <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">Recovery feeds mass flow and nozzle performance; supersonic inlets use oblique + normal shock loss model.</p>
                   </div>
 
                   {supersonicDesign && (
-                  <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
-                    <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                  <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                    <h3 className="font-semibold text-slate-800 dark:text-white mb-3 flex items-center gap-2">
                       <Wind size={14} /> Supersonic Ramp Plan (Mach {Math.max(mach,1).toFixed(2)})
                     </h3>
-                    <div className="text-sm text-gray-700 mb-3">
+                    <div className="text-sm text-slate-700 dark:text-slate-300 mb-3">
                       <div className="flex justify-between"><span>Total P₀ Ratio</span><span className="font-semibold">{supersonicDesign.totalP0Ratio.toFixed(3)}</span></div>
                       <div className="flex justify-between"><span>Exit Mach</span><span className="font-semibold">{supersonicDesign.machExit.toFixed(3)}</span></div>
                     </div>
-                    <div className="space-y-2 text-sm text-gray-700">
+                    <div className="space-y-2 text-sm text-slate-700 dark:text-slate-300">
                       {supersonicDesign.shocks.map((s, idx) => (
-                        <div key={idx} className="flex justify-between bg-gray-50 px-3 py-2 rounded">
+                        <div key={idx} className="flex justify-between bg-slate-50 dark:bg-slate-700/50 px-3 py-2 rounded">
                           <div>
-                            <div className="text-gray-500 text-xs uppercase">{s.normal ? 'Normal Shock' : `Ramp ${idx+1}`}</div>
+                            <div className="text-slate-500 dark:text-slate-400 text-xs uppercase">{s.normal ? 'Normal Shock' : `Ramp ${idx+1}`}</div>
                             {!s.normal && <div className="font-semibold">{s.thetaDeg.toFixed(1)}° deflection</div>}
                             {s.normal && <div className="font-semibold">Throat-normal</div>}
                           </div>
-                          <div className="text-right text-xs text-gray-600">
+                          <div className="text-right text-xs text-slate-600 dark:text-slate-400">
                             {!s.normal && <div>β {s.betaDeg.toFixed(1)}°</div>}
                             <div>Mn1 {s.Mn1.toFixed(2)}</div>
                             <div>Mn2 {s.Mn2.toFixed(2)}</div>
@@ -2035,41 +2274,41 @@ const TurbofanAnalysis = ({ onClose }) => {
                         </div>
                       ))}
                     </div>
-                    <p className="mt-3 text-xs text-gray-500">Default plan uses two 6° ramps to keep shock strength mild before the normal shock. Adjust deflection schedule in inlet settings to explore pressure recovery.</p>
+                    <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">Default plan uses two 6° ramps to keep shock strength mild before the normal shock. Adjust deflection schedule in inlet settings to explore pressure recovery.</p>
                   </div>
                   )}
 
-                  <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
-                    <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                  <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                    <h3 className="font-semibold text-slate-800 dark:text-white mb-3 flex items-center gap-2">
                       <Cpu size={14} /> Compressor Staging
                     </h3>
-                    <div className="grid grid-cols-2 gap-3 text-sm text-gray-700">
-                      <div><div className="text-gray-500 text-xs uppercase">Stages</div><div className="font-semibold">{componentDesign.compressorStages}</div></div>
-                      <div><div className="text-gray-500 text-xs uppercase">Effective η</div><div className="font-semibold">{(results.metrics.etaC_eff*100).toFixed(1)}%</div></div>
-                      <div><div className="text-gray-500 text-xs uppercase">OPR</div><div className="font-semibold">{results.metrics.opr.toFixed(1)}</div></div>
-                      <div><div className="text-gray-500 text-xs uppercase">Stage Loading</div><div className="font-semibold">{(Math.pow(designSpecs.prC, 1/Math.max(1, componentDesign.compressorStages))).toFixed(2)} PR/stage</div></div>
+                    <div className="grid grid-cols-2 gap-3 text-sm text-slate-700 dark:text-slate-300">
+                      <div><div className="text-slate-500 dark:text-slate-400 text-xs uppercase">Stages</div><div className="font-semibold">{componentDesign.compressorStages}</div></div>
+                      <div><div className="text-slate-500 dark:text-slate-400 text-xs uppercase">Effective η</div><div className="font-semibold">{(results.metrics.etaC_eff*100).toFixed(1)}%</div></div>
+                      <div><div className="text-slate-500 dark:text-slate-400 text-xs uppercase">OPR</div><div className="font-semibold">{results.metrics.opr.toFixed(1)}</div></div>
+                      <div><div className="text-slate-500 dark:text-slate-400 text-xs uppercase">Stage Loading</div><div className="font-semibold">{(Math.pow(designSpecs.prC, 1/Math.max(1, componentDesign.compressorStages))).toFixed(2)} PR/stage</div></div>
                     </div>
-                    <p className="mt-3 text-xs text-gray-500">Higher stage loading reduces η; adjust stages to balance weight vs efficiency and surge margin.</p>
+                    <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">Higher stage loading reduces η; adjust stages to balance weight vs efficiency and surge margin.</p>
                   </div>
 
-                  <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
-                    <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                  <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                    <h3 className="font-semibold text-slate-800 dark:text-white mb-3 flex items-center gap-2">
                       <Thermometer size={14} /> Turbine & Cooling
                     </h3>
-                    <div className="grid grid-cols-2 gap-3 text-sm text-gray-700">
-                      <div><div className="text-gray-500 text-xs uppercase">Stages</div><div className="font-semibold">{componentDesign.turbineStages}</div></div>
-                      <div><div className="text-gray-500 text-xs uppercase">Effective η</div><div className="font-semibold">{(results.metrics.etaT_eff*100).toFixed(1)}%</div></div>
-                      <div><div className="text-gray-500 text-xs uppercase">Cooling Bleed</div><div className="font-semibold">{componentDesign.coolingBleed.toFixed(0)}%</div></div>
-                      <div><div className="text-gray-500 text-xs uppercase">T04 → T05 Δ</div><div className="font-semibold">{(results.stations[3].T - results.stations[4].T).toFixed(0)} K drop</div></div>
+                    <div className="grid grid-cols-2 gap-3 text-sm text-slate-700 dark:text-slate-300">
+                      <div><div className="text-slate-500 dark:text-slate-400 text-xs uppercase">Stages</div><div className="font-semibold">{componentDesign.turbineStages}</div></div>
+                      <div><div className="text-slate-500 dark:text-slate-400 text-xs uppercase">Effective η</div><div className="font-semibold">{(results.metrics.etaT_eff*100).toFixed(1)}%</div></div>
+                      <div><div className="text-slate-500 dark:text-slate-400 text-xs uppercase">Cooling Bleed</div><div className="font-semibold">{componentDesign.coolingBleed.toFixed(0)}%</div></div>
+                      <div><div className="text-slate-500 dark:text-slate-400 text-xs uppercase">T04 → T05 Δ</div><div className="font-semibold">{(results.stations[3].T - results.stations[4].T).toFixed(0)} K drop</div></div>
                     </div>
-                    <p className="mt-3 text-xs text-gray-500">Cooling bleed reduces core mass flow; stage count boosts η but adds weight and back-pressure.</p>
+                    <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">Cooling bleed reduces core mass flow; stage count boosts η but adds weight and back-pressure.</p>
                   </div>
 
-                  <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
-                    <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                  <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                    <h3 className="font-semibold text-slate-800 dark:text-white mb-3 flex items-center gap-2">
                       <Activity size={14} /> Start & Surge Considerations
                     </h3>
-                    <ul className="list-disc pl-4 text-sm text-gray-700 space-y-1">
+                    <ul className="list-disc pl-4 text-sm text-slate-700 dark:text-slate-300 space-y-1">
                       <li>Start sequencing: low N1 with IGVs open and bleeds on to avoid stall.</li>
                       <li>Ramp shock angle (supersonic) with schedule tied to Mach to hold recovery.</li>
                       <li>Monitor surge margin: reduce stage loading or bleed during transients.</li>
@@ -2077,113 +2316,56 @@ const TurbofanAnalysis = ({ onClose }) => {
                     </ul>
                   </div>
                 </div>
+
+                {/* Normal Shock Analysis - Full Width */}
+                <div className="mb-4">
+                  <NormalShockAnalysis mach={mach} formatValue={formatValue} unitSystem={unitSystem} />
+                </div>
               </>
             ) : (
               <>
-            <div className="flex gap-2 mb-6 bg-white p-1 rounded-lg border border-gray-200 w-full lg:w-fit shadow-sm overflow-x-auto">
-                <button 
+            <div className="flex gap-1 mb-4 bg-white dark:bg-slate-800 p-1 rounded-lg border border-slate-200 dark:border-slate-700 w-fit shadow-sm">
+                <button
                     onClick={() => setActiveTab('dashboard')}
-                    className={`px-4 py-2 text-sm font-medium rounded-md transition ${activeTab === 'dashboard' ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-50'}`}
+                    className={`px-3 py-1.5 text-xs font-medium rounded transition ${activeTab === 'dashboard' ? 'bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700'}`}
                 >
                     Dashboard
                 </button>
-                <button 
+                <button
                     onClick={() => setActiveTab('thermo')}
-                    className={`px-4 py-2 text-sm font-medium rounded-md transition ${activeTab === 'thermo' ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-50'}`}
+                    className={`px-3 py-1.5 text-xs font-medium rounded transition ${activeTab === 'thermo' ? 'bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700'}`}
                 >
-                    Thermodynamics
+                    Thermo
                 </button>
                 {isNoiseRelevant && (
-                    <button 
+                    <button
                         onClick={() => setActiveTab('noise')}
-                        className={`px-4 py-2 text-sm font-medium rounded-md transition ${activeTab === 'noise' ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-50'}`}
+                        className={`px-3 py-1.5 text-xs font-medium rounded transition ${activeTab === 'noise' ? 'bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700'}`}
                     >
-                        Noise Map
+                        Noise
                     </button>
                 )}
-                <button 
+                <button
                     onClick={() => setActiveTab('trade')}
-                    className={`px-4 py-2 text-sm font-medium rounded-md transition ${activeTab === 'trade' ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-50'}`}
+                    className={`px-3 py-1.5 text-xs font-medium rounded transition ${activeTab === 'trade' ? 'bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700'}`}
                 >
-                    Trade Study
+                    Trade
                 </button>
             </div>
 
-            {/* Top Cards: Atmosphere */}
-            <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm mb-4">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                    <div>
-                        <div className="text-sm font-semibold text-gray-800">Scenario Snapshots</div>
-                        <p className="text-xs text-gray-500">Save the current setup, replay it later, or compare deltas.</p>
-                    </div>
-                    <div className="flex gap-2">
-                        <button 
-                            onClick={saveSnapshot}
-                            className="px-3 py-2 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700 transition"
-                        >
-                            Save Current
-                        </button>
-                        {snapshots.length > 0 && (
-                            <button 
-                                onClick={() => setSnapshots([])}
-                                className="px-3 py-2 bg-gray-100 text-gray-700 text-xs font-medium rounded-lg hover:bg-gray-200 transition"
-                            >
-                                Clear All
-                            </button>
-                        )}
-                    </div>
+            {/* Atmosphere Status Bar - Compact */}
+            <div className="flex flex-wrap gap-3 mb-4 text-xs">
+                <div className="bg-white dark:bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700">
+                    <span className="text-slate-500 dark:text-slate-400">Temp:</span> <span className="font-semibold text-slate-800 dark:text-white">{(results.atm.T - 273.15).toFixed(1)}°C</span>
                 </div>
-                {snapshots.length === 0 ? (
-                    <div className="text-xs text-gray-500 mt-3">No snapshots yet.</div>
-                ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
-                        {snapshots.map((snap) => (
-                            <div key={snap.id} className="p-3 rounded-lg border border-gray-200 bg-gray-50 flex flex-col gap-2">
-                                <div className="flex justify-between items-center">
-                                <div className="font-semibold text-sm text-gray-800">{snap.name}</div>
-                                <div className="flex gap-1">
-                                    <button 
-                                        onClick={() => applySnapshot(snap)}
-                                        className="px-3 py-1 text-xs bg-green-100 text-green-700 rounded hover:bg-green-200 transition"
-                                        >
-                                            Apply
-                                        </button>
-                                        <button 
-                                            onClick={() => deleteSnapshot(snap.id)}
-                                            className="px-3 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200 transition"
-                                        >
-                                            Delete
-                                        </button>
-                                    </div>
-                                </div>
-                                <div className="text-xs text-gray-600">
-                                    Thrust {snap.results?.thrust_N !== undefined ? formatValue(snap.results.thrust_N, 'thrust') : '--'} • TSFC {snap.results?.tsfc ? snap.results.tsfc.toFixed(4) : '--'} • Noise {(snap.results?.noise_dba ?? 0).toFixed(1)} dBA
-                                </div>
-                                <div className="text-[11px] text-gray-500">
-                                    Alt {snap.inputs.altitude.toLocaleString()} ft • Mach {snap.inputs.mach.toFixed(2)} • N1 {snap.inputs.n1}%
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </div>
-
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
-                    <div className="text-xs text-gray-500 mb-1">Static Temp</div>
-                    <div className="text-lg font-mono font-semibold">{(results.atm.T - 273.15).toFixed(1)}°C</div>
+                <div className="bg-white dark:bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700">
+                    <span className="text-slate-500 dark:text-slate-400">P:</span> <span className="font-semibold text-slate-800 dark:text-white">{(results.atm.P / 1000).toFixed(1)} kPa</span>
                 </div>
-                <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
-                    <div className="text-xs text-gray-500 mb-1">Static Pressure</div>
-                    <div className="text-lg font-mono font-semibold">{(results.atm.P / 1000).toFixed(1)} kPa</div>
+                <div className="bg-white dark:bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700">
+                    <span className="text-slate-500 dark:text-slate-400">ρ:</span> <span className="font-semibold text-slate-800 dark:text-white">{results.atm.rho.toFixed(3)} kg/m³</span>
                 </div>
-                <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
-                    <div className="text-xs text-gray-500 mb-1">Air Density</div>
-                    <div className="text-lg font-mono font-semibold">{results.atm.rho.toFixed(3)} kg/m³</div>
-                </div>
-                <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
-                    <div className="text-xs text-gray-500 mb-1">True Airspeed</div>
-                    <div className="text-lg font-mono font-semibold">{results.v_flight.toFixed(0)} m/s</div>
+                <div className="bg-white dark:bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700">
+                    <span className="text-slate-500 dark:text-slate-400">TAS:</span> <span className="font-semibold text-slate-800 dark:text-white">{results.v_flight.toFixed(0)} m/s</span>
                 </div>
             </div>
 
@@ -2204,87 +2386,78 @@ const TurbofanAnalysis = ({ onClose }) => {
                           engineCount={engineCount}
                         />
                     </div>
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                         {/* Performance Metrics */}
-                        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-                            <div className="bg-gray-50 px-4 py-3 border-b border-gray-200 flex justify-between items-center">
-                                <h3 className="font-semibold text-gray-800 flex items-center gap-2">
-                                    <Gauge size={16} /> Engine Performance
+                        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+                            <div className="bg-slate-50 dark:bg-slate-700/50 px-4 py-2 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
+                                <h3 className="font-semibold text-slate-800 dark:text-white flex items-center gap-2 text-sm">
+                                    <Gauge size={14} /> Performance
                                 </h3>
                                 {engineCount > 1 && (
-                                  <span className="text-[11px] text-gray-500">Total for {engineCount} engines</span>
+                                  <span className="text-[10px] text-slate-500 dark:text-slate-400">{engineCount} engines</span>
                                 )}
                             </div>
-                            <div className="p-4 space-y-4">
-                                <div className="flex justify-between items-end border-b border-gray-100 pb-2">
-                                    <span className="text-sm text-gray-600">Net Thrust</span>
-                                    <span className="text-2xl font-bold text-gray-900">{formatValue(thrustTotal, 'thrust')}</span>
+                            <div className="p-3 space-y-2 text-sm">
+                                <div className="flex justify-between items-center">
+                                    <span className="text-slate-600 dark:text-slate-400">Net Thrust</span>
+                                    <span className="text-lg font-bold text-slate-900 dark:text-white">{formatValue(thrustTotal, 'thrust')}</span>
                                 </div>
-                                <div className="grid grid-cols-2 gap-4 border-b border-gray-100 pb-2">
-                                    <div>
-                                        <span className="text-xs text-gray-500 block">Gross Thrust</span>
-                                        <span className="text-sm font-semibold text-gray-700">{formatValue(grossTotal, 'thrust')}</span>
-                                    </div>
-                                    <div>
-                                        <span className="text-xs text-gray-500 block">Ram Drag</span>
-                                        <span className="text-sm font-semibold text-red-400">-{formatValue(ramTotal, 'thrust')}</span>
-                                    </div>
+                                <div className="flex justify-between items-center text-xs">
+                                    <span className="text-slate-500 dark:text-slate-500">Gross / Ram</span>
+                                    <span className="text-slate-700 dark:text-slate-300">{formatValue(grossTotal, 'thrust')} / <span className="text-red-400">-{formatValue(ramTotal, 'thrust')}</span></span>
                                 </div>
-                                <div className="flex justify-between items-end border-b border-gray-100 pb-2">
-                                    <span className="text-sm text-gray-600">Fuel Flow</span>
-                                    <span className="text-xl font-semibold text-gray-900">{formatValue(fuelTotal, 'massFlow')}</span>
+                                <div className="flex justify-between items-center pt-1 border-t border-slate-100 dark:border-slate-700">
+                                    <span className="text-slate-600 dark:text-slate-400">Fuel Flow</span>
+                                    <span className="font-semibold text-slate-900 dark:text-white">{formatValue(fuelTotal, 'massFlow')}</span>
                                 </div>
-                                <div className="flex justify-between items-end border-b border-gray-100 pb-2">
-                                    <span className="text-sm text-gray-600">TSFC</span>
-                                    <span className="text-lg font-mono text-gray-900">{formatValue(results.tsfc_curr, 'tsfc')}</span>
+                                <div className="flex justify-between items-center">
+                                    <span className="text-slate-600 dark:text-slate-400">TSFC</span>
+                                    <span className="font-mono text-slate-900 dark:text-white">{formatValue(results.tsfc_curr, 'tsfc')}</span>
                                 </div>
-                                <div className="flex justify-between items-end">
-                                    <span className="text-sm text-gray-600">Mass Flow</span>
-                                    <span className="text-lg font-mono text-gray-900">{formatValue(massFlowTotal, 'massFlow')}</span>
+                                <div className="flex justify-between items-center">
+                                    <span className="text-slate-600 dark:text-slate-400">Mass Flow</span>
+                                    <span className="font-mono text-slate-900 dark:text-white">{formatValue(massFlowTotal, 'massFlow')}</span>
                                 </div>
                             </div>
                         </div>
 
                         {/* Acoustic Analysis */}
-                        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-                            <div className="bg-gray-50 px-4 py-3 border-b border-gray-200 flex justify-between items-center">
-                                <h3 className="font-semibold text-gray-800 flex items-center gap-2">
-                                    <Volume2 size={16} /> Acoustic Analysis
+                        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+                            <div className="bg-slate-50 dark:bg-slate-700/50 px-4 py-2 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
+                                <h3 className="font-semibold text-slate-800 dark:text-white flex items-center gap-2 text-sm">
+                                    <Volume2 size={14} /> Acoustics
                                 </h3>
-                                <span className={`text-xs px-2 py-1 rounded-full ${noiseDbTotal > 100 ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
-                                    {noiseDbTotal > 100 ? 'High Noise' : 'Nominal'}
+                                <span className={`text-[10px] px-2 py-0.5 rounded-full ${noiseDbTotal > 100 ? 'bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-400' : 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-400'}`}>
+                                    {noiseDbTotal > 100 ? 'High' : 'Nominal'}
                                 </span>
                             </div>
-                            <div className="p-4">
-                                <div className="flex items-center justify-center mb-6">
-                                    <div className="relative w-32 h-32 flex items-center justify-center rounded-full border-4 border-gray-100">
+                            <div className="p-3">
+                                <div className="flex items-center justify-center mb-3">
+                                    <div className="relative w-24 h-24 flex items-center justify-center rounded-full border-4 border-slate-100 dark:border-slate-700">
                                         <div className="text-center">
-                                            <div className="text-3xl font-bold text-gray-900">{noiseDbTotal.toFixed(1)}</div>
-                                            <div className="text-xs text-gray-500">dBA</div>
+                                            <div className="text-2xl font-bold text-slate-900 dark:text-white">{noiseDbTotal.toFixed(1)}</div>
+                                            <div className="text-[10px] text-slate-500 dark:text-slate-400">dBA</div>
                                         </div>
                                         <svg className="absolute inset-0 w-full h-full -rotate-90">
-                                            <circle 
-                                                cx="64" cy="64" r="60" 
-                                                fill="none" stroke="#E5E7EB" strokeWidth="8" 
-                                            />
-                                            <circle 
-                                                cx="64" cy="64" r="60" 
-                                                fill="none" stroke={noiseDbTotal > 110 ? '#EF4444' : '#3B82F6'} strokeWidth="8"
-                                                strokeDasharray="377"
-                                                strokeDashoffset={377 - (Math.min(noiseDbTotal, 140) / 140) * 377}
+                                            <circle cx="48" cy="48" r="44" fill="none" className="stroke-slate-200 dark:stroke-slate-600" strokeWidth="6" />
+                                            <circle
+                                                cx="48" cy="48" r="44"
+                                                fill="none" stroke={noiseDbTotal > 110 ? '#EF4444' : '#3B82F6'} strokeWidth="6"
+                                                strokeDasharray="276"
+                                                strokeDashoffset={276 - (Math.min(noiseDbTotal, 140) / 140) * 276}
                                                 className="transition-all duration-500"
                                             />
                                         </svg>
                                     </div>
                                 </div>
-                                <div className="grid grid-cols-2 gap-4 text-sm">
-                                    <div className="bg-gray-50 p-2 rounded">
-                                        <div className="text-gray-500">Jet Noise</div>
-                                        <div className="font-semibold">{noiseJetDbTotal.toFixed(1)} dBA</div>
+                                <div className="grid grid-cols-2 gap-2 text-xs">
+                                    <div className="bg-slate-50 dark:bg-slate-700/50 p-2 rounded">
+                                        <div className="text-slate-500 dark:text-slate-400">Jet</div>
+                                        <div className="font-semibold text-slate-800 dark:text-white">{noiseJetDbTotal.toFixed(1)} dBA</div>
                                     </div>
-                                    <div className="bg-gray-50 p-2 rounded">
-                                        <div className="text-gray-500">Fan Noise</div>
-                                        <div className="font-semibold">{noiseFanDbTotal.toFixed(1)} dBA</div>
+                                    <div className="bg-slate-50 dark:bg-slate-700/50 p-2 rounded">
+                                        <div className="text-slate-500 dark:text-slate-400">Fan</div>
+                                        <div className="font-semibold text-slate-800 dark:text-white">{noiseFanDbTotal.toFixed(1)} dBA</div>
                                     </div>
                                 </div>
                             </div>
