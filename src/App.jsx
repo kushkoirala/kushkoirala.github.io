@@ -115,9 +115,9 @@ function App() {
           <ul className="list-disc pl-4 space-y-1 text-slate-800 dark:text-slate-300 text-sm">
             <li><strong>Tesla — Enterprise Architecture:</strong> Architecting unified simulation pipeline across design, manufacturing, and validation. Enabling end-end design and manufacturing leveraging physics-based digital twin workflows at enterprise scale.</li>
             <li><strong>Boeing — Global Architecture :</strong> 3 years embedded with engineering teams building automated Design, Manufacturing and simulation workflows.</li>
-            <li><strong>Fasteners definition and deplyment :</strong> Defining Solution Architectures for Automotive and A&D customers for end-end fasteners design.</li>
-            <li><strong>Integrations :</strong> Helping customers integrat their 3DExperience paltforms to third party applications ( SAP,Requirements Management(doors) etc.)</li>
-            <li><strong>Systems Modeling:</strong> Requirements decomposition, V&V traceability, and architecture definition using SysML/UAF for aerospace certification programs.</li>
+            <li><strong>Fasteners definition and deployment :</strong> Defining Solution Architectures for Automotive and A&D customers for end-end fasteners design.</li>
+            <li><strong>Integrations :</strong> Helping customers integrate their 3DExperience paltforms to third party applications ( SAP,Requirements Management(DOORS) etc.)</li>
+            <li><strong>Systems Modeling:</strong> Requirements decomposition, V&V traceability, and architecture definition using SysML/UAF for aerospace certification and programs.</li>
           </ul>
         </div>
 
