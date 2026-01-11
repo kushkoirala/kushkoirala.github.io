@@ -77,8 +77,7 @@ function App() {
           </div>
         </div>
         <p className="text-base leading-relaxed text-slate-700 dark:text-slate-400 max-w-2xl">
-          <strong>Aerospace Engineer | Physics-Based ML & Simulation.</strong> Building digital twins, physics-informed models, and GPU-accelerated flight dynamics. 12+ years bridging aerospace domain expertise with modern compute — from neural network flight control to production simulation infrastructure.
-        </p>
+          <strong>Aerospace Engineer | Solutions Architect.</strong> Building digital twins, physics-informed models, and GPU-accelerated flight dynamics.
         <button onClick={() => window.print()} className="mt-4 px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded hover:bg-primary-700 transition print:hidden">
           Print Resume
         </button>
@@ -113,10 +112,10 @@ function App() {
             <span className="text-sm text-slate-500 dark:text-slate-400 italic">July 2018 – Present</span>
           </div>
           <ul className="list-disc pl-4 space-y-1 text-slate-800 dark:text-slate-300 text-sm">
-            <li><strong>Tesla — Simulation Infrastructure:</strong> Architecting unified simulation pipeline across design, manufacturing, and validation. Enabling physics-based digital twin workflows at enterprise scale.</li>
-            <li><strong>Boeing — Automated Analysis Pipelines:</strong> 3 years embedded with engineering teams building automated FEA/simulation workflows. Integrated CAD geometry with Abaqus/Nastran for structural certification.</li>
-            <li><strong>Real-Time Simulation Federation:</strong> Built Linux-based infrastructure connecting physics solvers (SIMULIA) with system models. Live bidirectional sync between CAD, simulation results, and requirements.</li>
-            <li><strong>Multi-Physics Workflow Automation:</strong> Python/C++ tooling for parametric geometry generation, mesh automation, and post-processing across CFD and structural analysis domains.</li>
+            <li><strong>Tesla — Enterprise Architecture:</strong> Architecting unified simulation pipeline across design, manufacturing, and validation. Enabling end-end design and manufacturing leveraging physics-based digital twin workflows at enterprise scale.</li>
+            <li><strong>Boeing — Global Architecture :</strong> 3 years embedded with engineering teams building automated Design, Manufacturing and simulation workflows.</li>
+            <li><strong>Fasteners definition and deplyment :</strong> Defining Solution Architectures for Automotive and A&D customers for end-end fasteners design.</li>
+            <li><strong>Integrations :</strong> Helping customers integrat their 3DExperience paltforms to third party applications ( SAP,Requirements Management(doors) etc.)</li>
             <li><strong>Systems Modeling:</strong> Requirements decomposition, V&V traceability, and architecture definition using SysML/UAF for aerospace certification programs.</li>
           </ul>
         </div>
