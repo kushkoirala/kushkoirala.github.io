@@ -219,6 +219,15 @@ function App() {
              <li><strong>Gold Medal</strong> for Academic Proficiency</li>
           </ul>
         </div>
+
+        <div className="mb-3">
+           <div className="flex justify-between items-baseline mb-1">
+            <div>
+              <h3 className="font-bold text-lg">Middle School <span className="font-normal text-slate-600 dark:text-slate-400 ml-2 text-sm">— Nepal</span></h3>
+            </div>
+            <span className="text-sm text-slate-500 dark:text-slate-400">2000</span>
+          </div>
+        </div>
       </section>
 
       {/* INTERACTIVE PORTFOLIO */}
