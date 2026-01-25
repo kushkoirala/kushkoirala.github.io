@@ -200,14 +200,6 @@ const StepViewer = ({ url }) => {
           case 'descent':
               controlsRef.current = { pitch: -5 * (Math.PI/180), roll: 0, yaw: 0, throttle: 0.4 };
               break;
-          case 'turnLeft':
-              // Left turn: left wing down = negative roll
-              controlsRef.current = { pitch: 0, roll: -20 * (Math.PI/180), yaw: 0, throttle: 0.6 };
-              break;
-          case 'turnRight':
-              // Right turn: right wing down = positive roll
-              controlsRef.current = { pitch: 0, roll: 20 * (Math.PI/180), yaw: 0, throttle: 0.6 };
-              break;
       }
       setResetKey(prev => prev + 1);
   };
@@ -696,7 +688,7 @@ const StepViewer = ({ url }) => {
             // - Roll input  -> X axis (wing down/up)
             // Signs chosen so positive pitch raises nose, positive roll drops right wing
             const pitchQuat = new THREE.Quaternion().setFromAxisAngle(bodyPitchAxis, -pitch);  // positive pitch raises nose
-            const rollQuat = new THREE.Quaternion().setFromAxisAngle(bodyRollAxis, -roll);     // invert so positive roll -> right wing down
+            const rollQuat = new THREE.Quaternion().setFromAxisAngle(bodyRollAxis, roll);      // positive roll -> right wing down
             const yawQuat = new THREE.Quaternion().setFromAxisAngle(bodyYawAxis, accumulatedYawRef.current); // yaw input -> Z axis (yaw rotation)
             
             // Combine control rotations: yaw * roll * pitch (original order to match Euler extraction)
@@ -1152,8 +1144,6 @@ const StepViewer = ({ url }) => {
                     <button onClick={() => setSteadyState('cruise')} className="px-2 py-1 bg-white/10 hover:bg-white/20 rounded text-[10px] transition">Cruise</button>
                     <button onClick={() => setSteadyState('climb')} className="px-2 py-1 bg-white/10 hover:bg-white/20 rounded text-[10px] transition">Climb</button>
                     <button onClick={() => setSteadyState('descent')} className="px-2 py-1 bg-white/10 hover:bg-white/20 rounded text-[10px] transition">Descent</button>
-                    <button onClick={() => setSteadyState('turnLeft')} className="px-2 py-1 bg-white/10 hover:bg-white/20 rounded text-[10px] transition">Left Turn</button>
-                    <button onClick={() => setSteadyState('turnRight')} className="px-2 py-1 bg-white/10 hover:bg-white/20 rounded text-[10px] transition">Right Turn</button>
                   </div>
                 </div>
               </div>
