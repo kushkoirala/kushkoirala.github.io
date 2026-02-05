@@ -1,13 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { Linkedin, Mail, X, FileText, Box, Activity, ArrowRight, Brain, Sun, Moon, CheckCircle2, ClipboardCheck, Plane, Cpu } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Linkedin, X, FileText, Box, ArrowRight, Brain, Sun, Moon, CheckCircle2, ClipboardCheck, Plane } from 'lucide-react';
 import UniversalModal from './components/UniversalModal';
 import DigitalTwin from './components/DigitalTwin';
 import ReqIFViewer from './components/ReqIFViewer';
-import TurbofanAnalysis from './components/TurbofanAnalysis';
 
 function App() {
   const [modalData, setModalData] = useState({ isOpen: false, url: '', title: '' });
-  const [fullScreen, setFullScreen] = useState(null); // 'reqif' | 'twin' | 'acoustic' | null
+  const [fullScreen, setFullScreen] = useState(null); // 'reqif' | 'twin' | null
   const [theme, setTheme] = useState('dark');
 
   useEffect(() => {
@@ -113,7 +112,7 @@ function App() {
             <span className="text-sm text-slate-500 dark:text-slate-400 italic">July 2018 – Present</span>
           </div>
           <ul className="list-disc pl-4 space-y-1 text-slate-800 dark:text-slate-300 text-sm">
-            <li><strong>Global Architect :</strong> Virtual Twin design for AI Factories.</li>
+            <li><strong>Global Architect for NVIDIA:</strong> Delivering the virtual twin of the Rubin Architecture.</li>
             <li><strong>Tesla — Global Architect:</strong> Architecting unified simulation pipeline across design, manufacturing, and validation. Enabling end-end design and manufacturing leveraging physics-based digital twin workflows at enterprise scale.</li>
             <li><strong>Boeing — Global Architect :</strong> 3 years embedded with engineering teams building automated Design, Manufacturing and simulation workflows.</li>
             <li><strong>Fasteners definition and deployment :</strong> Defining Solution Architectures for Automotive and A&D customers for end-end fasteners design.</li>
@@ -211,22 +210,14 @@ function App() {
         <div className="mb-3">
            <div className="flex justify-between items-baseline mb-1">
             <div>
-              <h3 className="font-bold text-lg">High School (CBSE) <span className="font-normal text-slate-600 dark:text-slate-400 ml-2 text-sm">— La Chatelaine Jr. College, Chennai, India</span></h3>
+              <h3 className="font-bold text-lg">Early Education <span className="font-normal text-slate-600 dark:text-slate-400 ml-2 text-sm">— Nepal &amp; Chennai, India</span></h3>
             </div>
-            <span className="text-sm text-slate-500 dark:text-slate-400">2003</span>
+            <span className="text-sm text-slate-500 dark:text-slate-400">2000 – 2003</span>
           </div>
           <ul className="list-disc pl-4 mt-1 text-sm text-slate-800 dark:text-slate-300 space-y-1">
-             <li><strong>Gold Medal</strong> for Academic Proficiency</li>
+             <li>High School (CBSE) — La Chatelaine Jr. College, Chennai. <strong>Gold Medal</strong> for Academic Proficiency.</li>
+             <li>Middle School — Nepal</li>
           </ul>
-        </div>
-
-        <div className="mb-3">
-           <div className="flex justify-between items-baseline mb-1">
-            <div>
-              <h3 className="font-bold text-lg">Middle School <span className="font-normal text-slate-600 dark:text-slate-400 ml-2 text-sm">— Nepal</span></h3>
-            </div>
-            <span className="text-sm text-slate-500 dark:text-slate-400">2000</span>
-          </div>
         </div>
       </section>
 
@@ -305,30 +296,32 @@ function App() {
             </div>
           </div>
 
-          {/* Card 3: Turbofan Analysis */}
-          <div
+          {/* Card 3: FlightMind LLM */}
+          <a
             className="group bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 hover:shadow-xl hover:border-orange-400 dark:hover:border-orange-500 transition-all duration-300 cursor-pointer flex flex-col"
-            onClick={() => setFullScreen('acoustic')}
+            href="https://github.com/kushkoirala/FlightMind"
+            target="_blank"
+            rel="noreferrer"
           >
             <div className="flex items-start gap-4 mb-4">
               <div className="h-14 w-14 bg-orange-100 dark:bg-orange-900/50 rounded-xl flex items-center justify-center text-orange-600 dark:text-orange-400 group-hover:scale-110 transition-transform duration-300">
-                <Cpu size={28} />
+                <Brain size={28} />
               </div>
               <div>
-                <h3 className="font-bold text-xl text-slate-900 dark:text-white mb-1">Turbofan Analysis</h3>
-                <span className="text-xs text-orange-600 dark:text-orange-400 font-medium">Cycle + Acoustics</span>
+                <h3 className="font-bold text-xl text-slate-900 dark:text-white mb-1">FlightMind</h3>
+                <span className="text-xs text-orange-600 dark:text-orange-400 font-medium">Custom LLM for Flight Control</span>
               </div>
             </div>
             <p className="text-base text-slate-600 dark:text-slate-400 mb-4 flex-1">
-              Engine cycle analysis with real-time parameter updates. Includes takeoff noise prediction based on Lighthill acoustic analogy from thesis research.
+              Purpose-built language model trained from scratch for aerospace reasoning. Designed to replace LLaMA in the AIDA neural flight control pipeline with a domain-specific architecture.
             </p>
             <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-700">
-              <p className="text-xs text-slate-500 dark:text-slate-400">JS Cycle Solver, Lighthill Model</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">PyTorch, CUDA, Transformers</p>
               <div className="flex items-center text-orange-600 dark:text-orange-400 text-sm font-medium group-hover:translate-x-1 transition-transform">
-                Simulate <ArrowRight size={16} className="ml-1" />
+                View on GitHub <ArrowRight size={16} className="ml-1" />
               </div>
             </div>
-          </div>
+          </a>
 
           {/* Card 4: AIDA Research */}
           <a
@@ -383,11 +376,11 @@ function App() {
             <p className="tech">Three.js, OpenCASCADE, WebAssembly</p>
           </div>
 
-          {/* Turbofan */}
+          {/* FlightMind */}
           <div className="print-portfolio-card">
-            <h3>Turbofan Analysis <span className="badge">Cycle + Acoustics</span></h3>
-            <p>Engine cycle analysis with real-time parameter updates. Takeoff noise prediction based on Lighthill acoustic analogy from thesis research.</p>
-            <p className="tech">JS Cycle Solver, Lighthill Model</p>
+            <h3>FlightMind <span className="badge">Custom LLM</span></h3>
+            <p>Purpose-built language model trained from scratch for aerospace reasoning. Designed to replace LLaMA in the AIDA neural flight control pipeline. GitHub: github.com/kushkoirala/FlightMind</p>
+            <p className="tech">PyTorch, CUDA, Transformers</p>
           </div>
 
           {/* AIDA */}
@@ -412,13 +405,8 @@ function App() {
       />
     </div>
 
-      {/* Acoustic Simulator Overlay */}
-      {fullScreen === 'acoustic' && (
-        <TurbofanAnalysis onClose={() => setFullScreen(null)} />
-      )}
-
       {/* Full-screen overlay for viewers */}
-      {fullScreen && fullScreen !== 'acoustic' && (
+      {fullScreen && (
         <div className="fixed inset-0 z-50 bg-white dark:bg-slate-900 flex flex-col">
           <div className="flex items-center justify-between px-4 py-3 border-b dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
             <div className="text-base font-semibold text-slate-900 dark:text-white">
