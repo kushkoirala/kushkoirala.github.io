@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Linkedin, X, FileText, Box, ArrowRight, Brain, Sun, Moon, CheckCircle2, ClipboardCheck, Plane } from 'lucide-react';
+import { Linkedin, X, Box, ArrowRight, Brain, Sun, Moon, ClipboardCheck } from 'lucide-react';
 import UniversalModal from './components/UniversalModal';
 import DigitalTwin from './components/DigitalTwin';
 import ReqIFViewer from './components/ReqIFViewer';
@@ -164,7 +164,7 @@ function App() {
           </div>
           <p className="text-slate-600 dark:text-slate-400 italic text-sm">Wichita State University — Wichita, KS</p>
           <ul className="list-disc pl-4 mt-1 text-sm text-slate-800 dark:text-slate-300 space-y-1">
-            <li><strong>AIDA — Neural Flight Control:</strong> Reinforcement learning for 6-DOF aircraft control. PyTorch policy networks trained in GPU-accelerated physics simulation (CUDA/CuPy). <a href="#" onClick={(e) => openPdf(e, 'AIDA - Proposal _ v1.pdf', 'AIDA')} className="text-primary-600 dark:text-primary-400 hover:underline">Proposal</a></li>
+            <li><strong>AIDA + FlightMind:</strong> Autonomous Cessna 172 flight via RL + custom aviation LLM (192M-token corpus, depth-parameterized transformer trained from scratch). GPU-accelerated 6-DOF physics (CUDA/CuPy). <a href="#" onClick={(e) => openPdf(e, 'AIDA - Proposal _ v1.pdf', 'AIDA')} className="text-primary-600 dark:text-primary-400 hover:underline">Proposal</a></li>
             <li><strong>Optimal Control:</strong> Convex optimization for powered descent guidance (Mars lander). Successive convexification with glide-slope and thrust constraints. <a href="#" onClick={(e) => openPdf(e, 'Mars Lander.pdf', 'Starship Mars Landing')} className="text-primary-600 dark:text-primary-400 hover:underline">Paper</a></li>
             <li><strong>Coursework:</strong> Nonlinear dynamics, optimal control theory, estimation & filtering, neural network fundamentals.</li>
           </ul>
@@ -231,47 +231,69 @@ function App() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          {/* Card 1: Requirements - Featured */}
-          <div
-            className="group relative bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-slate-800 dark:to-slate-800 rounded-2xl p-6 border border-blue-200 dark:border-slate-700 hover:shadow-xl hover:border-blue-400 dark:hover:border-blue-500 transition-all duration-300 cursor-pointer md:col-span-2"
-            onClick={() => setFullScreen('reqif')}
+          {/* Card 1: FlightMind - Landscape */}
+          <a
+            className="group relative bg-gradient-to-br from-orange-50 to-amber-50 dark:from-slate-800 dark:to-slate-800 rounded-2xl p-6 border border-orange-200 dark:border-slate-700 hover:shadow-xl hover:border-orange-400 dark:hover:border-orange-500 transition-all duration-300 cursor-pointer md:col-span-2"
+            href="https://github.com/kushkoirala/FlightMind"
+            target="_blank"
+            rel="noreferrer"
           >
             <div className="flex flex-col md:flex-row md:items-start gap-6">
               <div className="flex-shrink-0">
-                <div className="h-16 w-16 bg-blue-100 dark:bg-blue-900/50 rounded-xl flex items-center justify-center text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform duration-300">
-                  <ClipboardCheck size={32} />
+                <div className="h-16 w-16 bg-orange-100 dark:bg-orange-900/50 rounded-xl flex items-center justify-center text-orange-600 dark:text-orange-400 group-hover:scale-110 transition-transform duration-300">
+                  <Brain size={32} />
                 </div>
               </div>
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-2">
-                  <h3 className="font-bold text-xl text-slate-900 dark:text-white">14 CFR Part 25 Requirements</h3>
-                  <span className="px-2 py-0.5 text-xs font-medium bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-full">Airworthiness Standards</span>
+                  <h3 className="font-bold text-xl text-slate-900 dark:text-white">FlightMind</h3>
+                  <span className="px-2 py-0.5 text-xs font-medium bg-orange-100 dark:bg-orange-900 text-orange-700 dark:text-orange-300 rounded-full">Aviation LLM from Scratch</span>
                 </div>
                 <p className="text-base text-slate-600 dark:text-slate-400 mb-4">
-                  Full FAA airworthiness standards with derived requirements across 8 subparts. Powerplant section (Subpart E) fully decomposed with official CFR regulatory text. Features V&V tracking with verification methods, compliance status, and traceability.
+                  Aviation-specialized transformer trained from scratch on a 192M-token corpus (NTSB reports, METAR, 14 CFR, FAA handbooks). Depth-parameterized architecture with RoPE, SwiGLU, RMSNorm, and Flash Attention. Powers natural language pilot interaction in the AIDA autonomous flight platform.
                 </p>
-                <div className="flex flex-wrap gap-2 mb-4">
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white dark:bg-slate-700 rounded-lg text-xs text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-600">
-                    <CheckCircle2 size={12} className="text-green-500" /> V&V Tracking
-                  </span>
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white dark:bg-slate-700 rounded-lg text-xs text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-600">
-                    <FileText size={12} className="text-blue-500" /> ReqIF Standard
-                  </span>
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white dark:bg-slate-700 rounded-lg text-xs text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-600">
-                    <Plane size={12} className="text-indigo-500" /> Subparts A-H
-                  </span>
-                </div>
                 <div className="flex items-center justify-between">
-                  <p className="text-xs text-slate-500 dark:text-slate-400">Stack: ReqIF/XML, React, Vite, Tailwind</p>
-                  <div className="flex items-center text-blue-600 dark:text-blue-400 text-base font-medium group-hover:translate-x-2 transition-transform duration-300">
-                    Explore Requirements <ArrowRight size={18} className="ml-2" />
+                  <p className="text-xs text-slate-500 dark:text-slate-400">PyTorch, Flash Attention, CUDA, BPE Tokenizer</p>
+                  <div className="flex items-center text-orange-600 dark:text-orange-400 text-base font-medium group-hover:translate-x-2 transition-transform duration-300">
+                    View on GitHub <ArrowRight size={18} className="ml-2" />
                   </div>
                 </div>
               </div>
             </div>
-          </div>
+          </a>
 
-          {/* Card 2: Digital Twin */}
+          {/* Card 2: AIDA - Landscape */}
+          <a
+            className="group relative bg-gradient-to-br from-teal-50 to-cyan-50 dark:from-slate-800 dark:to-slate-800 rounded-2xl p-6 border border-teal-200 dark:border-slate-700 hover:shadow-xl hover:border-teal-400 dark:hover:border-teal-500 transition-all duration-300 cursor-pointer md:col-span-2"
+            href="https://github.com/kushkoirala/AIDA"
+            target="_blank"
+            rel="noreferrer"
+          >
+            <div className="flex flex-col md:flex-row md:items-start gap-6">
+              <div className="flex-shrink-0">
+                <div className="h-16 w-16 bg-teal-100 dark:bg-teal-900/50 rounded-xl flex items-center justify-center text-teal-600 dark:text-teal-400 group-hover:scale-110 transition-transform duration-300">
+                  <Brain size={32} />
+                </div>
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-3 mb-2">
+                  <h3 className="font-bold text-xl text-slate-900 dark:text-white">AIDA — AI Flight Control</h3>
+                  <span className="px-2 py-0.5 text-xs font-medium bg-teal-100 dark:bg-teal-900 text-teal-700 dark:text-teal-300 rounded-full">Research</span>
+                </div>
+                <p className="text-base text-slate-600 dark:text-slate-400 mb-4">
+                  Autonomous Cessna 172 cross-country flight via reinforcement learning, Bayesian intent inference, and Control Barrier Functions. GPU-accelerated 6-DOF physics (500M+ steps/sec). Powered by FlightMind for natural language pilot interaction.
+                </p>
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Python, PyTorch, Gymnasium, CUDA, CuPy</p>
+                  <div className="flex items-center text-teal-600 dark:text-teal-400 text-base font-medium group-hover:translate-x-2 transition-transform duration-300">
+                    View on GitHub <ArrowRight size={18} className="ml-2" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </a>
+
+          {/* Card 3: Digital Twin - Portrait */}
           <div
             className="group bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 hover:shadow-xl hover:border-purple-400 dark:hover:border-purple-500 transition-all duration-300 cursor-pointer flex flex-col"
             onClick={() => setFullScreen('twin')}
@@ -296,63 +318,30 @@ function App() {
             </div>
           </div>
 
-          {/* Card 3: FlightMind LLM */}
-          <a
-            className="group bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 hover:shadow-xl hover:border-orange-400 dark:hover:border-orange-500 transition-all duration-300 cursor-pointer flex flex-col"
-            href="https://github.com/kushkoirala/FlightMind"
-            target="_blank"
-            rel="noreferrer"
+          {/* Card 4: Requirements - Portrait */}
+          <div
+            className="group bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 hover:shadow-xl hover:border-blue-400 dark:hover:border-blue-500 transition-all duration-300 cursor-pointer flex flex-col"
+            onClick={() => setFullScreen('reqif')}
           >
             <div className="flex items-start gap-4 mb-4">
-              <div className="h-14 w-14 bg-orange-100 dark:bg-orange-900/50 rounded-xl flex items-center justify-center text-orange-600 dark:text-orange-400 group-hover:scale-110 transition-transform duration-300">
-                <Brain size={28} />
+              <div className="h-14 w-14 bg-blue-100 dark:bg-blue-900/50 rounded-xl flex items-center justify-center text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform duration-300">
+                <ClipboardCheck size={28} />
               </div>
               <div>
-                <h3 className="font-bold text-xl text-slate-900 dark:text-white mb-1">FlightMind</h3>
-                <span className="text-xs text-orange-600 dark:text-orange-400 font-medium">Custom LLM for Flight Control</span>
+                <h3 className="font-bold text-xl text-slate-900 dark:text-white mb-1">14 CFR Part 25</h3>
+                <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">Airworthiness Standards</span>
               </div>
             </div>
             <p className="text-base text-slate-600 dark:text-slate-400 mb-4 flex-1">
-              Purpose-built language model trained from scratch for aerospace reasoning. Designed to replace LLaMA in the AIDA neural flight control pipeline with a domain-specific architecture.
+              FAA airworthiness standards across 8 subparts with V&V tracking, compliance status, and ReqIF traceability.
             </p>
             <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-700">
-              <p className="text-xs text-slate-500 dark:text-slate-400">PyTorch, CUDA, Transformers</p>
-              <div className="flex items-center text-orange-600 dark:text-orange-400 text-sm font-medium group-hover:translate-x-1 transition-transform">
-                View on GitHub <ArrowRight size={16} className="ml-1" />
+              <p className="text-xs text-slate-500 dark:text-slate-400">ReqIF/XML, React, Tailwind</p>
+              <div className="flex items-center text-blue-600 dark:text-blue-400 text-sm font-medium group-hover:translate-x-1 transition-transform">
+                Explore <ArrowRight size={16} className="ml-1" />
               </div>
             </div>
-          </a>
-
-          {/* Card 4: AIDA Research */}
-          <a
-            className="group bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 hover:shadow-xl hover:border-teal-400 dark:hover:border-teal-500 transition-all duration-300 cursor-pointer flex flex-col md:col-span-2"
-            href="https://github.com/kushkoirala/AIDA"
-            target="_blank"
-            rel="noreferrer"
-          >
-            <div className="flex flex-col md:flex-row md:items-start gap-6">
-              <div className="flex-shrink-0">
-                <div className="h-14 w-14 bg-teal-100 dark:bg-teal-900/50 rounded-xl flex items-center justify-center text-teal-600 dark:text-teal-400 group-hover:scale-110 transition-transform duration-300">
-                  <Brain size={28} />
-                </div>
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center gap-3 mb-2">
-                  <h3 className="font-bold text-xl text-slate-900 dark:text-white">AIDA — AI Flight Control</h3>
-                  <span className="px-2 py-0.5 text-xs font-medium bg-teal-100 dark:bg-teal-900 text-teal-700 dark:text-teal-300 rounded-full">Research</span>
-                </div>
-                <p className="text-base text-slate-600 dark:text-slate-400 mb-4">
-                  Autonomous fixed-wing aircraft control using reinforcement learning and neural networks. Integrates LLMs for adaptive flight behavior with GPU-accelerated physics simulation.
-                </p>
-                <div className="flex items-center justify-between">
-                  <p className="text-xs text-slate-500 dark:text-slate-400">Python, PyTorch, Gymnasium, CUDA, CuPy</p>
-                  <div className="flex items-center text-teal-600 dark:text-teal-400 text-sm font-medium group-hover:translate-x-2 transition-transform duration-300">
-                    View on GitHub <ArrowRight size={16} className="ml-2" />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </a>
+          </div>
         </div>
       </section>
 
@@ -378,15 +367,15 @@ function App() {
 
           {/* FlightMind */}
           <div className="print-portfolio-card">
-            <h3>FlightMind <span className="badge">Custom LLM</span></h3>
-            <p>Purpose-built language model trained from scratch for aerospace reasoning. Designed to replace LLaMA in the AIDA neural flight control pipeline. GitHub: github.com/kushkoirala/FlightMind</p>
-            <p className="tech">PyTorch, CUDA, Transformers</p>
+            <h3>FlightMind <span className="badge">Aviation LLM</span></h3>
+            <p>Aviation-specialized transformer trained from scratch on 192M tokens (NTSB, METAR, 14 CFR, FAA handbooks). Depth-parameterized architecture with RoPE, SwiGLU, Flash Attention. Outperforms GPT-2 perplexity at 50M params. GitHub: github.com/kushkoirala/FlightMind</p>
+            <p className="tech">PyTorch, Flash Attention, CUDA, BPE Tokenizer</p>
           </div>
 
           {/* AIDA */}
           <div className="print-portfolio-card featured">
             <h3>AIDA — AI Flight Control <span className="badge">Research</span></h3>
-            <p>Autonomous fixed-wing aircraft control using reinforcement learning and neural networks. Integrates LLMs for adaptive flight behavior with GPU-accelerated physics simulation. GitHub: github.com/kushkoirala/AIDA</p>
+            <p>Autonomous Cessna 172 cross-country flight via RL, Bayesian intent inference, and Control Barrier Functions. GPU-accelerated 6-DOF physics (500M+ steps/sec). Powered by FlightMind LLM. GitHub: github.com/kushkoirala/AIDA</p>
             <p className="tech">Python, PyTorch, Gymnasium, CUDA, CuPy</p>
           </div>
         </div>
