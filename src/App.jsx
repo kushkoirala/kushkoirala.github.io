@@ -1,12 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Linkedin, X, Box, ArrowRight, Brain, Sun, Moon, ClipboardCheck } from 'lucide-react';
+import { Linkedin, X, ArrowRight, Brain, Sun, Moon, Play } from 'lucide-react';
 import UniversalModal from './components/UniversalModal';
-import DigitalTwin from './components/DigitalTwin';
-import ReqIFViewer from './components/ReqIFViewer';
 
 function App() {
   const [modalData, setModalData] = useState({ isOpen: false, url: '', title: '' });
-  const [fullScreen, setFullScreen] = useState(null); // 'reqif' | 'twin' | null
   const [theme, setTheme] = useState('dark');
 
   useEffect(() => {
@@ -76,7 +73,7 @@ function App() {
           </div>
         </div>
         <p className="text-base leading-relaxed text-slate-700 dark:text-slate-400 max-w-2xl">
-          <strong>Aerospace Engineer | Solutions Architect.</strong> Building digital twins, physics-informed models, and GPU-accelerated flight dynamics.
+          <strong>Aerospace Engineer &amp; Global Solution Architect at Dassault Systèmes.</strong> 15+ years across aerospace, automotive, defense, and advanced manufacturing. Now focused on agentic AI for engineering: engineering agents, digital twins, and simulation-driven workflows, grounded in design, certification, and large-scale enterprise systems.
         </p>
         <button onClick={() => window.print()} className="mt-4 px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded hover:bg-primary-700 transition print:hidden">
           Print Resume
@@ -86,16 +83,15 @@ function App() {
       {/* TECHNICAL SKILLS */}
       <section className="mb-6">
         <div className="flex flex-wrap gap-2 text-sm">
+          <span className="px-3 py-1 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded-full font-medium">LLM Agents</span>
+          <span className="px-3 py-1 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded-full font-medium">RAG / Hybrid Search</span>
+          <span className="px-3 py-1 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded-full font-medium">Edge / Local LLMs</span>
           <span className="px-3 py-1 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded-full font-medium">PyTorch</span>
-          <span className="px-3 py-1 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded-full font-medium">CUDA / CuPy</span>
           <span className="px-3 py-1 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded-full font-medium">Python</span>
-          <span className="px-3 py-1 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded-full font-medium">C++</span>
-          <span className="px-3 py-1 bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 rounded-full font-medium">6-DOF Dynamics</span>
+          <span className="px-3 py-1 bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 rounded-full font-medium">CUDA / CuPy</span>
           <span className="px-3 py-1 bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 rounded-full font-medium">CFD / FEA</span>
           <span className="px-3 py-1 bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 rounded-full font-medium">Flight Control</span>
-          <span className="px-3 py-1 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-full font-medium">Reinforcement Learning</span>
           <span className="px-3 py-1 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-full font-medium">Digital Twins</span>
-          <span className="px-3 py-1 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-full font-medium">MBSE / SysML</span>
         </div>
       </section>
 
@@ -107,17 +103,15 @@ function App() {
         <div className="mb-6 break-inside-avoid">
           <div className="flex justify-between items-baseline mb-1">
             <div>
-              <h3 className="font-bold text-lg">Global Architect <span className="font-normal text-slate-600 dark:text-slate-400 ml-1">@ Dassault Systèmes (NIAR-WSU)</span></h3>
+              <h3 className="font-bold text-lg">Global Solution Architect <span className="font-normal text-slate-600 dark:text-slate-400 ml-1">@ Dassault Systèmes</span></h3>
             </div>
             <span className="text-sm text-slate-500 dark:text-slate-400 italic">July 2018 – Present</span>
           </div>
           <ul className="list-disc pl-4 space-y-1 text-slate-800 dark:text-slate-300 text-sm">
-            <li><strong>Global Architect for NVIDIA:</strong> Delivering the virtual twin of the Rubin Architecture.</li>
-            <li><strong>Tesla — Global Architect:</strong> Architecting unified simulation pipeline across design, manufacturing, and validation. Enabling end-end design and manufacturing leveraging physics-based digital twin workflows at enterprise scale.</li>
-            <li><strong>Boeing — Global Architect :</strong> 3 years embedded with engineering teams building automated Design, Manufacturing and simulation workflows.</li>
-            <li><strong>Fasteners definition and deployment :</strong> Defining Solution Architectures for Automotive and A&D customers for end-end fasteners design.</li>
-            <li><strong>Integrations :</strong> Helping customers integrate their 3DExperience paltforms to third party applications ( SAP,Requirements Management(DOORS) etc.)</li>
-            <li><strong>Systems Modeling:</strong> Requirements decomposition, V&V traceability, and architecture definition using SysML/UAF for aerospace certification and programs.</li>
+            <li><strong>Agentic AI for engineering:</strong> Driving agentic-readiness and the dev/test of engineering agents that plan, execute, and verify engineering and simulation tasks on the 3DEXPERIENCE platform.</li>
+            <li><strong>NVIDIA DSX AI Factory:</strong> Lead solution architect for the virtual twin of next-generation AI-factory data centers.</li>
+            <li><strong>Boeing (3 yrs, embedded):</strong> Supported digital transformation through engineering-process modernization, automation, and platform adoption.</li>
+            <li><strong>Strategic customers:</strong> Solution architecture across simulation, systems modeling, and enterprise integration for Tesla, Rivian, Textron Aviation, and the U.S. Air Force.</li>
           </ul>
         </div>
 
@@ -125,15 +119,13 @@ function App() {
         <div className="mb-6 break-inside-avoid">
           <div className="flex justify-between items-baseline mb-1">
             <div>
-              <h3 className="font-bold text-lg">Lead Design Engineer & Architect <span className="font-normal text-slate-600 dark:text-slate-400 ml-1">@ SAFRAN (Zodiac Aerospace)</span></h3>
+              <h3 className="font-bold text-lg">Engineering Drafter → Lead Engineer → Solution Architect <span className="font-normal text-slate-600 dark:text-slate-400 ml-1">@ SAFRAN (Zodiac Aerospace)</span></h3>
             </div>
             <span className="text-sm text-slate-500 dark:text-slate-400 italic">Dec 2012 – July 2018</span>
           </div>
           <ul className="list-disc pl-4 space-y-1 text-slate-800 dark:text-slate-300 text-sm">
-            <li><strong>Parametric CAD Automation (KBE):</strong> Built CATIA V5 automation framework using VBA/CATScript—algorithmically generated structural components at scale. Reduced design cycle from weeks to days per aircraft program.</li>
-            <li><strong>FEA Workflow & Certification:</strong> Established in-house Abaqus/Nastran pipeline for FAA Part 25 compliance. Automated mesh generation + post-processing using Python scripts.</li>
-            <li><strong>Model-Based Definition (MBD):</strong> Led company-wide transition to 3D PMI + GD&T in CATIA V5, eliminating 2D drawings for most assemblies. Trained engineering team, now org-wide standard.</li>
-            <li><strong>Z300 Certification:</strong> Drove the Z300 aircraft seat through full certification—requirements, design, analysis/test coordination, and compliance documentation—until approved.</li>
+            <li><strong>Z300 seats, Lead Engineer:</strong> Started on the Pro/E → CATIA V5 transformation, then led the Zodiac Z300 aircraft seat to engineering release and FAA certification readiness.</li>
+            <li><strong>CAD &amp; process automation:</strong> Drove Model-Based Definition (3D PMI + GD&T) and SmarTeam data/process standardization across engineering, advancing to Solution Architect.</li>
           </ul>
         </div>
 
@@ -141,12 +133,25 @@ function App() {
         <div className="mb-6 break-inside-avoid">
           <div className="flex justify-between items-baseline mb-1">
             <div>
-              <h3 className="font-bold text-lg">Design Engineer <span className="font-normal text-slate-600 dark:text-slate-400 ml-1">@ Duncan Aviation</span></h3>
+              <h3 className="font-bold text-lg">Contract Design Engineer <span className="font-normal text-slate-600 dark:text-slate-400 ml-1">@ Duncan Aviation</span></h3>
             </div>
             <span className="text-sm text-slate-500 dark:text-slate-400 italic">Aug 2012 – Nov 2012</span>
           </div>
           <ul className="list-disc pl-4 space-y-1 text-slate-800 dark:text-slate-300 text-sm">
-            <li><strong>VIP Cabin Integration:</strong> Designed custom Falcon 7X interior mods (BMW Designworks collab). Managed ECOs in SmarTeam PLM—delivered on-time for high-profile client delivery.</li>
+            <li><strong>VIP cabin design:</strong> Designed Dassault Falcon Jet VIP interior modifications in CATIA V5, managing ECOs and cabin-integration release in SmarTeam.</li>
+          </ul>
+        </div>
+
+        {/* Early career: Robtronix + Etezazi */}
+        <div className="mb-6 break-inside-avoid">
+          <div className="flex justify-between items-baseline mb-1">
+            <div>
+              <h3 className="font-bold text-lg">Co-Founder &amp; IT / Manufacturing Systems <span className="font-normal text-slate-600 dark:text-slate-400 ml-1">@ Robtronix &amp; Etezazi Industries</span></h3>
+            </div>
+            <span className="text-sm text-slate-500 dark:text-slate-400 italic">2008 – 2012</span>
+          </div>
+          <ul className="list-disc pl-4 space-y-1 text-slate-800 dark:text-slate-300 text-sm">
+            <li>Co-founded <strong>Robtronix</strong> (laptop refurb and IT retail/repair) and ran shop-floor IT at <strong>Etezazi Industries</strong> (networking, JobBOSS ERP, CNC code-loading Wi-Fi, FARO metrology) while completing my B.S.</li>
           </ul>
         </div>
       </section>
@@ -155,68 +160,28 @@ function App() {
       <section className="mb-8 break-inside-avoid">
         <h2 className="text-2xl font-bold text-primary-600 dark:text-primary-400 border-b border-slate-200 dark:border-slate-700 pb-1 mb-4">Education</h2>
         
-        <div className="mb-4">
-           <div className="flex justify-between items-baseline mb-1">
-            <div>
-              <h3 className="font-bold text-lg">Ph.D. Aerospace Engineering (Coursework)</h3>
-            </div>
-            <span className="text-sm text-slate-500 dark:text-slate-400">2021 – Present</span>
-          </div>
-          <p className="text-slate-600 dark:text-slate-400 italic text-sm">Wichita State University — Wichita, KS</p>
-          <ul className="list-disc pl-4 mt-1 text-sm text-slate-800 dark:text-slate-300 space-y-1">
-            <li><strong>AIDA + FlightMind:</strong> Autonomous Cessna 172 flight via RL + custom aviation LLM (192M-token corpus, depth-parameterized transformer trained from scratch). GPU-accelerated 6-DOF physics (CUDA/CuPy). <a href="#" onClick={(e) => openPdf(e, 'AIDA - Proposal _ v1.pdf', 'AIDA')} className="text-primary-600 dark:text-primary-400 hover:underline">Proposal</a></li>
-            <li><strong>Optimal Control:</strong> Convex optimization for powered descent guidance (Mars lander). Successive convexification with glide-slope and thrust constraints. <a href="#" onClick={(e) => openPdf(e, 'Mars Lander.pdf', 'Starship Mars Landing')} className="text-primary-600 dark:text-primary-400 hover:underline">Paper</a></li>
-            <li><strong>Coursework:</strong> Nonlinear dynamics, optimal control theory, estimation & filtering, neural network fundamentals.</li>
-          </ul>
-        </div>
-
         <div className="mb-3">
            <div className="flex justify-between items-baseline mb-1">
             <div>
-              <h3 className="font-bold text-lg">M.S. Aerospace Engineering <span className="font-normal text-slate-600 dark:text-slate-400 ml-2 text-sm">— Wichita State University, Wichita KS</span></h3>
+              <h3 className="font-bold text-lg">M.S. Aerospace Engineering <span className="font-normal text-slate-600 dark:text-slate-400 ml-2 text-sm">Wichita State University, Wichita KS</span></h3>
             </div>
             <span className="text-sm text-slate-500 dark:text-slate-400">May 2024</span>
           </div>
           <ul className="list-disc pl-4 mt-1 text-sm text-slate-800 dark:text-slate-300 space-y-1">
-             <li><strong>Project:</strong> <a href="#" onClick={(e) => openPdf(e, 'AcousticsAnalysisTFE731.pdf', 'Acoustic Analysis')} className="text-primary-600 dark:text-primary-400 hover:underline">Turbofan Takeoff Acoustics Modeling</a> (Python/MATLAB) aligning jet/fan noise predictions to lab data.</li>
-             <li><strong>Focus:</strong> Flight control with propulsion integration; mission-level design and acoustic trade studies.</li>
-          </ul>
-        </div>
-
-        <div className="mb-3">
-           <div className="flex justify-between items-baseline mb-1">
-            <div>
-              <h3 className="font-bold text-lg">M.Eng. Aerospace Engineering <span className="font-normal text-slate-600 dark:text-slate-400 ml-2 text-sm">— University of Texas at Arlington, Arlington TX</span></h3>
-            </div>
-            <span className="text-sm text-slate-500 dark:text-slate-400">2016 – 2019</span>
-          </div>
-          <ul className="list-disc pl-4 mt-1 text-sm text-slate-800 dark:text-slate-300 space-y-1">
-            <li><strong>Emphasis:</strong> Advanced composites with supporting GNC coursework.</li>
+             <li><strong>Project:</strong> <a href="#" onClick={(e) => openPdf(e, 'AcousticsAnalysisTFE731.pdf', 'Acoustic Analysis')} className="text-primary-600 dark:text-primary-400 hover:underline">Jet noise prediction model</a> (Python/MATLAB) for turbofan takeoff acoustics, validated against lab data.</li>
+             <li><strong>Graduate coursework:</strong> Flight dynamics &amp; control, incl. nonlinear dynamics and control.</li>
           </ul>
         </div>
 
          <div className="mb-3">
            <div className="flex justify-between items-baseline mb-1">
             <div>
-              <h3 className="font-bold text-lg">B.S. Aerospace Engineering <span className="font-normal text-slate-600 dark:text-slate-400 ml-2 text-sm">— Wichita State University, Wichita KS</span></h3>
+              <h3 className="font-bold text-lg">B.S. Aerospace Engineering <span className="font-normal text-slate-600 dark:text-slate-400 ml-2 text-sm">Wichita State University, Wichita KS</span></h3>
             </div>
             <span className="text-sm text-slate-500 dark:text-slate-400">May 2012</span>
           </div>
           <ul className="list-disc pl-4 mt-1 text-sm text-slate-800 dark:text-slate-300 space-y-1">
-             <li><strong>Capstone:</strong> <a href="#" onClick={(e) => openPdf(e, 'Final Report-PropShox.pdf', 'Udaan Aircraft')} className="text-primary-600 dark:text-primary-400 hover:underline">Udaan Dive Bomber</a> — Full aircraft design, wind tunnel testing, propulsion integration.</li>
-          </ul>
-        </div>
-
-        <div className="mb-3">
-           <div className="flex justify-between items-baseline mb-1">
-            <div>
-              <h3 className="font-bold text-lg">Early Education <span className="font-normal text-slate-600 dark:text-slate-400 ml-2 text-sm">— Nepal &amp; Chennai, India</span></h3>
-            </div>
-            <span className="text-sm text-slate-500 dark:text-slate-400">2000 – 2003</span>
-          </div>
-          <ul className="list-disc pl-4 mt-1 text-sm text-slate-800 dark:text-slate-300 space-y-1">
-             <li>High School (CBSE) — La Chatelaine Jr. College, Chennai. <strong>Gold Medal</strong> for Academic Proficiency.</li>
-             <li>Middle School — Nepal</li>
+             <li><strong>Capstone:</strong> <a href="#" onClick={(e) => openPdf(e, 'Final Report-PropShox.pdf', 'Udaan Aircraft')} className="text-primary-600 dark:text-primary-400 hover:underline">Udaan</a>: designed, built, and flew the aircraft, with wind-tunnel testing and propulsion integration.</li>
           </ul>
         </div>
       </section>
@@ -224,51 +189,15 @@ function App() {
       {/* INTERACTIVE PORTFOLIO */}
       <section className="mb-12 print:hidden">
         <div className="mb-8">
-          <h2 className="text-3xl font-bold text-primary-600 dark:text-primary-400 mb-3">Interactive Engineering Portfolio</h2>
+          <h2 className="text-3xl font-bold text-primary-600 dark:text-primary-400 mb-3">Personal Research</h2>
           <p className="text-slate-600 dark:text-slate-400 text-base max-w-2xl">
-            Live demonstrations of aerospace engineering capabilities — from FAA certification requirements to physics-based simulations.
+            A live demonstration of AI-guided flight: an LLM-flown Cessna 172 in a physics-based simulator.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          {/* Card 1: FlightMind - Landscape */}
-          <a
-            className="group relative bg-gradient-to-br from-orange-50 to-amber-50 dark:from-slate-800 dark:to-slate-800 rounded-2xl p-6 border border-orange-200 dark:border-slate-700 hover:shadow-xl hover:border-orange-400 dark:hover:border-orange-500 transition-all duration-300 cursor-pointer md:col-span-2"
-            href="https://github.com/kushkoirala/FlightMind"
-            target="_blank"
-            rel="noreferrer"
-          >
-            <div className="flex flex-col md:flex-row md:items-start gap-6">
-              <div className="flex-shrink-0">
-                <div className="h-16 w-16 bg-orange-100 dark:bg-orange-900/50 rounded-xl flex items-center justify-center text-orange-600 dark:text-orange-400 group-hover:scale-110 transition-transform duration-300">
-                  <Brain size={32} />
-                </div>
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center gap-3 mb-2">
-                  <h3 className="font-bold text-xl text-slate-900 dark:text-white">FlightMind</h3>
-                  <span className="px-2 py-0.5 text-xs font-medium bg-orange-100 dark:bg-orange-900 text-orange-700 dark:text-orange-300 rounded-full">Aviation LLM from Scratch</span>
-                </div>
-                <p className="text-base text-slate-600 dark:text-slate-400 mb-4">
-                  Aviation-specialized transformer trained from scratch on a 192M-token corpus (NTSB reports, METAR, 14 CFR, FAA handbooks). Depth-parameterized architecture with RoPE, SwiGLU, RMSNorm, and Flash Attention. Powers natural language pilot interaction in the AIDA autonomous flight platform.
-                </p>
-                <div className="flex items-center justify-between">
-                  <p className="text-xs text-slate-500 dark:text-slate-400">PyTorch, Flash Attention, CUDA, BPE Tokenizer</p>
-                  <div className="flex items-center text-orange-600 dark:text-orange-400 text-base font-medium group-hover:translate-x-2 transition-transform duration-300">
-                    View on GitHub <ArrowRight size={18} className="ml-2" />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </a>
-
-          {/* Card 2: AIDA - Landscape */}
-          <a
-            className="group relative bg-gradient-to-br from-teal-50 to-cyan-50 dark:from-slate-800 dark:to-slate-800 rounded-2xl p-6 border border-teal-200 dark:border-slate-700 hover:shadow-xl hover:border-teal-400 dark:hover:border-teal-500 transition-all duration-300 cursor-pointer md:col-span-2"
-            href="https://github.com/kushkoirala/AIDA"
-            target="_blank"
-            rel="noreferrer"
-          >
+        <div className="grid grid-cols-1 gap-5">
+          {/* AIDA */}
+          <div className="group relative bg-gradient-to-br from-teal-50 to-cyan-50 dark:from-slate-800 dark:to-slate-800 rounded-2xl p-6 border border-teal-200 dark:border-slate-700 hover:shadow-xl hover:border-teal-400 dark:hover:border-teal-500 transition-all duration-300">
             <div className="flex flex-col md:flex-row md:items-start gap-6">
               <div className="flex-shrink-0">
                 <div className="h-16 w-16 bg-teal-100 dark:bg-teal-900/50 rounded-xl flex items-center justify-center text-teal-600 dark:text-teal-400 group-hover:scale-110 transition-transform duration-300">
@@ -277,111 +206,42 @@ function App() {
               </div>
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-2">
-                  <h3 className="font-bold text-xl text-slate-900 dark:text-white">AIDA — AI Flight Control</h3>
-                  <span className="px-2 py-0.5 text-xs font-medium bg-teal-100 dark:bg-teal-900 text-teal-700 dark:text-teal-300 rounded-full">Research</span>
+                  <h3 className="font-bold text-xl text-slate-900 dark:text-white">AIDA: LLM-Guided Flight</h3>
+                  <span className="px-2 py-0.5 text-xs font-medium bg-teal-100 dark:bg-teal-900 text-teal-700 dark:text-teal-300 rounded-full">Personal Research</span>
                 </div>
                 <p className="text-base text-slate-600 dark:text-slate-400 mb-4">
-                  Autonomous Cessna 172 cross-country flight via reinforcement learning, Bayesian intent inference, and Control Barrier Functions. GPU-accelerated 6-DOF physics (500M+ steps/sec). Powered by FlightMind for natural language pilot interaction.
+                  In simulation, a Cessna 172 completed the full 31&nbsp;nm SN65→KHUT cross-country under natural-language command. A quantized model (Salesforce xLAM-2-8B) acts as a function-calling copilot, translating pilot intent into heading, altitude, and landing commands over WebSocket. The flight stack runs a CUDA 6-DOF model (RK4, ~577M steps/s), a 17-phase finite-state autopilot with residual-PPO corrections, entropy-modulated Control Barrier Functions for flight-envelope safety, and Bayesian intent inference.
                 </p>
-                <div className="flex items-center justify-between">
-                  <p className="text-xs text-slate-500 dark:text-slate-400">Python, PyTorch, Gymnasium, CUDA, CuPy</p>
-                  <div className="flex items-center text-teal-600 dark:text-teal-400 text-base font-medium group-hover:translate-x-2 transition-transform duration-300">
-                    View on GitHub <ArrowRight size={18} className="ml-2" />
-                  </div>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">Python, CUDA C++, llama.cpp, PyTorch, Three.js, WebSocket</p>
+                <div className="flex flex-wrap items-center gap-5">
+                  <a href="https://www.youtube.com/watch?v=NKPKqAlc9Z4" target="_blank" rel="noreferrer" className="flex items-center text-teal-600 dark:text-teal-400 text-base font-medium hover:translate-x-1 transition-transform">
+                    <Play size={16} className="mr-2" /> Watch the flight
+                  </a>
+                  <a href="https://github.com/kushkoirala/AIDA" target="_blank" rel="noreferrer" className="flex items-center text-slate-600 dark:text-slate-300 text-base font-medium hover:translate-x-1 transition-transform">
+                    View on GitHub <ArrowRight size={16} className="ml-2" />
+                  </a>
                 </div>
-              </div>
-            </div>
-          </a>
-
-          {/* Card 3: Digital Twin - Portrait */}
-          <div
-            className="group bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 hover:shadow-xl hover:border-purple-400 dark:hover:border-purple-500 transition-all duration-300 cursor-pointer flex flex-col"
-            onClick={() => setFullScreen('twin')}
-          >
-            <div className="flex items-start gap-4 mb-4">
-              <div className="h-14 w-14 bg-purple-100 dark:bg-purple-900/50 rounded-xl flex items-center justify-center text-purple-600 dark:text-purple-400 group-hover:scale-110 transition-transform duration-300">
-                <Box size={28} />
-              </div>
-              <div>
-                <h3 className="font-bold text-xl text-slate-900 dark:text-white mb-1">Digital Twin</h3>
-                <span className="text-xs text-purple-600 dark:text-purple-400 font-medium">6-DOF Flight Simulation</span>
-              </div>
-            </div>
-            <p className="text-base text-slate-600 dark:text-slate-400 mb-4 flex-1">
-              Real-time 3D visualization with CFD pressure coefficients, quaternion-based flight dynamics, and STEP file import via WebAssembly.
-            </p>
-            <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-700">
-              <p className="text-xs text-slate-500 dark:text-slate-400">Three.js, OpenCASCADE, WebAssembly</p>
-              <div className="flex items-center text-purple-600 dark:text-purple-400 text-sm font-medium group-hover:translate-x-1 transition-transform">
-                Launch <ArrowRight size={16} className="ml-1" />
-              </div>
-            </div>
-          </div>
-
-          {/* Card 4: Requirements - Portrait */}
-          <div
-            className="group bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 hover:shadow-xl hover:border-blue-400 dark:hover:border-blue-500 transition-all duration-300 cursor-pointer flex flex-col"
-            onClick={() => setFullScreen('reqif')}
-          >
-            <div className="flex items-start gap-4 mb-4">
-              <div className="h-14 w-14 bg-blue-100 dark:bg-blue-900/50 rounded-xl flex items-center justify-center text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform duration-300">
-                <ClipboardCheck size={28} />
-              </div>
-              <div>
-                <h3 className="font-bold text-xl text-slate-900 dark:text-white mb-1">14 CFR Part 25</h3>
-                <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">Airworthiness Standards</span>
-              </div>
-            </div>
-            <p className="text-base text-slate-600 dark:text-slate-400 mb-4 flex-1">
-              FAA airworthiness standards across 8 subparts with V&V tracking, compliance status, and ReqIF traceability.
-            </p>
-            <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-700">
-              <p className="text-xs text-slate-500 dark:text-slate-400">ReqIF/XML, React, Tailwind</p>
-              <div className="flex items-center text-blue-600 dark:text-blue-400 text-sm font-medium group-hover:translate-x-1 transition-transform">
-                Explore <ArrowRight size={16} className="ml-1" />
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* PRINTABLE PORTFOLIO - Page 3 */}
+      {/* PRINTABLE PORTFOLIO */}
       <section className="hidden print:block print-portfolio">
-        <h2 className="text-2xl font-bold text-primary-600 border-b border-slate-200 pb-2 mb-4">Interactive Engineering Portfolio</h2>
-        <p className="text-sm text-slate-600 mb-4">Live demonstrations available at <strong>kushkoirala.github.io</strong></p>
+        <h2 className="text-2xl font-bold text-primary-600 border-b border-slate-200 pb-2 mb-4">Personal Research</h2>
 
         <div className="print-portfolio-grid">
-          {/* Requirements */}
-          <div className="print-portfolio-card featured">
-            <h3>14 CFR Part 25 Requirements <span className="badge">Airworthiness Standards</span></h3>
-            <p>Full FAA airworthiness standards with derived requirements across 8 subparts (A-H). Powerplant section (Subpart E) fully decomposed with official CFR regulatory text. Features V&V tracking with verification methods, compliance status, and traceability.</p>
-            <p className="tech">Stack: ReqIF/XML, React, Vite, Tailwind</p>
-          </div>
-
-          {/* Digital Twin */}
-          <div className="print-portfolio-card">
-            <h3>Digital Twin <span className="badge">6-DOF Simulation</span></h3>
-            <p>Real-time 3D visualization with CFD pressure coefficients, quaternion-based flight dynamics, and STEP file import via WebAssembly.</p>
-            <p className="tech">Three.js, OpenCASCADE, WebAssembly</p>
-          </div>
-
-          {/* FlightMind */}
-          <div className="print-portfolio-card">
-            <h3>FlightMind <span className="badge">Aviation LLM</span></h3>
-            <p>Aviation-specialized transformer trained from scratch on 192M tokens (NTSB, METAR, 14 CFR, FAA handbooks). Depth-parameterized architecture with RoPE, SwiGLU, Flash Attention. Outperforms GPT-2 perplexity at 50M params. GitHub: github.com/kushkoirala/FlightMind</p>
-            <p className="tech">PyTorch, Flash Attention, CUDA, BPE Tokenizer</p>
-          </div>
-
           {/* AIDA */}
           <div className="print-portfolio-card featured">
-            <h3>AIDA — AI Flight Control <span className="badge">Research</span></h3>
-            <p>Autonomous Cessna 172 cross-country flight via RL, Bayesian intent inference, and Control Barrier Functions. GPU-accelerated 6-DOF physics (500M+ steps/sec). Powered by FlightMind LLM. GitHub: github.com/kushkoirala/AIDA</p>
-            <p className="tech">Python, PyTorch, Gymnasium, CUDA, CuPy</p>
+            <h3>AIDA: LLM-Guided Flight <span className="badge">Personal Research</span></h3>
+            <p>An LLM flew a simulated Cessna 172 through a full cross-country (SN65→KHUT) by natural-language command, over a CUDA 6-DOF model with PPO-augmented control, Control Barrier Functions, and Bayesian intent inference.</p>
+            <p className="tech">Python, CUDA C++, llama.cpp, PyTorch, Three.js</p>
           </div>
         </div>
 
         <div className="print-portfolio-url">
-          View interactive demos: <a href="https://kushkoirala.github.io">kushkoirala.github.io</a>
+          Flight demo: <a href="https://www.youtube.com/watch?v=NKPKqAlc9Z4">youtube.com/watch?v=NKPKqAlc9Z4</a>
         </div>
       </section>
 
@@ -393,27 +253,6 @@ function App() {
         onClose={() => setModalData({ ...modalData, isOpen: false })} 
       />
     </div>
-
-      {/* Full-screen overlay for viewers */}
-      {fullScreen && (
-        <div className="fixed inset-0 z-50 bg-white dark:bg-slate-900 flex flex-col">
-          <div className="flex items-center justify-between px-4 py-3 border-b dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
-            <div className="text-base font-semibold text-slate-900 dark:text-white">
-              {fullScreen === 'reqif' ? 'Requirements (Full Screen)' : 'Digital Twin (Full Screen)'}
-            </div>
-            <button
-              type="button"
-              onClick={() => setFullScreen(null)}
-              className="flex items-center gap-2 text-base text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
-            >
-              <X className="h-4 w-4" /> Close
-            </button>
-          </div>
-          <div className="flex-1 overflow-hidden bg-slate-100 dark:bg-slate-900 relative">
-            {fullScreen === 'reqif' ? <ReqIFViewer reqifFile="part25-certification.reqif" /> : <DigitalTwin />}
-          </div>
-        </div>
-      )}
   </div>
   );
 }
