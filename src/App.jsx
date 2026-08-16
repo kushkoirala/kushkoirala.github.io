@@ -109,8 +109,8 @@ function App() {
           </div>
           <ul className="list-disc pl-4 space-y-1 text-slate-800 dark:text-slate-300 text-sm">
             <li><strong>Agentic AI for engineering:</strong> Driving agentic-readiness and the dev/test of engineering agents that plan, execute, and verify engineering and simulation tasks on the 3DEXPERIENCE platform.</li>
-            <li><strong>NVIDIA DSX AI Factory:</strong> Lead solution architect for the virtual twin of next-generation AI-factory data centers.</li>
-            <li><strong>Boeing (3 yrs, embedded):</strong> Supported digital transformation through engineering-process modernization, automation, and platform adoption.</li>
+            <li><strong>NVIDIA DSX AI Factory (MBSE):</strong> Global Architect for the virtual twin of next-generation AI-factory data centers leveraging MBSE (CatiaMAGIC).</li>
+            <li><strong>Boeing (3 yrs, embedded):</strong> Supported digital transformation through engineering-process modernization, automation, and platform adoption.Compliance and Certification.</li>
             <li><strong>Strategic customers:</strong> Solution architecture across simulation, systems modeling, and enterprise integration for Tesla, Rivian, Textron Aviation, and the U.S. Air Force.</li>
           </ul>
         </div>
