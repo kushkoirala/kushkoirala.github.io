@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Linkedin, X, ArrowRight, Brain, Sun, Moon, Play } from 'lucide-react';
+import { Linkedin, X, ArrowRight, Brain, Sun, Moon, Play, Github } from 'lucide-react';
 import UniversalModal from './components/UniversalModal';
 
 function App() {
@@ -46,6 +46,15 @@ function App() {
                 title="LinkedIn"
               >
                 <Linkedin size={16} />
+              </a>
+              <a
+                href="https://github.com/kushkoirala"
+                target="_blank"
+                rel="noreferrer"
+                className="p-2 bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-300 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition"
+                title="GitHub"
+              >
+                <Github size={16} />
               </a>
               <a
                 href="https://x.com/kushkoirala"
@@ -163,7 +172,7 @@ function App() {
         <div className="mb-3">
            <div className="flex justify-between items-baseline mb-1">
             <div>
-              <h3 className="font-bold text-lg">M.S. Aerospace Engineering <span className="font-normal text-slate-600 dark:text-slate-400 ml-2 text-sm">Wichita State University, Wichita KS</span></h3>
+              <h3 className="font-bold text-lg">M.S. Aerospace Engineering <a href="https://www.wichita.edu" target="_blank" rel="noreferrer" className="font-normal text-slate-600 dark:text-slate-400 ml-2 text-sm hover:text-primary-600 dark:hover:text-primary-400 hover:underline">Wichita State University, Wichita KS</a></h3>
             </div>
             <span className="text-sm text-slate-500 dark:text-slate-400">May 2024</span>
           </div>
@@ -176,7 +185,7 @@ function App() {
          <div className="mb-3">
            <div className="flex justify-between items-baseline mb-1">
             <div>
-              <h3 className="font-bold text-lg">B.S. Aerospace Engineering <span className="font-normal text-slate-600 dark:text-slate-400 ml-2 text-sm">Wichita State University, Wichita KS</span></h3>
+              <h3 className="font-bold text-lg">B.S. Aerospace Engineering <a href="https://www.wichita.edu" target="_blank" rel="noreferrer" className="font-normal text-slate-600 dark:text-slate-400 ml-2 text-sm hover:text-primary-600 dark:hover:text-primary-400 hover:underline">Wichita State University, Wichita KS</a></h3>
             </div>
             <span className="text-sm text-slate-500 dark:text-slate-400">May 2012</span>
           </div>
@@ -241,9 +250,19 @@ function App() {
         </div>
 
         <div className="print-portfolio-url">
+          <a href="https://github.com/kushkoirala/kushkoirala.github.io">github.com/kushkoirala/kushkoirala.github.io</a> &middot;
           Flight demo: <a href="https://www.youtube.com/watch?v=NKPKqAlc9Z4">youtube.com/watch?v=NKPKqAlc9Z4</a>
         </div>
       </section>
+
+      {/* SOURCE */}
+      <footer className="mt-6 border-t border-slate-200 dark:border-slate-700 pt-3 text-xs text-slate-500 dark:text-slate-400 print:hidden">
+        Source for this resume:{' '}
+        <a href="https://github.com/kushkoirala/kushkoirala.github.io" target="_blank" rel="noreferrer"
+           className="text-primary-600 dark:text-primary-400 hover:underline">
+          github.com/kushkoirala/kushkoirala.github.io
+        </a>
+      </footer>
 
       {/* MODAL */}
       <UniversalModal 
