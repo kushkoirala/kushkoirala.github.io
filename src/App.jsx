@@ -250,7 +250,7 @@ function App() {
         </div>
 
         <div className="print-portfolio-url">
-          <a href="https://github.com/kushkoirala/kushkoirala.github.io">github.com/kushkoirala/kushkoirala.github.io</a> &middot;
+          Source: <a href="https://github.com/kushkoirala/kushkoirala.github.io">github.com/kushkoirala/kushkoirala.github.io</a> &middot;{' '}
           Flight demo: <a href="https://www.youtube.com/watch?v=NKPKqAlc9Z4">youtube.com/watch?v=NKPKqAlc9Z4</a>
         </div>
       </section>
