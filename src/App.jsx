@@ -73,7 +73,7 @@ function App() {
           </div>
         </div>
         <p className="text-base leading-relaxed text-slate-700 dark:text-slate-400 max-w-2xl">
-          <strong>Aerospace Engineer &amp; Global Solution Architect at Dassault Systèmes.</strong> 15+ years across aerospace, automotive, defense, and advanced manufacturing. Now focused on agentic AI for engineering: engineering agents, digital twins, and simulation-driven workflows, grounded in design, certification, and large-scale enterprise systems.
+          <strong>Aerospace Engineer &amp; Global Solution Architect at Dassault Systèmes.</strong> Building virtual twins of Aircrafts, Cars and AI Factories & operating agents inside those twins.
         </p>
         <button onClick={() => window.print()} className="mt-4 px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded hover:bg-primary-700 transition print:hidden">
           Print Resume
