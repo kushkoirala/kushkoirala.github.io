@@ -250,19 +250,10 @@ function App() {
         </div>
 
         <div className="print-portfolio-url">
-          Source: <a href="https://github.com/kushkoirala/kushkoirala.github.io">github.com/kushkoirala/kushkoirala.github.io</a> &middot;{' '}
+          Interactive resume: <a href="https://kushkoirala.github.io">kushkoirala.github.io</a> &middot;{' '}
           Flight demo: <a href="https://www.youtube.com/watch?v=NKPKqAlc9Z4">youtube.com/watch?v=NKPKqAlc9Z4</a>
         </div>
       </section>
-
-      {/* SOURCE */}
-      <footer className="mt-6 border-t border-slate-200 dark:border-slate-700 pt-3 text-xs text-slate-500 dark:text-slate-400 print:hidden">
-        Source for this resume:{' '}
-        <a href="https://github.com/kushkoirala/kushkoirala.github.io" target="_blank" rel="noreferrer"
-           className="text-primary-600 dark:text-primary-400 hover:underline">
-          github.com/kushkoirala/kushkoirala.github.io
-        </a>
-      </footer>
 
       {/* MODAL */}
       <UniversalModal 
